@@ -476,7 +476,7 @@ function AppContent() {
             <img
               src={(user.photo_url && (user.photo_url.startsWith('/') || user.photo_url.startsWith('http'))
                 ? user.photo_url
-                : `${IS_MULTI ? '/GolfTeam' : '/Nicole26'}/${user.photo_url || 'profile.jpg'}`) + `?t=${photoVersion}`}
+                : `${IS_MULTI ? '/GolfTeam' : '/Nicole26'}/${user.photo_url || 'profile.jpg'}`) + `?v=${Math.floor(Date.now() / 300000)}`}
               onError={(e) => { e.target.onerror = null; e.target.src = "https://ui-avatars.com/api/?name=" + user.username }}
               alt={user.full_name}
               style={{ width: '120px', height: '120px', borderRadius: '50%', objectFit: 'cover', border: '4px solid white', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
