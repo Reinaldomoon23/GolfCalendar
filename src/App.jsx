@@ -585,14 +585,14 @@ function AppContent() {
             border: '1px solid rgba(0,0,0,0.05)',
             cursor: pdfUrl ? 'pointer' : 'default',
             transition: 'all 0.2s ease',
-            minWidth: 'max-content',
-            whiteSpace: 'nowrap',
+            width: '220px', // Fixed width to prevent jumping
             maxWidth: '90vw',
             overflow: 'hidden',
-            textOverflow: 'ellipsis'
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap'
           }}>
           <TrendingUp size={18} className={isUpdatingHandicap ? "spin-animation" : ""} />
-          <span>{handicap ? `Hándicap: ${String(handicap).substring(0, 15)}` : 'Hándicap: --'}</span>
+          <span>{isUpdatingHandicap ? 'Actualizando...' : (handicap ? `Hándicap: ${String(handicap).substring(0, 15)}` : 'Hándicap: --')}</span>
         </button>
       </header>
 
