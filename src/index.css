@@ -26,6 +26,11 @@
   --color-grand-prix: #C5B4A5;
   --color-grand-prix-bg: #faf9f8;
 
+  --color-valedera: #FCD34D;
+  /* Amber 300 - Bright Yellow */
+  --color-valedera-text: #78350f;
+  /* Amber 900 - Dark Brown for contrast */
+
   /* Architectural Minimalism */
   --border-thin: 1px solid #E5E1DE;
   --shadow-soft: 0 4px 20px rgba(140, 133, 127, 0.08);
@@ -122,11 +127,11 @@ h4 {
 
 .badge {
   display: inline-flex;
-  padding: 0.4rem 1.2rem;
+  padding: 0.2rem 0.6rem;
   border: 1px solid #E5E1DE;
   border-radius: 20px;
-  font-size: 0.7rem;
-  font-weight: 400;
+  font-size: 0.6rem;
+  font-weight: 500;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   background: transparent;

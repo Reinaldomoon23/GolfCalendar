@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useRegisterSW } from 'virtual:pwa-register/react';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import CalendarView from './components/CalendarView';
 import StatsView from './components/StatsView';
@@ -29,6 +30,18 @@ function AppContent() {
   const location = useLocation();
 
   // Initialize user based on Mode
+  const {
+    needRefresh: [needRefresh, setNeedRefresh],
+    updateServiceWorker,
+  } = useRegisterSW({
+    onRegistered(r) {
+      console.log('SW Registered: ' + r)
+    },
+    onRegisterError(error) {
+      console.log('SW registration error', error)
+    },
+  })
+
   const [user, setUser] = useState(() => {
     if (!IS_MULTI) {
       return DEFAULT_USER;
@@ -175,7 +188,7 @@ function AppContent() {
   const [preferences, setPreferences] = useState(() => {
     // Default: all enabled
     return {
-      groups: ['valedero', 'grand_prix', 'baby_cup', 'wagr', 'legacy', 'club'],
+      groups: ['juvenil', 'rfeg', 'fcg', 'club', 'adultos'],
       hiddenIds: []
     };
   });
@@ -204,7 +217,15 @@ function AppContent() {
   // Merge static and custom tournaments, prioritizing custom (overrides)
   // Also filter out hidden tournaments (personal isolation)
   const tournaments = [
-    ...tournamentsData.filter(t => !preferences.hiddenIds?.includes(t.id) && !customTournaments.some(ct => ct.id === t.id)),
+    ...tournamentsData.filter(t => {
+      // Filter hidden
+      if (preferences.hiddenIds?.includes(t.id)) return false;
+      // Hard Override (same ID)
+      if (customTournaments.some(ct => ct.id === t.id)) return false;
+      // Soft Override (Deduplication: same Name AND Dates)
+      if (customTournaments.some(ct => ct.name === t.name && ct.dates === t.dates)) return false;
+      return true;
+    }),
     ...customTournaments
   ];
 
@@ -270,16 +291,23 @@ function AppContent() {
     fetch(`${baselink}/api/users.json?t=${new Date().getTime()}`)
       .then(res => res.json())
       .then(users => {
+        let me = null;
         if (Array.isArray(users)) {
-          const me = users.find(u => u.username === user.username);
-          if (me) {
+          me = users.find(u => u.username === user.username);
+        } else if (users && typeof users === 'object') {
+          me = users[user.username];
+        }
+
+        if (me) {
+          // Only update if something actually changed to avoid re-renders
+          if (me.photo_url !== user.photo_url || me.full_name !== user.full_name || me.federation_id !== user.federation_id) {
             setUser(prev => ({
               ...prev,
               photo_url: me.photo_url,
               full_name: me.full_name,
               federation_id: me.federation_id
             }));
-            // Update local storage too so next offline load is fresher
+
             if (IS_MULTI) {
               const updated = { ...user, photo_url: me.photo_url, full_name: me.full_name, federation_id: me.federation_id };
               localStorage.setItem('golf_tracker_user', JSON.stringify(updated));
@@ -288,7 +316,7 @@ function AppContent() {
         }
       })
       .catch(err => console.error("Error syncing profile:", err));
-  }, [user]);
+  }, [user?.username]);
 
   // Auto-update check for 08:00 AM
   useEffect(() => {
@@ -357,7 +385,20 @@ function AppContent() {
         username: user.username,
         tournaments: updated
       })
-    }).catch(err => console.error(err));
+    }).then(res => {
+      if (!res.ok) throw new Error('Network response was not ok');
+      return res.json();
+    })
+      .then(data => {
+        if (!data.success) {
+          console.error('Server error saving custom tournaments:', data.error);
+          alert('⚠️ Error al guardar el torneo en la nube. Se mantiene en local.');
+        }
+      })
+      .catch(err => {
+        console.error('Fetch error:', err);
+        alert('⚠️ Error de conexión al guardar el torneo. Verifica tu internet.');
+      });
   };
 
   const handleAddTournament = (newT) => {
@@ -433,7 +474,9 @@ function AppContent() {
             title="Cambiar foto de perfil"
           >
             <img
-              src={user.photo_url ? (user.photo_url.startsWith('/') || user.photo_url.startsWith('http') ? user.photo_url : `${IS_MULTI ? '/GolfTeam' : '/Nicole26'}/${user.photo_url}`) + `?t=${photoVersion}` : (IS_MULTI ? "/GolfTeam/profile.jpg" : "/Nicole26/profile.jpg") + `?t=${photoVersion}`}
+              src={(user.photo_url && (user.photo_url.startsWith('/') || user.photo_url.startsWith('http'))
+                ? user.photo_url
+                : `${IS_MULTI ? '/GolfTeam' : '/Nicole26'}/${user.photo_url || 'profile.jpg'}`) + `?t=${photoVersion}`}
               onError={(e) => { e.target.onerror = null; e.target.src = "https://ui-avatars.com/api/?name=" + user.username }}
               alt={user.full_name}
               style={{ width: '120px', height: '120px', borderRadius: '50%', objectFit: 'cover', border: '4px solid white', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
@@ -476,10 +519,29 @@ function AppContent() {
           {user.full_name || 'Calendario Golf'}
           {IS_MULTI && (
             <button
-              onClick={() => {
+              onClick={async () => {
                 setEditFullName(user.full_name);
                 setEditFederationId(user.federation_id || '');
                 setIsProfileModalOpen(true);
+
+                try {
+                  const baselink = IS_MULTI ? '/GolfTeam' : '/Nicole26';
+                  const res = await fetch(`${baselink}/api/users.json?t=${Date.now()}`);
+                  const users = await res.json();
+                  let me = null;
+                  if (Array.isArray(users)) {
+                    me = users.find(u => u.username === user.username);
+                  } else if (users && typeof users === 'object') {
+                    me = users[user.username];
+                  }
+                  if (me) {
+                    setEditFullName(me.full_name);
+                    setEditFederationId(me.federation_id || '');
+                    setUser(prev => ({ ...prev, ...me }));
+                  }
+                } catch (e) {
+                  console.error("Error refreshing profile for edit", e);
+                }
               }}
               style={{
                 background: 'none',
@@ -502,32 +564,36 @@ function AppContent() {
         </h1>
         <p style={{ color: 'var(--color-text-muted)' }}>Temporada 2026 <span style={{ fontSize: '0.8em', opacity: 0.7 }}>(v2.3.5)</span></p>
 
-        {handicap && (
-          <button
-            className="handicap-btn fade-in"
-            onClick={() => pdfUrl && window.open(pdfUrl, '_blank')}
-            title={pdfUrl ? "Ver fuente del hándicap (PDF)" : "Hándicap actualizado"}
-            disabled={!pdfUrl}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              background: 'var(--color-primary-light)',
-              color: 'var(--color-primary-dark)',
-              padding: '6px 16px',
-              borderRadius: '20px',
-              marginTop: '12px',
-              fontSize: '1.1rem',
-              fontWeight: '600',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-              border: 'none',
-              cursor: pdfUrl ? 'pointer' : 'default',
-              transition: 'all 0.2s ease'
-            }}>
-            <TrendingUp size={18} className={isUpdatingHandicap ? "spin-animation" : ""} />
-            <span>{isUpdatingHandicap ? "Actualizando..." : `Hándicap: ${handicap}`}</span>
-          </button>
-        )}
+        <button
+          className="handicap-btn fade-in"
+          onClick={() => pdfUrl && window.open(pdfUrl, '_blank')}
+          title={pdfUrl ? "Ver PDF del Hándicap" : "Hándicap actualizado"}
+          disabled={!pdfUrl}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            background: 'var(--color-primary-light)',
+            color: 'var(--color-primary-dark)',
+            padding: '8px 24px',
+            borderRadius: '24px',
+            marginTop: '12px',
+            fontSize: '1.1rem',
+            fontWeight: '600',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+            border: '1px solid rgba(0,0,0,0.05)',
+            cursor: pdfUrl ? 'pointer' : 'default',
+            transition: 'all 0.2s ease',
+            minWidth: 'max-content',
+            whiteSpace: 'nowrap',
+            maxWidth: '90vw',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis'
+          }}>
+          <TrendingUp size={18} className={isUpdatingHandicap ? "spin-animation" : ""} />
+          <span>{handicap ? `Hándicap: ${String(handicap).substring(0, 15)}` : 'Hándicap: --'}</span>
+        </button>
       </header>
 
       {/* Navigation Tabs */}
@@ -586,6 +652,35 @@ function AppContent() {
           <Route path="/handicap" element={<HandicapView user={user} currentHandicap={handicap} />} />
         </Routes>
       </main>
+
+      {/* PWA Update Banner */}
+      {needRefresh && (
+        <div className="fade-in" style={{
+          position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)',
+          backgroundColor: 'var(--color-primary)', color: 'white', padding: '16px 24px', borderRadius: '50px',
+          boxShadow: '0 10px 25px rgba(0,0,0,0.2)', zIndex: 9999, display: 'flex', gap: '15px', alignItems: 'center',
+          border: '1px solid rgba(255,255,255,0.1)', minWidth: '300px', justifyContent: 'space-between'
+        }}>
+          <span style={{ fontSize: '0.9rem', fontWeight: '500' }}>¡Nueva versión disponible!</span>
+          <button
+            onClick={() => updateServiceWorker(true)}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '20px',
+              border: 'none',
+              background: 'white',
+              color: 'var(--color-primary)',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              textTransform: 'uppercase',
+              fontSize: '0.75rem',
+              letterSpacing: '0.05em'
+            }}
+          >
+            Actualizar
+          </button>
+        </div>
+      )}
 
       {/* Profile Edit Modal */}
       {isProfileModalOpen && (

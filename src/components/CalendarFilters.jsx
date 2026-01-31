@@ -1,13 +1,11 @@
 import { Check } from 'lucide-react';
 
 const GROUPS = [
-    { id: 'valedero', label: 'Valederos', color: '#2563eb' },
-    { id: 'grand_prix', label: 'Grand Prix', color: '#d97706' },
-    { id: 'baby_cup', label: 'Baby Cup', color: '#db2777' },
-    { id: 'wagr', label: 'WAGR', color: '#7c3aed' },
-    { id: 'merit', label: 'Orden Merito', color: '#B58B80' },
-    { id: 'legacy', label: 'Legacy', color: '#059669' },
-    { id: 'club', label: 'Club', color: '#4b5563' }
+    { id: 'juvenil', label: 'Circuito Juvenil', color: '#db2777' }, // Pink
+    { id: 'rfeg', label: 'RFEG', color: '#dc2626' }, // Red
+    { id: 'fcg', label: 'FCG', color: '#d97706' }, // Orange
+    { id: 'club', label: 'Club', color: '#059669' }, // Green
+    { id: 'adultos', label: 'Circuitos Adultos', color: '#4b5563' } // Gray
 ];
 
 export default function CalendarFilters({ activeGroups, onChange }) {

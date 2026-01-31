@@ -422,6 +422,20 @@ export default function CalendarView({
             dateString += ` - ${formatDate(end)}`;
         }
 
+        // Check for conflicts with existing tournaments
+        const { start: newStartTs, end: newEndTs } = parseDateHelper(dateString);
+        // exclude self if editing? No, here we are adding NEW.
+        const conflict = tournaments.find(t => {
+            const { start: tStart, end: tEnd } = parseDateHelper(t.dates);
+            return (newStartTs <= tEnd && tStart <= newEndTs);
+        });
+
+        if (conflict) {
+            if (!window.confirm(`⚠️ ¡Conflicto de Fechas Detectado!\n\nEste nuevo torneo coincide con:\n"${conflict.name}"\n📅 ${conflict.dates}\n\n¿Estás seguro de que quieres crearlo de todas formas esto generará una coincidencia?`)) {
+                return;
+            }
+        }
+
         const t = {
             id: 'custom_' + Date.now(),
             name: newTournament.name,
@@ -437,6 +451,16 @@ export default function CalendarView({
 
 
         if (onAddTournament) onAddTournament(t);
+
+        // UX Improvement: If adding a past tournament, switch filter to 'all' so it doesn't "disappear"
+        const tDate = parseDate(dateString);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (tDate < today) {
+            setFilter('all');
+        }
+
         setShowAddForm(false);
         setNewTournament({
             name: '',
@@ -648,11 +672,34 @@ export default function CalendarView({
             if (activeGroups && activeGroups.length > 0) {
                 // Special handling for specific filters that should check properties, not just groups
                 const matchesFilter = activeGroups.some(g => {
+                    // --- NEW SIMPLIFIED CATEGORIES ---
+                    if (g === 'juvenil') {
+                        // Includes Legacy, Baby Cup, Junior Cup, and general underage tournaments
+                        return (t.groups && (t.groups.includes('legacy') || t.groups.includes('baby_cup'))) ||
+                            t.type === 'junior_cup' ||
+                            (t.name && (t.name.toLowerCase().includes('infantil') || t.name.toLowerCase().includes('alevi') || t.name.toLowerCase().includes('benjami')));
+                    }
+                    if (g === 'rfeg') {
+                        return t.organizer === 'RFEG' || (t.groups && t.groups.includes('valedero') && t.organizer !== 'FCG');
+                    }
+                    if (g === 'fcg') {
+                        return t.organizer === 'FCG';
+                    }
+                    if (g === 'club') {
+                        return t.organizer === 'CLUB' || t.organizer === 'CAMIRAL' || t.type === 'club' || (t.groups && t.groups.includes('club'));
+                    }
+                    if (g === 'adultos') {
+                        return (t.groups && t.groups.includes('wagr')) ||
+                            (t.name && t.name.toLowerCase().includes('absolut')) ||
+                            (t.organizer !== 'CLUB' && t.organizer !== 'CAMIRAL' && !t.name.toLowerCase().includes('infantil') && !t.name.toLowerCase().includes('alevi'));
+                    }
+
+                    // --- LEGACY FALLBACKS (for old saved preferences) ---
                     if (g === 'valedero') return t.valedera;
                     if (g === 'grand_prix') return t.grand_prix;
                     if (g === 'merit') return (t.merit || t.type === 'merit');
                     if (g === 'camiral') return (t.groups && t.groups.includes('camiral'));
-                    // Default fallback for other groups
+                    // Default fallback
                     return t.groups && t.groups.includes(g);
                 });
 
@@ -732,18 +779,24 @@ export default function CalendarView({
             theme = FALLBACK_PALETTES[index];
         }
 
+        // 4. Overrides for Special Types
+        // (Valedera is handled directly in styles below for enhanced visuals)
+
         let style = {
-            border: '1px solid #E5E1DE',
-            boxShadow: '0 4px 15px rgba(140, 133, 127, 0.05)',
+            border: t.valedera ? '2px solid #D97706' : '1px solid #E5E1DE', // Thick golden border
+            boxShadow: t.valedera
+                ? '0 10px 30px rgba(217, 119, 6, 0.15), 0 4px 6px rgba(217, 119, 6, 0.05)'
+                : '0 4px 15px rgba(140, 133, 127, 0.05)',
             opacity: past ? 0.6 : 1,
-            background: theme.bg,
-            borderRadius: '4px',
-            borderLeft: `4px solid ${theme.border}`
+            background: t.valedera
+                ? 'linear-gradient(145deg, #FFFCF5 0%, #FFF7ED 100%)'
+                : theme.bg,
+            borderRadius: '4px'
         };
 
         if (t.conflict) {
             style.background = 'var(--color-conflict-bg)';
-            style.borderLeft = '4px solid #b25d5d';
+            // Removed border to avoid visual confusion with Valedera
         }
 
         return style;
@@ -1149,13 +1202,11 @@ export default function CalendarView({
                                     onChange={(e) => handleDetailChange('type', e.target.value)}
                                     style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc', fontSize: '1rem' }}
                                 >
-                                    <option value="club">Estándar / Club</option>
-                                    <option value="official">Oficial</option>
-                                    <option value="championship">Torneo</option>
-                                    <option value="national_championship">Torneo Nacional</option>
-                                    <option value="regional_championship">Torneo Regional</option>
-                                    <option value="circuit">Circuito</option>
-                                    <option value="amateur">Torneo Amateur</option>
+                                    <option value="club">Club</option>
+                                    <option value="juvenil">Circuito Juvenil</option>
+                                    <option value="rfeg">RFEG</option>
+                                    <option value="fcg">FCG</option>
+                                    <option value="adultos">Circuitos Adultos</option>
                                 </select>
                             </div>
 
@@ -1280,12 +1331,10 @@ export default function CalendarView({
                                             style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
                                         >
                                             <option value="club">Club</option>
-                                            <option value="official">Oficial</option>
-                                            <option value="championship">Torneo</option>
-                                            <option value="national_championship">Torneo Nacional</option>
-                                            <option value="regional_championship">Torneo Regional</option>
-                                            <option value="circuit">Circuito</option>
-                                            <option value="amateur">Torneo Amateur</option>
+                                            <option value="juvenil">Circuito Juvenil</option>
+                                            <option value="rfeg">RFEG</option>
+                                            <option value="fcg">FCG</option>
+                                            <option value="adultos">Circuitos Adultos</option>
                                         </select>
                                     </div>
                                 </div>
@@ -1669,62 +1718,7 @@ export default function CalendarView({
                             </div>
 
                             {/* Tag Toggles */}
-                            <div style={{ marginBottom: '2rem', padding: '1rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                                <label style={{ display: 'block', marginBottom: '10px', fontWeight: '600', fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>Etiquetas del Torneo</label>
-                                <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        <input
-                                            type="checkbox"
-                                            id="edit-grand-prix"
-                                            checked={t.grand_prix || false}
-                                            onChange={(e) => {
-                                                if (onUpdateTournament) {
-                                                    onUpdateTournament({ ...t, grand_prix: e.target.checked });
-                                                }
-                                            }}
-                                            style={{ width: '18px', height: '18px', accentColor: 'var(--color-grand-prix)' }}
-                                        />
-                                        <label htmlFor="edit-grand-prix" style={{ fontWeight: '500' }}>Grand Prix</label>
-                                    </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        <input
-                                            type="checkbox"
-                                            id="edit-valedera"
-                                            checked={t.valedera || false}
-                                            onChange={(e) => {
-                                                if (onUpdateTournament) {
-                                                    onUpdateTournament({ ...t, valedera: e.target.checked });
-                                                }
-                                            }}
-                                            style={{ width: '18px', height: '18px', accentColor: 'var(--color-accent)' }}
-                                        />
-                                        <label htmlFor="edit-valedera" style={{ fontWeight: '500' }}>Valedera</label>
-                                    </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        <input
-                                            type="checkbox"
-                                            id="edit-camiral"
-                                            checked={t.groups && t.groups.includes('camiral')}
-                                            onChange={(e) => {
-                                                if (onUpdateTournament) {
-                                                    const currentGroups = t.groups || ['club'];
-                                                    let newGroups;
-                                                    if (e.target.checked) {
-                                                        newGroups = [...currentGroups, 'camiral'];
-                                                    } else {
-                                                        newGroups = currentGroups.filter(g => g !== 'camiral');
-                                                    }
-                                                    // Deduplicate just in case
-                                                    newGroups = [...new Set(newGroups)];
-                                                    onUpdateTournament({ ...t, groups: newGroups });
-                                                }
-                                            }}
-                                            style={{ width: '18px', height: '18px', accentColor: '#2563eb' }}
-                                        />
-                                        <label htmlFor="edit-camiral" style={{ fontWeight: '500' }}>Camiral</label>
-                                    </div>
-                                </div>
-                            </div>
+
 
                             <div style={{ display: 'flex', gap: '1rem' }}>
                                 {results[t.id] && (
@@ -2039,25 +2033,24 @@ export default function CalendarView({
                                     </div>
                                 )
                             }
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.5rem' }}>
-                                <div style={{ display: 'flex', gap: '6px' }}>
-                                    <span className="badge" style={{
-                                        backgroundColor: ['RFEG', 'FCG'].includes(t.organizer) ? 'var(--color-federation)' : 'rgba(0,0,0,0.05)',
-                                        color: ['RFEG', 'FCG'].includes(t.organizer) ? 'white' : 'var(--color-text-main)'
-                                    }}>
-                                        {t.organizer}
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center', marginBottom: '0.5rem', paddingRight: '30px' }}>
+                                <span className="badge" style={{
+                                    backgroundColor: ['RFEG', 'FCG'].includes(t.organizer) ? 'var(--color-federation)' : 'rgba(0,0,0,0.05)',
+                                    color: ['RFEG', 'FCG'].includes(t.organizer) ? 'white' : 'var(--color-text-main)'
+                                }}>
+                                    {t.organizer}
+                                </span>
+                                {t.grand_prix && (
+                                    <span className="badge" style={{ backgroundColor: 'var(--color-grand-prix)', color: 'white' }}>
+                                        GRAND PRIX
                                     </span>
-                                    {t.grand_prix && (
-                                        <span className="badge" style={{ backgroundColor: 'var(--color-grand-prix)', color: 'white' }}>
-                                            GRAND PRIX
-                                        </span>
-                                    )}
-                                    {t.valedera && (
-                                        <span className="badge" style={{ backgroundColor: 'var(--color-accent)', color: 'var(--color-primary)' }}>
-                                            VALEDERA
-                                        </span>
-                                    )}
-                                </div>
+                                )}
+                                {t.valedera && (
+                                    <span className="badge" style={{ backgroundColor: 'var(--color-valedera)', color: 'var(--color-valedera-text)', fontWeight: '700', display: 'inline-flex', alignItems: 'center' }}>
+                                        <Trophy size={11} style={{ marginRight: '4px' }} strokeWidth={2.5} />
+                                        VALEDERA
+                                    </span>
+                                )}
                                 {t.conflict && (
                                     <span className="badge" style={{ backgroundColor: 'var(--color-conflict)', color: 'white' }}>
                                         COINCIDE

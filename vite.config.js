@@ -1,22 +1,19 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
-  // Load env (Vite loads .env files by default based on mode, but process.env might not be populated in config context unless we use loadEnv)
-  // However, VITE_APP_MODE passed in CLI "VITE_APP_MODE=multi" is available in process.env?
-  // Actually, let's use the exact variable we are passing.
-
-  const appMode = process.env.VITE_APP_MODE || 'single';
+  const env = loadEnv(mode, process.cwd(), '');
+  const appMode = env.VITE_APP_MODE || 'single';
   const base = appMode === 'multi' ? '/GolfTeam/' : '/Nicole26/';
 
   return {
     plugins: [
       react(),
       VitePWA({
-        registerType: 'autoUpdate',
+        registerType: 'prompt',
         includeAssets: ['favicon.ico', 'apple-touch-icon-180x180.png', 'mask-icon.svg'],
         workbox: {
           cleanupOutdatedCaches: true,

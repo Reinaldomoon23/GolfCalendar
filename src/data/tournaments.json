@@ -41,8 +41,10 @@
         "course": "Lauro",
         "organizer": "RFEG",
         "type": "official",
+        "grand_prix": true,
         "groups": [
-            "valedero"
+            "valedero",
+            "grand_prix"
         ]
     },
     {
