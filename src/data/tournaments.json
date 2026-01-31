@@ -1,0 +1,367 @@
+[
+    {
+        "id": 1,
+        "dates": "18/01/2026",
+        "name": "ORDEN DE MERITO",
+        "course": "Tour",
+        "organizer": "CAMIRAL",
+        "type": "merit",
+        "groups": [
+            "club"
+        ]
+    },
+    {
+        "id": 105,
+        "dates": "25/01/2026",
+        "name": "Infinitum Golf Lakes",
+        "course": "Infinitum Lakes",
+        "organizer": "CLUB",
+        "type": "club",
+        "groups": [
+            "club"
+        ]
+    },
+    {
+        "id": 2,
+        "dates": "31/01/2026 - 01/02/2026",
+        "name": "Puntuable Zonal I RFEG",
+        "course": "Infinitum Lakes",
+        "organizer": "RFEG",
+        "type": "official",
+        "grand_prix": true,
+        "groups": [
+            "valedero",
+            "grand_prix"
+        ]
+    },
+    {
+        "id": 110,
+        "dates": "06/02/2026 - 08/02/2026",
+        "name": "Puntuable Nacional Juvenil",
+        "course": "Lauro",
+        "organizer": "RFEG",
+        "type": "official",
+        "groups": [
+            "valedero"
+        ]
+    },
+    {
+        "id": 4,
+        "dates": "14/02/2026 - 15/02/2026",
+        "name": "Torremirona Cup (Infantil/Aleví/Benjamí)",
+        "course": "Torremirona",
+        "organizer": "CLUB",
+        "type": "club",
+        "grand_prix": true,
+        "groups": [
+            "grand_prix"
+        ]
+    },
+    {
+        "id": 5,
+        "dates": "22/02/2026",
+        "name": "ORDEN DE MERITO",
+        "course": "Stadium",
+        "organizer": "CAMIRAL",
+        "type": "merit",
+        "groups": [
+            "club"
+        ]
+    },
+    {
+        "id": 6,
+        "dates": "28/02/2026 - 01/03/2026",
+        "name": "Puntuable Zonal II RFEG",
+        "course": "Vallromanes/La Roca",
+        "organizer": "RFEG",
+        "type": "official",
+        "grand_prix": true,
+        "groups": [
+            "valedero",
+            "grand_prix"
+        ]
+    },
+    {
+        "id": 7,
+        "dates": "15/03/2026",
+        "name": "ORDEN DE MERITO",
+        "course": "Tour",
+        "organizer": "CAMIRAL",
+        "type": "merit",
+        "groups": [
+            "club"
+        ]
+    },
+    {
+        "id": 8,
+        "dates": "29/03/2026",
+        "name": "Legacy Golf (Infantil/Aleví/Benjamí)",
+        "course": "Vallromanes",
+        "organizer": "CLUB",
+        "type": "club",
+        "grand_prix": true,
+        "groups": [
+            "legacy",
+            "grand_prix",
+            "baby_cup"
+        ]
+    },
+    {
+        "id": 9,
+        "dates": "12/04/2026",
+        "name": "Legacy Golf (Infantil/Aleví)",
+        "course": "Terramar",
+        "organizer": "CLUB",
+        "type": "club",
+        "grand_prix": true,
+        "conflict": true,
+        "groups": [
+            "legacy",
+            "grand_prix",
+            "baby_cup"
+        ]
+    },
+    {
+        "id": 10,
+        "dates": "12/04/2026",
+        "name": "ORDEN DE MERITO",
+        "course": "Stadium",
+        "organizer": "CAMIRAL",
+        "type": "merit",
+        "conflict": true,
+        "groups": [
+            "club"
+        ]
+    },
+    {
+        "id": 11,
+        "dates": "24/05/2026",
+        "name": "XXV Junior & Baby Cup",
+        "course": "Sant Cugat",
+        "organizer": "FCG",
+        "type": "junior_cup",
+        "grand_prix": true,
+        "groups": [
+            "baby_cup",
+            "grand_prix"
+        ]
+    },
+    {
+        "id": 12,
+        "dates": "01/05/2026 - 03/05/2026",
+        "name": "Campeonato de España Sub16 2026",
+        "course": "Infinitum Lakes",
+        "organizer": "RFEG",
+        "type": "national_championship",
+        "groups": [
+            "valedero"
+        ]
+    },
+    {
+        "id": 13,
+        "dates": "03/05/2026",
+        "name": "ORDEN DE MERITO",
+        "course": "Tour",
+        "organizer": "CAMIRAL",
+        "type": "merit",
+        "conflict": true,
+        "groups": [
+            "club"
+        ]
+    },
+    {
+        "id": 14,
+        "dates": "10/05/2026",
+        "name": "Circuito Miguel Angel Jimenez (Infantil)",
+        "course": "Barcelona",
+        "organizer": "CLUB",
+        "type": "circuit",
+        "grand_prix": true,
+        "groups": [
+            "grand_prix"
+        ]
+    },
+    {
+        "id": 15,
+        "dates": "16/05/2026 - 17/05/2026",
+        "name": "Campionat de Catalunya Infantil",
+        "course": "Costa Brava",
+        "organizer": "FCG",
+        "type": "regional_championship",
+        "groups": [
+            "valedero"
+        ]
+    },
+    {
+        "id": 16,
+        "dates": "30/05/2026 - 31/05/2026",
+        "name": "CLUB CHAMPIONSHIP",
+        "course": "Tour/Stadium",
+        "organizer": "CAMIRAL",
+        "type": "championship",
+        "groups": [
+            "club"
+        ]
+    },
+    {
+        "id": 17,
+        "dates": "07/06/2026",
+        "name": "XXV Junior & Baby Cup (Infantil/Aleví/Benjamí)",
+        "course": "Llavaneras",
+        "organizer": "CLUB",
+        "type": "junior_cup",
+        "grand_prix": true,
+        "groups": [
+            "baby_cup",
+            "grand_prix"
+        ]
+    },
+    {
+        "id": 18,
+        "dates": "14/06/2026",
+        "name": "ORDEN DE MERITO",
+        "course": "Stadium",
+        "organizer": "CAMIRAL",
+        "type": "merit",
+        "groups": [
+            "club"
+        ]
+    },
+    {
+        "id": 19,
+        "dates": "19/07/2026",
+        "name": "ORDEN DE MERITO",
+        "course": "Stadium",
+        "organizer": "CAMIRAL",
+        "type": "merit",
+        "groups": [
+            "club"
+        ]
+    },
+    {
+        "id": 20,
+        "dates": "23/08/2026",
+        "name": "ORDEN DE MERITO",
+        "course": "Tour",
+        "organizer": "CAMIRAL",
+        "type": "merit",
+        "groups": [
+            "club"
+        ]
+    },
+    {
+        "id": 21,
+        "dates": "06/09/2026",
+        "name": "ORDEN DE MERITO",
+        "course": "Tour",
+        "organizer": "CAMIRAL",
+        "type": "merit",
+        "groups": [
+            "club"
+        ]
+    },
+    {
+        "id": 22,
+        "dates": "19/09/2026 - 20/09/2026",
+        "name": "Campionat de Catalunya Matchplay Sub-18/16/14/12/10 2026",
+        "course": "Golf Costa Daurada",
+        "organizer": "FCG",
+        "type": "regional_championship",
+        "groups": [
+            "valedero"
+        ]
+    },
+    {
+        "id": 23,
+        "dates": "02/10/2026 - 04/10/2026",
+        "name": "Campionat de Catalunya Sub-18 i Sub-16 (WAGR) 2026",
+        "course": "Fontanals Golf Club",
+        "organizer": "FCG",
+        "type": "regional_championship",
+        "groups": [
+            "valedero",
+            "wagr"
+        ]
+    },
+    {
+        "id": 24,
+        "dates": "18/10/2026",
+        "name": "ORDEN DE MERITO",
+        "course": "Tour",
+        "organizer": "CAMIRAL",
+        "type": "merit",
+        "groups": [
+            "club"
+        ]
+    },
+    {
+        "id": 25,
+        "dates": "29/11/2026",
+        "name": "ORDEN DE MERITO",
+        "course": "Stadium",
+        "organizer": "CAMIRAL",
+        "type": "merit",
+        "groups": [
+            "club"
+        ]
+    },
+    {
+        "id": 26,
+        "dates": "13/12/2026",
+        "name": "ORDEN DE MERITO",
+        "course": "Tour",
+        "organizer": "CAMIRAL",
+        "type": "merit",
+        "groups": [
+            "club"
+        ]
+    },
+    {
+        "id": 27,
+        "dates": "26/06/2026 - 28/06/2026",
+        "name": "Campeonato de España Infantil, Alevín y Benjamín 2026 \"Memorial Juan Antonio Andreu\"",
+        "course": "Real La Manga Club / La Serena Golf",
+        "organizer": "RFEG",
+        "type": "national_championship",
+        "groups": [
+            "valedero"
+        ]
+    },
+    {
+        "id": 28,
+        "dates": "11/07/2026 - 12/07/2026",
+        "name": "Campionat de Catalunya Absolut i 2a (WAGR)",
+        "course": "Peralada Golf",
+        "organizer": "FCG",
+        "type": "regional_championship",
+        "groups": [
+            "valedero",
+            "wagr"
+        ]
+    },
+    {
+        "id": 103,
+        "dates": "12/09/2026 - 13/09/2026",
+        "name": "Barcelona Junior Golf Open by IMG Academy",
+        "course": "Barcelona",
+        "organizer": "CLUB",
+        "type": "club",
+        "grand_prix": true,
+        "groups": [
+            "grand_prix"
+        ]
+    },
+    {
+        "id": 104,
+        "dates": "27/09/2026",
+        "name": "XXV Junior & Baby Cup",
+        "course": "Costa Brava",
+        "organizer": "FCG",
+        "type": "junior_cup",
+        "grand_prix": true,
+        "groups": [
+            "baby_cup",
+            "grand_prix"
+        ]
+    }
+]

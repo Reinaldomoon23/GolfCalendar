@@ -1,0 +1,136 @@
+[
+    {
+        "id": 1,
+        "dates": "18\/01\/2026",
+        "name": "ORDEN DE MERITO",
+        "course": "Tour",
+        "organizer": "CAMIRAL",
+        "type": "merit",
+        "groups": [
+            "club"
+        ]
+    },
+    {
+        "id": 5,
+        "dates": "22\/02\/2026",
+        "name": "ORDEN DE MERITO",
+        "course": "Stadium",
+        "organizer": "CAMIRAL",
+        "type": "merit",
+        "groups": [
+            "club"
+        ]
+    },
+    {
+        "id": 7,
+        "dates": "15\/03\/2026",
+        "name": "ORDEN DE MERITO",
+        "course": "Tour",
+        "organizer": "CAMIRAL",
+        "type": "merit",
+        "groups": [
+            "club"
+        ]
+    },
+    {
+        "id": 10,
+        "dates": "12\/04\/2026",
+        "name": "ORDEN DE MERITO",
+        "course": "Stadium",
+        "organizer": "CAMIRAL",
+        "type": "merit",
+        "conflict": true,
+        "groups": [
+            "club"
+        ]
+    },
+    {
+        "id": 13,
+        "dates": "03\/05\/2026",
+        "name": "ORDEN DE MERITO",
+        "course": "Tour",
+        "organizer": "CAMIRAL",
+        "type": "merit",
+        "conflict": true,
+        "groups": [
+            "club"
+        ]
+    },
+    {
+        "id": 18,
+        "dates": "14\/06\/2026",
+        "name": "ORDEN DE MERITO",
+        "course": "Stadium",
+        "organizer": "CAMIRAL",
+        "type": "merit",
+        "groups": [
+            "club"
+        ]
+    },
+    {
+        "id": 19,
+        "dates": "19\/07\/2026",
+        "name": "ORDEN DE MERITO",
+        "course": "Stadium",
+        "organizer": "CAMIRAL",
+        "type": "merit",
+        "groups": [
+            "club"
+        ]
+    },
+    {
+        "id": 20,
+        "dates": "23\/08\/2026",
+        "name": "ORDEN DE MERITO",
+        "course": "Tour",
+        "organizer": "CAMIRAL",
+        "type": "merit",
+        "groups": [
+            "club"
+        ]
+    },
+    {
+        "id": 21,
+        "dates": "06\/09\/2026",
+        "name": "ORDEN DE MERITO",
+        "course": "Tour",
+        "organizer": "CAMIRAL",
+        "type": "merit",
+        "groups": [
+            "club"
+        ]
+    },
+    {
+        "id": 24,
+        "dates": "18\/10\/2026",
+        "name": "ORDEN DE MERITO",
+        "course": "Tour",
+        "organizer": "CAMIRAL",
+        "type": "merit",
+        "groups": [
+            "club"
+        ]
+    },
+    {
+        "id": 25,
+        "dates": "29\/11\/2026",
+        "name": "ORDEN DE MERITO",
+        "course": "Stadium",
+        "organizer": "CAMIRAL",
+        "type": "merit",
+        "groups": [
+            "club"
+        ]
+    },
+    {
+        "id": 26,
+        "dates": "13\/12\/2026",
+        "name": "ORDEN DE MERITO",
+        "course": "Tour",
+        "organizer": "CAMIRAL",
+        "type": "merit",
+        "groups": [
+            "club"
+        ]
+    }
+]
