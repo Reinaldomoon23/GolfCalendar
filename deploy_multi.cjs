@@ -1,5 +1,6 @@
 const FtpDeploy = require("ftp-deploy");
 const ftpDeploy = new FtpDeploy();
+const ftpDeploy2 = new FtpDeploy();
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
@@ -32,32 +33,54 @@ try {
     console.error("❌ Failed to update .htaccess:", err);
 }
 
-// 2. Configure FTP
+// 2. Configure FTP for Frontend (dist)
 const config = {
-    user: "jordi@reinaldomoon.top", // Same FTP user
+    user: "jordi@reinaldomoon.top",
     password: "DanzigXtothec23$",
     host: "ftp.reinaldomoon.top",
     port: 21,
     localRoot: __dirname + "/dist",
-    remoteRoot: "/public_html/GolfTeam/", // <--- DIFFERENT FOLDER
+    remoteRoot: "/public_html/GolfTeam/",
     include: ["*", "**/*", ".htaccess"],
     exclude: [
         "dist/**/*.map",
-        ".git/**",
-        "api/users.json",           // Protect User Database
-        "data/custom_tournaments_*.json", // Protect User Custom Tournaments
-        "data/prefs_*.json",        // Protect User Preferences
-        "data/results_*.json"       // Protect User Results
+        ".git/**"
     ],
     deleteRemote: false,
     forcePasv: true,
     sftp: false
 };
 
-// 3. Deploy
-console.log("📤 deploying to " + config.remoteRoot + "...");
+// 2.5 Configure FTP for Backend (public/api and public/data)
+const backendConfig = {
+    user: "jordi@reinaldomoon.top",
+    password: "DanzigXtothec23$",
+    host: "ftp.reinaldomoon.top",
+    port: 21,
+    localRoot: __dirname + "/public",
+    remoteRoot: "/public_html/GolfTeam/",
+    include: ["api/**/*", "data/**/*", "profiles/**/*"],
+    exclude: [
+        "api/users.json",           // Protect User Database
+        "data/custom_tournaments_*.json", // Protect User Custom Tournaments
+        "data/prefs_*.json",        // Protect User Preferences
+        "data/results_*.json",      // Protect User Results
+        "data/handicap_history_*.json" // Protect Handicap History
+    ],
+    deleteRemote: false,
+    forcePasv: true,
+    sftp: false
+};
+
+// 3. Deploy Frontend
+console.log("📤 Deploying frontend to " + config.remoteRoot + "...");
 
 ftpDeploy
     .deploy(config)
-    .then(res => console.log("✅ Deployment to /GolfTeam finished successfully!"))
+    .then(res => {
+        console.log("✅ Frontend deployment finished!");
+        console.log("📤 Deploying backend (PHP) to " + backendConfig.remoteRoot + "...");
+        return ftpDeploy2.deploy(backendConfig);
+    })
+    .then(res => console.log("✅ Backend deployment finished! All done!"))
     .catch(err => console.log("❌ Deployment failed:", err));
