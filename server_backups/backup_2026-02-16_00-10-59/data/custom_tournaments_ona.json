@@ -1,0 +1,112 @@
+[
+    {
+        "id": 110,
+        "dates": "27\/02\/2026 - 01\/03\/2026",
+        "name": "Puntuable Nacional Juvenil",
+        "course": "Salamanca Forum Golf",
+        "organizer": "RFEG",
+        "type": "rfeg",
+        "groups": [
+            "valedero"
+        ],
+        "grand_prix": true,
+        "valedera": true,
+        "merit": false,
+        "wagr": false,
+        "conflict": false,
+        "_start": 1770332400000,
+        "_end": 1770505200000,
+        "par": 71
+    },
+    {
+        "id": 2,
+        "dates": "01\/02\/2026",
+        "name": "Puntuable Zonal I RFEG",
+        "course": "Infinitum Lakes",
+        "organizer": "RFEG",
+        "type": "official",
+        "grand_prix": true,
+        "groups": [
+            "valedero",
+            "grand_prix"
+        ],
+        "conflict": false,
+        "par": 71,
+        "valedera": false,
+        "merit": false,
+        "wagr": false
+    },
+    {
+        "id": 28,
+        "dates": "11\/07\/2026 - 12\/07\/2026",
+        "name": "Campionat de Catalunya Absolut i 2a (WAGR)",
+        "course": "Peralada Golf",
+        "organizer": "FCG",
+        "type": "regional_championship",
+        "groups": [
+            "valedero",
+            "wagr"
+        ],
+        "valedera": false,
+        "conflict": false,
+        "par": 72,
+        "grand_prix": false,
+        "merit": false,
+        "wagr": false
+    },
+    {
+        "id": 22,
+        "dates": "19\/09\/2026 - 20\/09\/2026",
+        "name": "Campionat de Catalunya Matchplay Sub-18\/16\/14\/12\/10 2026",
+        "course": "Golf Costa Daurada",
+        "organizer": "FCG",
+        "type": "regional_championship",
+        "groups": [
+            "valedero"
+        ],
+        "valedera": false,
+        "conflict": false,
+        "par": 72,
+        "grand_prix": false,
+        "merit": false,
+        "wagr": false
+    },
+    {
+        "id": 23,
+        "dates": "02\/10\/2026 - 04\/10\/2026",
+        "name": "Campionat de Catalunya Sub-18 i Sub-16 (WAGR) 2026",
+        "course": "Fontanals Golf Club",
+        "organizer": "FCG",
+        "type": "regional_championship",
+        "groups": [
+            "valedero",
+            "wagr"
+        ],
+        "valedera": false,
+        "conflict": false,
+        "par": 72,
+        "grand_prix": false,
+        "merit": false,
+        "wagr": false
+    },
+    {
+        "id": 6,
+        "dates": "14\/03\/2026 - 15\/03\/2026",
+        "name": "Puntuable Zonal II RFEG",
+        "course": "Golf La Roca",
+        "organizer": "RFEG",
+        "type": "fcg",
+        "grand_prix": true,
+        "groups": [
+            "valedero",
+            "grand_prix"
+        ],
+        "valedera": true,
+        "_start": 1773442800000,
+        "_end": 1773529200000,
+        "conflict": false,
+        "par": 71,
+        "merit": false,
+        "wagr": false
+    }
+]

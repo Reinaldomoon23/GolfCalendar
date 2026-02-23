@@ -32,7 +32,8 @@
         "groups": [
             "valedero",
             "grand_prix"
-        ]
+        ],
+        "valedera": true
     },
     {
         "id": 110,
@@ -45,7 +46,8 @@
         "groups": [
             "valedero",
             "grand_prix"
-        ]
+        ],
+        "valedera": true
     },
     {
         "id": 4,
@@ -57,7 +59,8 @@
         "grand_prix": true,
         "groups": [
             "grand_prix"
-        ]
+        ],
+        "valedera": true
     },
     {
         "id": 5,
@@ -81,7 +84,8 @@
         "groups": [
             "valedero",
             "grand_prix"
-        ]
+        ],
+        "valedera": true
     },
     {
         "id": 7,
@@ -106,7 +110,8 @@
             "legacy",
             "grand_prix",
             "baby_cup"
-        ]
+        ],
+        "valedera": true
     },
     {
         "id": 9,
@@ -121,7 +126,8 @@
             "legacy",
             "grand_prix",
             "baby_cup"
-        ]
+        ],
+        "valedera": true
     },
     {
         "id": 10,
@@ -157,7 +163,8 @@
         "type": "national_championship",
         "groups": [
             "valedero"
-        ]
+        ],
+        "valedera": true
     },
     {
         "id": 13,
@@ -181,7 +188,8 @@
         "grand_prix": true,
         "groups": [
             "grand_prix"
-        ]
+        ],
+        "valedera": true
     },
     {
         "id": 15,
@@ -192,7 +200,8 @@
         "type": "regional_championship",
         "groups": [
             "valedero"
-        ]
+        ],
+        "valedera": true
     },
     {
         "id": 16,
@@ -216,7 +225,8 @@
         "groups": [
             "baby_cup",
             "grand_prix"
-        ]
+        ],
+        "valedera": true
     },
     {
         "id": 18,
@@ -271,7 +281,8 @@
         "type": "regional_championship",
         "groups": [
             "valedero"
-        ]
+        ],
+        "valedera": true
     },
     {
         "id": 23,
@@ -283,7 +294,8 @@
         "groups": [
             "valedero",
             "wagr"
-        ]
+        ],
+        "valedera": true
     },
     {
         "id": 24,
@@ -327,7 +339,8 @@
         "type": "national_championship",
         "groups": [
             "valedero"
-        ]
+        ],
+        "valedera": true
     },
     {
         "id": 28,
@@ -339,7 +352,8 @@
         "groups": [
             "valedero",
             "wagr"
-        ]
+        ],
+        "valedera": true
     },
     {
         "id": 103,
@@ -351,7 +365,8 @@
         "grand_prix": true,
         "groups": [
             "grand_prix"
-        ]
+        ],
+        "valedera": true
     },
     {
         "id": 104,
@@ -364,6 +379,7 @@
         "groups": [
             "baby_cup",
             "grand_prix"
-        ]
+        ],
+        "valedera": true
     }
 ]

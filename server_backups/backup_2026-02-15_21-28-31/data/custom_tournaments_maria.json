@@ -1,0 +1,72 @@
+[
+    {
+        "id": 17,
+        "dates": "07\/06\/2026",
+        "name": "XXV Junior & Baby Cup (Infantil\/Alev\u00ed\/Benjam\u00ed)",
+        "course": "Llavaneras",
+        "organizer": "CLUB",
+        "type": "junior_cup",
+        "grand_prix": true,
+        "groups": [
+            "baby_cup",
+            "grand_prix"
+        ],
+        "conflict": false,
+        "par": 70,
+        "valedera": true,
+        "merit": false,
+        "wagr": false
+    },
+    {
+        "id": 4,
+        "dates": "14\/02\/2026 - 15\/02\/2026",
+        "name": "Torremirona Cup (Infantil\/Alev\u00ed\/Benjam\u00ed)",
+        "course": "Torremirona",
+        "organizer": "CLUB",
+        "type": "club",
+        "grand_prix": true,
+        "groups": [
+            "grand_prix",
+            "valedero"
+        ],
+        "conflict": false,
+        "par": 72,
+        "valedera": true,
+        "merit": false,
+        "wagr": false,
+        "_start": 1771023600000,
+        "_end": 1771110000000
+    },
+    {
+        "id": 6,
+        "dates": "28\/02\/2026 - 01\/03\/2026",
+        "name": "Puntuable Zonal II RFEG",
+        "course": "Vallromanes\/La Roca",
+        "organizer": "RFEG",
+        "type": "official",
+        "grand_prix": true,
+        "groups": [
+            "valedero",
+            "grand_prix"
+        ],
+        "conflict": false,
+        "par": 72,
+        "valedera": true,
+        "merit": false,
+        "wagr": false
+    },
+    {
+        "id": "custom_1770105203556",
+        "name": "Cica Golf",
+        "dates": "01\/02\/2026",
+        "course": "Camiral Tour",
+        "organizer": "CLUB",
+        "type": "club",
+        "custom": true,
+        "grand_prix": false,
+        "valedera": false,
+        "groups": [
+            "club"
+        ]
+    }
+]

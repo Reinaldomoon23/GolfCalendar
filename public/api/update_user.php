@@ -11,6 +11,7 @@ $data = json_decode(file_get_contents('php://input'), true);
 $username = strtolower(trim($data['username'] ?? ''));
 $fullName = $data['full_name'] ?? '';
 $federationId = trim($data['federation_id'] ?? '');
+$email = trim($data['email'] ?? '');
 
 if (!$username) {
     http_response_code(400);
@@ -41,6 +42,9 @@ if (isset($data['photo_url'])) {
     $users[$username]['photo_url'] = $data['photo_url'];
 }
 $users[$username]['federation_id'] = $federationId;
+if ($email !== null) { // Keep existing logic where null check might be useful, but trim converts to string.
+    $users[$username]['email'] = $email;
+}
 
 if (file_put_contents($usersFile, json_encode($users, JSON_PRETTY_PRINT))) {
     $updatedUser = $users[$username];

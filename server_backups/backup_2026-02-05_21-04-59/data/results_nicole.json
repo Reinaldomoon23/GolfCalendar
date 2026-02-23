@@ -1,0 +1,136 @@
+{
+    "1": {
+        "position": "",
+        "rounds": [
+            ""
+        ],
+        "stableford": [
+            "36"
+        ],
+        "comments": "",
+        "handicap": "4.7",
+        "scorecards": [],
+        "total": 0,
+        "average": 0,
+        "stablefordTotal": 36,
+        "updatedAt": "2026-01-19T10:35:00.000Z"
+    },
+    "2": {
+        "position": "9",
+        "rounds": [
+            "82"
+        ],
+        "stableford": [
+            ""
+        ],
+        "comments": "",
+        "handicap": "4",
+        "scorecards": [
+            {
+                "pars": [
+                    4,
+                    5,
+                    4,
+                    3,
+                    4,
+                    4,
+                    3,
+                    4,
+                    4,
+                    4,
+                    4,
+                    4,
+                    4,
+                    3,
+                    4,
+                    5,
+                    3,
+                    5
+                ],
+                "strokes": [
+                    4,
+                    5,
+                    4,
+                    3,
+                    "6",
+                    4,
+                    "4",
+                    4,
+                    4,
+                    "5",
+                    4,
+                    "5",
+                    "5",
+                    "5",
+                    "5",
+                    "6",
+                    "4",
+                    5
+                ]
+            }
+        ],
+        "total": 82,
+        "average": "82.0",
+        "stablefordTotal": 0,
+        "updatedAt": "2026-02-03T20:36:03.505Z"
+    },
+    "105": {
+        "position": "1",
+        "rounds": [
+            "77"
+        ],
+        "stableford": [
+            ""
+        ],
+        "comments": "",
+        "handicap": "4.4",
+        "scorecards": [
+            {
+                "pars": [
+                    4,
+                    5,
+                    4,
+                    3,
+                    4,
+                    4,
+                    3,
+                    4,
+                    4,
+                    4,
+                    4,
+                    4,
+                    4,
+                    3,
+                    4,
+                    5,
+                    3,
+                    5
+                ],
+                "strokes": [
+                    4,
+                    5,
+                    4,
+                    3,
+                    4,
+                    4,
+                    "4",
+                    "5",
+                    "5",
+                    4,
+                    "3",
+                    "5",
+                    "5",
+                    "4",
+                    "6",
+                    5,
+                    3,
+                    "4"
+                ]
+            }
+        ],
+        "total": 77,
+        "average": "77.0",
+        "stablefordTotal": 0,
+        "updatedAt": "2026-02-03T20:34:42.485Z"
+    }
+}

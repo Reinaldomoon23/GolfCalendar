@@ -1,0 +1,145 @@
+[
+    {
+        "id": 2,
+        "dates": "01\/02\/2026",
+        "name": "Puntuable Zonal I RFEG",
+        "course": "Infinitum Lakes",
+        "organizer": "FCG",
+        "type": "fcg",
+        "grand_prix": true,
+        "groups": [
+            "valedero",
+            "grand_prix"
+        ],
+        "conflict": false,
+        "par": 71,
+        "valedera": true,
+        "merit": false,
+        "wagr": false
+    },
+    {
+        "id": 105,
+        "dates": "25\/01\/2026",
+        "name": "Infinitum Golf Lakes",
+        "course": "Infinitum Lakes",
+        "organizer": "LEGACY",
+        "type": "juvenil",
+        "groups": [
+            "club",
+            "legacy"
+        ],
+        "conflict": false,
+        "par": 71,
+        "grand_prix": false,
+        "valedera": false,
+        "merit": false,
+        "wagr": false
+    },
+    {
+        "id": 17,
+        "dates": "07\/06\/2026",
+        "name": "XXV Junior & Baby Cup (Infantil\/Alev\u00ed\/Benjam\u00ed)",
+        "course": "Llavaneras",
+        "organizer": "CLUB",
+        "type": "junior_cup",
+        "grand_prix": true,
+        "groups": [
+            "baby_cup",
+            "grand_prix"
+        ],
+        "conflict": false,
+        "par": 70,
+        "valedera": true,
+        "merit": false,
+        "wagr": false
+    },
+    {
+        "id": 4,
+        "dates": "14\/02\/2026 - 15\/02\/2026",
+        "name": "Torremirona Cup (Infantil\/Alev\u00ed\/Benjam\u00ed)",
+        "course": "Torremirona",
+        "organizer": "CLUB",
+        "type": "club",
+        "grand_prix": true,
+        "groups": [
+            "grand_prix"
+        ],
+        "conflict": false,
+        "par": 72,
+        "valedera": true,
+        "merit": false,
+        "wagr": false
+    },
+    {
+        "id": 6,
+        "dates": "28\/02\/2026 - 01\/03\/2026",
+        "name": "Puntuable Zonal II RFEG",
+        "course": "Vallromanes\/La Roca",
+        "organizer": "RFEG",
+        "type": "official",
+        "grand_prix": true,
+        "groups": [
+            "valedero",
+            "grand_prix"
+        ],
+        "conflict": false,
+        "par": 72,
+        "valedera": true,
+        "merit": false,
+        "wagr": false
+    },
+    {
+        "id": 28,
+        "dates": "11\/07\/2026 - 12\/07\/2026",
+        "name": "Campionat de Catalunya Absolut i 2a (WAGR)",
+        "course": "Peralada Golf",
+        "organizer": "FCG",
+        "type": "regional_championship",
+        "groups": [
+            "valedero",
+            "wagr"
+        ],
+        "valedera": false,
+        "conflict": false,
+        "par": 72,
+        "grand_prix": false,
+        "merit": false,
+        "wagr": false
+    },
+    {
+        "id": 23,
+        "dates": "02\/10\/2026 - 04\/10\/2026",
+        "name": "Campionat de Catalunya Sub-18 i Sub-16 (WAGR) 2026",
+        "course": "Fontanals Golf Club",
+        "organizer": "FCG",
+        "type": "regional_championship",
+        "groups": [
+            "valedero",
+            "wagr"
+        ],
+        "valedera": false,
+        "conflict": false,
+        "par": 72,
+        "grand_prix": false,
+        "merit": false,
+        "wagr": false
+    },
+    {
+        "id": "custom_1770324226721",
+        "dates": "14\/02\/2026 - 15\/02\/2026",
+        "name": "Torremirona Cup (Infantil\/Alev\u00ed\/Benjam\u00ed) (Copia)",
+        "course": "Torremirona",
+        "organizer": "CLUB",
+        "type": "club",
+        "grand_prix": true,
+        "groups": [
+            "grand_prix"
+        ],
+        "conflict": false,
+        "par": 72,
+        "valedera": true,
+        "merit": false,
+        "wagr": false,
+        "custom": true
+    }
+]

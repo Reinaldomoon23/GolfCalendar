@@ -1,0 +1,55 @@
+[
+    {
+        "id": "custom_1769094676799",
+        "name": "Puntuable Nacional Juvenil Femenino 2026",
+        "dates": "06\/02\/2026 - 08\/02\/2026",
+        "course": "Lauro Golf",
+        "organizer": "RFEG",
+        "type": "club",
+        "custom": true,
+        "grand_prix": true,
+        "valedera": true,
+        "groups": [
+            "club",
+            "valedero"
+        ],
+        "merit": false,
+        "wagr": false,
+        "conflict": false
+    },
+    {
+        "id": 2,
+        "dates": "01\/02\/2026",
+        "name": "Puntuable Zonal I RFEG",
+        "course": "Infinitum Lakes",
+        "organizer": "RFEG",
+        "type": "fcg",
+        "grand_prix": true,
+        "groups": [
+            "valedero",
+            "grand_prix"
+        ],
+        "conflict": false,
+        "par": 71,
+        "valedera": true,
+        "merit": false,
+        "wagr": false
+    },
+    {
+        "id": 4,
+        "dates": "14\/02\/2026 - 15\/02\/2026",
+        "name": "Torremirona Cup (Infantil\/Alev\u00ed\/Benjam\u00ed)",
+        "course": "Torremirona",
+        "organizer": "CLUB",
+        "type": "club",
+        "grand_prix": true,
+        "groups": [
+            "grand_prix"
+        ],
+        "conflict": false,
+        "par": 72,
+        "valedera": true,
+        "merit": false,
+        "wagr": false
+    }
+]

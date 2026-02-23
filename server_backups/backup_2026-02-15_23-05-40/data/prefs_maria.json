@@ -1,0 +1,18 @@
+{
+    "groups": [
+        "grand_prix",
+        "valedero",
+        "baby_cup",
+        "legacy",
+        "wagr",
+        "merit"
+    ],
+    "hiddenIds": [
+        110,
+        22,
+        23,
+        28,
+        12,
+        2
+    ]
+}

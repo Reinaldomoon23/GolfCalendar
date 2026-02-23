@@ -1,0 +1,36 @@
+[
+    {
+        "id": 110,
+        "dates": "06\/02\/2026 - 08\/02\/2026",
+        "name": "Puntuable Nacional Juvenil",
+        "course": "Lauro",
+        "organizer": "RFEG",
+        "type": "official",
+        "groups": [
+            "valedero"
+        ],
+        "grand_prix": true,
+        "valedera": false,
+        "merit": false,
+        "wagr": false,
+        "conflict": false
+    },
+    {
+        "id": 2,
+        "dates": "01\/02\/2026",
+        "name": "Puntuable Zonal I RFEG",
+        "course": "Infinitum Lakes",
+        "organizer": "RFEG",
+        "type": "official",
+        "grand_prix": true,
+        "groups": [
+            "valedero",
+            "grand_prix"
+        ],
+        "conflict": false,
+        "par": 71,
+        "valedera": false,
+        "merit": false,
+        "wagr": false
+    }
+]

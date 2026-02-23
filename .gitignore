@@ -33,3 +33,11 @@ temp_scraped_pars.json
 screenshots/
 debug_scrape.log
 debug_usa_scrape.png
+
+# User Data (Ignored to prevent overwrite)
+public/data/results_*.json
+public/data/custom_tournaments_*.json
+public/data/prefs_*.json
+public/data/handicap_history_*.json
+public/api/users.json
+

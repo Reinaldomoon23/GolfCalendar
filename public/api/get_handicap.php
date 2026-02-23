@@ -27,24 +27,31 @@ spl_autoload_register(function ($class) {
 
 use Smalot\PdfParser\Parser;
 
-$username = $_GET['username'] ?? 'nicole'; // Default to nicole for compatibility
+$username = $_GET['username'] ?? 'nicole'; 
+$passedLicense = $_GET['license'] ?? '';
 
 // Load User Config
 $usersFile = __DIR__ . '/users.json';
 $pdfUrl = '';
 
-if (file_exists($usersFile)) {
+// Priority 1: License passed via URL (from Firestore/Frontend)
+if (!empty($passedLicense)) {
+    if (preg_match('/(\d+)$/', $passedLicense, $matches)) {
+        $shortId = substr($matches[1], -6);
+        $pdfUrl = 'https://api.rfeg.es/files/summaryhandicap/' . $shortId . '.pdf';
+    }
+}
+
+// Priority 2: Look in users.json (Legacy/Fallback)
+if (empty($pdfUrl) && file_exists($usersFile)) {
     $users = json_decode(file_get_contents($usersFile), true);
     if (isset($users[$username])) {
         $userData = $users[$username];
         if (!empty($userData['handicap_url'])) {
             $pdfUrl = $userData['handicap_url'];
         } elseif (!empty($userData['federation_id'])) {
-            // Extract numbers from the end (usually last 6 digits)
-            // User said "use only the last figures" (last 6)
-            if (preg_match('/(\d+)$/', $userData['federation_id'], $matches)) {
-                $allDigits = $matches[1];
-                $shortId = substr($allDigits, -6);
+             if (preg_match('/(\d+)$/', $userData['federation_id'], $matches)) {
+                $shortId = substr($matches[1], -6);
                 $pdfUrl = 'https://api.rfeg.es/files/summaryhandicap/' . $shortId . '.pdf';
             }
         }
@@ -53,7 +60,9 @@ if (file_exists($usersFile)) {
 
 // Global Default Fallback if still empty
 if (empty($pdfUrl)) {
-    $pdfUrl = 'https://api.rfeg.es/files/summaryhandicap/996143.pdf'; // Global fallback
+    // Graceful exit for users without license
+    echo json_encode(['handicap' => null, 'pdf_url' => null, 'message' => 'No license found']);
+    exit;
 }
 
 try {

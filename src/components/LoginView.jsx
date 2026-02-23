@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { User, Lock, ArrowRight, Loader2 } from 'lucide-react';
+import { User, Lock, ArrowRight, Loader2, Eye, EyeOff } from 'lucide-react';
 
 export default function LoginView({ onLogin }) {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -13,7 +14,7 @@ export default function LoginView({ onLogin }) {
 
     // Determine base path based on environment or window location
     const IS_MULTI = import.meta.env.VITE_APP_MODE === 'multi';
-    const baselink = IS_MULTI ? '/GolfTeam' : '/Nicole26';
+    const baselink = import.meta.env.BASE_URL.replace(/\/$/, '');
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -166,13 +167,13 @@ export default function LoginView({ onLogin }) {
                         <div style={{ position: 'relative' }}>
                             <Lock size={20} style={{ position: 'absolute', left: '12px', top: '12px', color: 'var(--color-text-muted)' }} />
                             <input
-                                type="password"
+                                type={showPassword ? 'text' : 'password'}
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 placeholder="••••••••"
                                 style={{
                                     width: '100%',
-                                    padding: '12px 12px 12px 42px',
+                                    padding: '12px 42px 12px 42px', // increased right padding for eye icon
                                     borderRadius: 'var(--radius-sm)',
                                     border: '1px solid #ccc',
                                     fontSize: '1rem',
@@ -180,6 +181,25 @@ export default function LoginView({ onLogin }) {
                                 }}
                                 required
                             />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                style={{
+                                    position: 'absolute',
+                                    right: '12px',
+                                    top: '12px',
+                                    background: 'none',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    color: 'var(--color-text-muted)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    padding: 0
+                                }}
+                                tabIndex={-1}
+                            >
+                                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                            </button>
                         </div>
                     </div>
 
