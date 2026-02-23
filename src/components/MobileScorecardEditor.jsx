@@ -10,7 +10,8 @@ const MobileScorecardEditor = ({
     onPrev,
     onSave,
     config, // { track_putts, track_girs }
-    par
+    par,
+    courseName = 'Campo de Golf'
 }) => {
     const [activeField, setActiveField] = useState('strokes');
     const [isFirstKey, setIsFirstKey] = useState(true);
@@ -164,9 +165,14 @@ const MobileScorecardEditor = ({
                 <button onClick={onClose} style={{ color: '#94a3b8', background: 'transparent', border: 'none', padding: '0.25rem', cursor: 'pointer' }}>
                     <X size={24} />
                 </button>
-                <div style={{ textAlign: 'center' }}>
-                    <h2 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0, letterSpacing: '0.05em', color: 'white' }}>HOYO {holeIdx + 1}</h2>
-                    <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.8rem', fontWeight: '700' }}>PAR {par}</p>
+                <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        {courseName}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: '8px' }}>
+                        <h2 style={{ fontSize: '1.2rem', fontWeight: '800', margin: 0, letterSpacing: '0.05em', color: 'white' }}>HOYO {holeIdx + 1}</h2>
+                        <span style={{ margin: 0, color: '#10b981', fontSize: '1.2rem', fontWeight: '900' }}>PAR {par}</span>
+                    </div>
                 </div>
                 <div style={{ width: '24px' }} />
             </div>
