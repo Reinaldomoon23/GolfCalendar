@@ -20,13 +20,6 @@
         "photo_url": "profiles\/ona.jpg",
         "handicap_url": ""
     },
-    "tiger": {
-        "password_hash": "$2y$12$TzQM3.MEj\/2ej5XvCdYRKeByUqY53g00xsXKG\/xAHGtsjWQki6DzG",
-        "full_name": "Tiger Woods Test",
-        "federation_id": "USA0000001",
-        "photo_url": "profiles\/tiger.jpg",
-        "handicap_url": ""
-    },
     "valentina": {
         "password_hash": "$2y$12$22h2RVE.wztzjEupdlB0vOMv8\/vF2lJV.NJjGaC3hMw8QWVfhVwGu",
         "full_name": "Valentina Corretja de Miguel",
