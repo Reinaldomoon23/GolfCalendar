@@ -73,7 +73,7 @@ const MobileScorecardEditor = ({
     const renderNumpad = () => {
         if (activeField === 'girs') {
             return (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem', flex: 1 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem', flex: 1 }}>
                     {['G', '+1', '+2', '+'].map((val) => {
                         const isActive = gir === val;
                         return (
@@ -81,10 +81,10 @@ const MobileScorecardEditor = ({
                                 key={val}
                                 onClick={() => handleGir(val)}
                                 style={{
-                                    padding: '1.5rem', borderRadius: '20px', fontWeight: '800', fontSize: '1.75rem',
+                                    padding: '1rem', borderRadius: '16px', fontWeight: '800', fontSize: '1.5rem',
                                     border: 'none', backgroundColor: isActive ? '#10b981' : '#334155',
                                     color: isActive ? 'white' : '#e2e8f0', transition: 'all 0.15s ease',
-                                    boxShadow: isActive ? '0 8px 20px -4px rgba(16,185,129,0.4)' : 'none',
+                                    boxShadow: isActive ? '0 4px 12px rgba(16,185,129,0.3)' : 'none',
                                     cursor: 'pointer'
                                 }}
                             >
@@ -98,7 +98,7 @@ const MobileScorecardEditor = ({
 
         const keys = [1, 2, 3, 4, 5, 6, 7, 8, 9, '', 0, 'del'];
         return (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
                 {keys.map((k, i) => {
                     if (k === '') {
                         return <div key={i} />;
@@ -107,22 +107,22 @@ const MobileScorecardEditor = ({
                         return (
                             <button key={i} onClick={handleDelete}
                                 style={{
-                                    padding: '1.25rem', borderRadius: '20px', backgroundColor: '#334155',
+                                    padding: '0.8rem', borderRadius: '16px', backgroundColor: '#334155',
                                     color: '#cbd5e1', border: 'none', display: 'flex', alignItems: 'center',
                                     justifyContent: 'center', cursor: 'pointer',
-                                    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'
+                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                                 }}>
-                                <Delete size={32} />
+                                <Delete size={26} />
                             </button>
                         );
                     }
                     return (
                         <button key={i} onClick={() => handleNumpad(k)}
                             style={{
-                                padding: '1.25rem', borderRadius: '20px', backgroundColor: '#334155',
-                                color: 'white', fontSize: '2.25rem', fontWeight: '700', border: 'none',
+                                padding: '0.8rem', borderRadius: '16px', backgroundColor: '#334155',
+                                color: 'white', fontSize: '1.75rem', fontWeight: '700', border: 'none',
                                 fontFamily: 'system-ui, -apple-system, sans-serif', cursor: 'pointer',
-                                boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', transition: 'background-color 0.1s'
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.1)', transition: 'background-color 0.1s'
                             }}>
                             {k}
                         </button>
@@ -142,67 +142,67 @@ const MobileScorecardEditor = ({
             fontFamily: 'Inter, system-ui, sans-serif'
         }}>
             {/* Header */}
-            <div style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <button onClick={onClose} style={{ color: '#94a3b8', background: 'transparent', border: 'none', padding: '0.5rem', margin: '-0.5rem', cursor: 'pointer' }}>
-                    <X size={28} />
+            <div style={{ padding: '1rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <button onClick={onClose} style={{ color: '#94a3b8', background: 'transparent', border: 'none', padding: '0.25rem', cursor: 'pointer' }}>
+                    <X size={24} />
                 </button>
                 <div style={{ textAlign: 'center' }}>
-                    <h2 style={{ fontSize: '1.25rem', fontWeight: '800', margin: 0, letterSpacing: '0.05em', color: 'white' }}>HOYO {holeIdx + 1}</h2>
-                    <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.875rem', fontWeight: '700' }}>PAR {par}</p>
+                    <h2 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0, letterSpacing: '0.05em', color: 'white' }}>HOYO {holeIdx + 1}</h2>
+                    <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.8rem', fontWeight: '700' }}>PAR {par}</p>
                 </div>
-                <div style={{ width: '28px' }} />
+                <div style={{ width: '24px' }} />
             </div>
 
             {/* Field Selector / Mini Dashboard */}
-            <div style={{ padding: '0 1.5rem', display: 'flex', gap: '0.75rem', marginBottom: '1rem' }}>
+            <div style={{ padding: '0 1.5rem', display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
                 <button
                     onClick={() => setActiveField('strokes')}
                     style={{
-                        flex: 1, padding: '0.75rem', borderRadius: '20px', border: 'none',
+                        flex: 1, padding: '0.5rem', borderRadius: '16px', border: 'none',
                         backgroundColor: activeField === 'strokes' ? '#3b82f6' : '#1e293b',
                         color: activeField === 'strokes' ? 'white' : '#94a3b8', fontWeight: '700',
                         cursor: 'pointer', transition: 'all 0.2s ease'
                     }}
                 >
-                    <span style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}>GOLPES</span><br />
-                    <span style={{ fontSize: '1.5rem', color: activeField === 'strokes' ? 'white' : '#e2e8f0' }}>{strokes || '-'}</span>
+                    <span style={{ fontSize: '0.65rem', letterSpacing: '0.05em' }}>GOLPES</span><br />
+                    <span style={{ fontSize: '1.25rem', color: activeField === 'strokes' ? 'white' : '#e2e8f0' }}>{strokes || '-'}</span>
                 </button>
                 {config.track_putts && (
                     <button
                         onClick={() => setActiveField('putts')}
                         style={{
-                            flex: 1, padding: '0.75rem', borderRadius: '20px', border: 'none',
+                            flex: 1, padding: '0.5rem', borderRadius: '16px', border: 'none',
                             backgroundColor: activeField === 'putts' ? '#8b5cf6' : '#1e293b',
                             color: activeField === 'putts' ? 'white' : '#94a3b8', fontWeight: '700',
                             cursor: 'pointer', transition: 'all 0.2s ease'
                         }}
                     >
-                        <span style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}>PUTTS</span><br />
-                        <span style={{ fontSize: '1.5rem', color: activeField === 'putts' ? 'white' : '#e2e8f0' }}>{putts !== '' ? putts : '-'}</span>
+                        <span style={{ fontSize: '0.65rem', letterSpacing: '0.05em' }}>PUTTS</span><br />
+                        <span style={{ fontSize: '1.25rem', color: activeField === 'putts' ? 'white' : '#e2e8f0' }}>{putts !== '' ? putts : '-'}</span>
                     </button>
                 )}
                 {config.track_girs && (
                     <button
                         onClick={() => setActiveField('girs')}
                         style={{
-                            flex: 1, padding: '0.75rem', borderRadius: '20px', border: 'none',
+                            flex: 1, padding: '0.5rem', borderRadius: '16px', border: 'none',
                             backgroundColor: activeField === 'girs' ? '#10b981' : '#1e293b',
                             color: activeField === 'girs' ? 'white' : '#94a3b8', fontWeight: '700',
                             cursor: 'pointer', transition: 'all 0.2s ease'
                         }}
                     >
-                        <span style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}>GIR</span><br />
-                        <span style={{ fontSize: '1.5rem', color: activeField === 'girs' ? 'white' : '#e2e8f0' }}>{gir || '-'}</span>
+                        <span style={{ fontSize: '0.65rem', letterSpacing: '0.05em' }}>GIR</span><br />
+                        <span style={{ fontSize: '1.25rem', color: activeField === 'girs' ? 'white' : '#e2e8f0' }}>{gir || '-'}</span>
                     </button>
                 )}
             </div>
 
             {/* Main Value Display */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '120px' }}>
                 <div style={{
-                    fontSize: activeField === 'girs' ? '6rem' : '7.5rem',
+                    fontSize: activeField === 'girs' ? '5rem' : '6rem',
                     fontWeight: '900', lineHeight: 1,
-                    textShadow: '0 4px 20px rgba(0,0,0,0.5)',
+                    textShadow: '0 4px 12px rgba(0,0,0,0.4)',
                     color: 'white',
                     fontVariantNumeric: 'tabular-nums'
                 }}>
@@ -212,9 +212,9 @@ const MobileScorecardEditor = ({
                 </div>
                 {activeField === 'strokes' && (
                     <div style={{
-                        marginTop: '1rem', padding: '0.5rem 1.25rem', borderRadius: '999px',
+                        marginTop: '0.5rem', padding: '0.4rem 1rem', borderRadius: '999px',
                         backgroundColor: `${scoreColor}20`, color: scoreColor,
-                        fontWeight: '800', fontSize: '1.1rem', letterSpacing: '0.02em',
+                        fontWeight: '800', fontSize: '0.9rem', letterSpacing: '0.02em',
                         border: `1px solid ${scoreColor}40`
                     }}>
                         {scoreLabel.toUpperCase()}
@@ -225,27 +225,27 @@ const MobileScorecardEditor = ({
             {/* Keyboard Grid & Navigation inside premium dock container */}
             <div style={{
                 backgroundColor: '#1e293b', // slate-800
-                padding: '1.5rem',
-                borderTopLeftRadius: '32px',
-                borderTopRightRadius: '32px',
-                display: 'flex', flexDirection: 'column', gap: '1.25rem',
+                padding: '1rem',
+                borderTopLeftRadius: '24px',
+                borderTopRightRadius: '24px',
+                display: 'flex', flexDirection: 'column', gap: '0.75rem',
                 boxShadow: '0 -10px 40px rgba(0,0,0,0.5)'
             }}>
                 {renderNumpad()}
 
                 {/* Bottom Navigation */}
-                <div style={{ display: 'flex', gap: '0.75rem', paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
+                <div style={{ display: 'flex', gap: '0.5rem', paddingBottom: 'max(0.25rem, env(safe-area-inset-bottom))' }}>
                     <button
                         onClick={onPrev}
                         disabled={holeIdx === 0}
                         style={{
-                            flex: 1, padding: '1rem', borderRadius: '20px', fontWeight: '800', fontSize: '1rem',
+                            flex: 1, padding: '0.75rem', borderRadius: '16px', fontWeight: '800', fontSize: '0.9rem',
                             backgroundColor: '#0f172a', color: holeIdx === 0 ? '#334155' : 'white',
                             border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem',
                             cursor: holeIdx === 0 ? 'default' : 'pointer'
                         }}
                     >
-                        <ChevronLeft size={20} />
+                        <ChevronLeft size={18} />
                         ANT
                     </button>
 
@@ -253,28 +253,28 @@ const MobileScorecardEditor = ({
                         <button
                             onClick={onSave}
                             style={{
-                                padding: '1rem 1.5rem', borderRadius: '20px', fontWeight: '800',
+                                padding: '0.75rem 1.25rem', borderRadius: '16px', fontWeight: '800',
                                 backgroundColor: '#f59e0b', color: 'white', border: 'none',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)', cursor: 'pointer'
+                                boxShadow: '0 2px 8px rgba(245, 158, 11, 0.3)', cursor: 'pointer'
                             }}
                         >
-                            <Save size={20} />
+                            <Save size={18} />
                         </button>
                     )}
 
                     <button
                         onClick={holeIdx === 17 ? onClose : onNext}
                         style={{
-                            flex: 2, padding: '1rem', borderRadius: '20px', fontWeight: '800', fontSize: '1.05rem',
+                            flex: 2, padding: '0.75rem', borderRadius: '16px', fontWeight: '800', fontSize: '0.95rem',
                             backgroundColor: holeIdx === 17 ? '#0f172a' : '#10b981', color: 'white',
                             border: holeIdx === 17 ? '2px solid #cbd5e1' : 'none',
                             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem',
-                            boxShadow: holeIdx === 17 ? 'none' : '0 4px 12px rgba(16, 185, 129, 0.3)', cursor: 'pointer'
+                            boxShadow: holeIdx === 17 ? 'none' : '0 2px 8px rgba(16, 185, 129, 0.3)', cursor: 'pointer'
                         }}
                     >
                         {holeIdx === 17 ? 'FINALIZAR' : 'SIGUIENTE'}
-                        {holeIdx !== 17 && <ChevronRight size={22} />}
+                        {holeIdx !== 17 && <ChevronRight size={20} />}
                     </button>
                 </div>
             </div>
