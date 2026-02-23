@@ -32,30 +32,31 @@ const MobileScorecardEditor = ({
     const putts = (card.putts || [])[holeIdx] || '';
     const gir = (card.girs || [])[holeIdx] || '';
 
-    const getNum = (val) => val === '' ? 0 : parseInt(val);
+    const getNum = (val) => (val === '' || val === '-') ? 0 : parseInt(val);
 
     const handleNumpad = (num) => {
+        const currentStr = String(activeField === 'strokes' ? strokes : putts);
         let val;
 
-        if (isFirstKey) {
+        if (isFirstKey || currentStr === '-') {
             val = num.toString();
             setIsFirstKey(false);
         } else {
-            const currentStr = String(activeField === 'strokes' ? strokes : putts);
             if (currentStr === '' || currentStr === '0') {
                 val = num.toString();
             } else {
                 val = currentStr + num.toString();
-                if (parseInt(val) > 99) val = currentStr;
+                if (val !== '-' && parseInt(val) > 99) val = currentStr;
             }
         }
 
-        onUpdate(holeIdx, activeField, parseInt(val));
+        const finalVal = val === '-' ? '-' : parseInt(val);
+        onUpdate(holeIdx, activeField, finalVal);
     };
 
     const handleDelete = () => {
         const currentStr = String(activeField === 'strokes' ? strokes : putts);
-        if (currentStr.length <= 1) {
+        if (currentStr.length <= 1 || currentStr === '-') {
             onUpdate(holeIdx, activeField, '');
         } else {
             onUpdate(holeIdx, activeField, parseInt(currentStr.slice(0, -1)));
@@ -70,7 +71,7 @@ const MobileScorecardEditor = ({
     let scoreLabel = 'Añadir Score';
     let scoreColor = '#94a3b8'; // Slate 400
 
-    if (strokes !== '') {
+    if (strokes !== '' && strokes !== '-') {
         const s = getNum(strokes);
         if (s === 1) { scoreLabel = 'HOYO EN UNO 🎯'; scoreColor = '#f59e0b'; }
         else if (scoreDiff <= -3) { scoreLabel = 'Albatros (-3)'; scoreColor = '#ec4899'; }
@@ -80,6 +81,9 @@ const MobileScorecardEditor = ({
         else if (scoreDiff === 1) { scoreLabel = 'Bogey (+1)'; scoreColor = '#f97316'; }
         else if (scoreDiff === 2) { scoreLabel = 'Doble Bogey (+2)'; scoreColor = '#ef4444'; } // Red
         else { scoreLabel = `+${scoreDiff}`; scoreColor = '#b91c1c'; } // Dark Red
+    } else if (strokes === '-') {
+        scoreLabel = 'Raya / NR';
+        scoreColor = '#64748b'; // Slate 500
     }
 
     const valStr = activeField === 'strokes' ? String(strokes || '-') :
@@ -113,13 +117,10 @@ const MobileScorecardEditor = ({
             );
         }
 
-        const keys = [1, 2, 3, 4, 5, 6, 7, 8, 9, '', 0, 'del'];
+        const keys = [1, 2, 3, 4, 5, 6, 7, 8, 9, '-', 0, 'del'];
         return (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
                 {keys.map((k, i) => {
-                    if (k === '') {
-                        return <div key={i} />;
-                    }
                     if (k === 'del') {
                         return (
                             <button key={i} onClick={handleDelete}
