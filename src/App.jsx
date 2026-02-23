@@ -808,22 +808,32 @@ function AppContent() {
     <div className="app-container fade-in">
       <header className="app-header" style={{ position: 'relative' }}>
         {IS_MULTI && (
-          <button
-            onClick={handleLogout}
-            className="btn"
-            style={{
-              position: 'absolute',
-              top: 0,
-              right: 0,
-              padding: '8px',
-              background: 'transparent',
-              color: 'var(--color-text-muted)',
-              zIndex: 100 // Ensure it is above other header elements
-            }}
-            title="Cerrar Sesión"
-          >
-            <LogOut size={24} />
-          </button>
+          <div style={{ position: 'absolute', top: 0, right: 0, display: 'flex', gap: '0.5rem', padding: '0.5rem', zIndex: 100 }}>
+            <button
+              onClick={handleAppUpdate}
+              style={{
+                background: 'rgba(255,255,255,0.85)', border: '1px solid #e2e8f0', cursor: 'pointer',
+                color: 'var(--color-primary)', fontSize: '0.8rem', fontWeight: 'bold',
+                display: 'flex', alignItems: 'center', gap: '4px',
+                padding: '4px 10px', borderRadius: '12px',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+              }}
+              title="Recargar/Actualizar la App"
+            >
+              ↻
+            </button>
+            <button
+              onClick={handleLogout}
+              className="btn"
+              style={{
+                background: 'none', border: 'none', padding: '4px', cursor: 'pointer',
+                color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center'
+              }}
+              title="Cerrar Sesión"
+            >
+              <LogOut size={24} />
+            </button>
+          </div>
         )}
 
 
