@@ -178,6 +178,23 @@ function AppContent() {
           await setDoc(doc(db, "users", user.username), {
             photo_url: data.url
           }, { merge: true });
+
+          // Sync to PHP users.json so other devices get updated avatars for linked accounts
+          try {
+            await fetch(`${baselink}/api/update_user.php`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                username: user.username,
+                photo_url: data.url,
+                full_name: user.full_name || '',
+                federation_id: user.federation_id || '',
+                email: user.email || ''
+              })
+            });
+          } catch (e) {
+            console.error("PHP profile sync failed", e);
+          }
         }
 
         setPhotoVersion(Date.now()); // Force refresh

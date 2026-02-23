@@ -70,6 +70,11 @@ const MobileScorecardEditor = ({
         else { scoreLabel = `+${scoreDiff}`; scoreColor = '#b91c1c'; } // Dark Red
     }
 
+    const valStr = activeField === 'strokes' ? String(strokes || '-') :
+        activeField === 'putts' ? String(putts !== '' ? putts : '-') :
+            String(gir || '-');
+    const isMultiDigit = valStr.length > 1 && valStr !== '-';
+
     const renderNumpad = () => {
         if (activeField === 'girs') {
             return (
@@ -196,11 +201,10 @@ const MobileScorecardEditor = ({
                     </button>
                 )}
             </div>
-
             {/* Main Value Display */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '120px' }}>
                 <div style={{
-                    fontSize: activeField === 'girs' ? '5rem' : '6rem',
+                    fontSize: activeField === 'girs' ? '5rem' : (isMultiDigit ? '5rem' : '6rem'),
                     fontWeight: '900', lineHeight: 1,
                     textShadow: '0 4px 12px rgba(0,0,0,0.4)',
                     color: 'white',

@@ -1,0 +1,79 @@
+{
+    "nicole": {
+        "password_hash": "$2y$12$C.d\/HvZbTMj9B4\/8J5poTOYlOlPlIC1bxRK04yHhVjAt3pOC.8IcS",
+        "full_name": "Nicole Likhomanova",
+        "photo_url": "profiles\/nicole_1770126902.jpg",
+        "federation_id": "",
+        "handicap_url": "https:\/\/api.rfeg.es\/files\/summaryhandicap\/996143.pdf"
+    },
+    "txell": {
+        "password_hash": "$2y$12$AbzkxMcsPEcqD29FFKzsuOgSPMMDnn4MLAqFHDS\/cfjO23Sn2npE2",
+        "full_name": "Txell Al\u00f3s",
+        "federation_id": "CB22984122",
+        "photo_url": "profiles\/txell.jpg",
+        "handicap_url": ""
+    },
+    "ona": {
+        "password_hash": "$2y$12$Mr9X8OHybl0nTy.PW75sCeAChCtcpjpHDmRiy841fPhl0zyVO77E2",
+        "full_name": "Ona Martinez Cucco",
+        "federation_id": "CB01912504",
+        "photo_url": "profiles\/ona.jpg",
+        "handicap_url": ""
+    },
+    "tiger": {
+        "password_hash": "$2y$12$TzQM3.MEj\/2ej5XvCdYRKeByUqY53g00xsXKG\/xAHGtsjWQki6DzG",
+        "full_name": "Tiger Woods Test",
+        "federation_id": "USA0000001",
+        "photo_url": "profiles\/tiger.jpg",
+        "handicap_url": ""
+    },
+    "valentina": {
+        "password_hash": "$2y$12$22h2RVE.wztzjEupdlB0vOMv8\/vF2lJV.NJjGaC3hMw8QWVfhVwGu",
+        "full_name": "Valentina Corretja de Miguel",
+        "federation_id": "CB01965090",
+        "photo_url": "profiles\/valentina.jpg",
+        "handicap_url": ""
+    },
+    "maria": {
+        "full_name": "Maria Boixader",
+        "federation_id": "CB65415931",
+        "email": "",
+        "photo_url": "profiles/maria_1770065115.jpg",
+        "handicap_url": ""
+    },
+    "sofia": {
+        "full_name": "Sofia Boixader",
+        "federation_id": "CB65036032",
+        "email": "",
+        "photo_url": "profiles/sofia.jpg",
+        "handicap_url": ""
+    },
+    "david": {
+        "password_hash": "$2y$12$uI0OTkoTHpLr7.3gCIHEpOIt96MipoH7mj.NZT36B15Qmmrg6zB.y",
+        "full_name": "David Boixader",
+        "role": "manager",
+        "federation_id": "CB65968149",
+        "email": "",
+        "managed_users": [
+            "maria",
+            "sofia"
+        ],
+        "photo_url": "profiles/david.jpg"
+    },
+    "adriana": {
+        "username": "adriana",
+        "password_hash": "$2y$12$4WxUJrsdxMppNz.UyDAC3e.Z6NzphwYhn6AjiybiQfB3MoCt1\/oNq",
+        "full_name": "Adriana Montolio",
+        "role": "user",
+        "federation_id": "",
+        "handicap": "",
+        "photo_url": "profile.jpg"
+    },
+    "jordi": {
+        "password_hash": "$2y$12$kslrycJ42qoA6cF0HagXk.ZaLdZeP1zkbIEtDeVnTjJW8/uNsLH9u",
+        "full_name": "Jordi",
+        "federation_id": "",
+        "photo_url": "profiles/jordi.jpg",
+        "handicap_url": ""
+    }
+}
