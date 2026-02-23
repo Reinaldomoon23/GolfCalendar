@@ -139,6 +139,7 @@ export default function CalendarView({
                 par: selectedTournament.par || calculatedPar,
                 grand_prix: selectedTournament.grand_prix || false,
                 valedera: selectedTournament.valedera || false,
+                sace: selectedTournament.sace || false,
                 merit: selectedTournament.merit || (selectedTournament.type === 'merit') || false,
                 wagr: selectedTournament.wagr || false,
                 conflict: selectedTournament.conflict || false,
@@ -357,7 +358,8 @@ export default function CalendarView({
         organizer: 'CLUB',
         type: 'club',
         grand_prix: false,
-        valedera: false
+        valedera: false,
+        sace: false
     });
 
 
@@ -433,6 +435,7 @@ export default function CalendarView({
             custom: true,
             grand_prix: newTournament.grand_prix,
             valedera: newTournament.valedera,
+            sace: newTournament.sace,
             groups: ['club'] // Default group for custom
         };
 
@@ -458,7 +461,8 @@ export default function CalendarView({
             organizer: 'CLUB',
             type: 'club',
             grand_prix: false,
-            valedera: false
+            valedera: false,
+            sace: false
         });
     };
 
@@ -698,6 +702,10 @@ export default function CalendarView({
             if (filter === 'all') return true;
 
             if (filter === 'upcoming') {
+                // If the user is in the monthly calendar grid view, show all tournaments
+                // for the month, ignoring the 'upcoming' filter.
+                if (calendarType === 'month') return true;
+
                 if (!t.dates) return true; // TBD usually future
                 const { start, end } = parseDateHelper(t.dates);
 
@@ -1347,6 +1355,11 @@ export default function CalendarView({
                                     VALEDERA
                                 </span>
                             )}
+                            {t.sace && (
+                                <span className="badge" style={{ backgroundColor: '#2563eb', color: 'white', marginLeft: '0.5rem' }}>
+                                    SACE
+                                </span>
+                            )}
                             {/* Support logic for merit: check property OR legacy type='merit' */}
                             {(t.merit || t.type === 'merit') && (
                                 <span className="badge" style={{ backgroundColor: '#B58B80', color: 'white', marginLeft: '0.5rem' }}>
@@ -1539,6 +1552,15 @@ export default function CalendarView({
                                             style={{ width: '18px', height: '18px' }}
                                         />
                                         <span style={{ fontSize: '0.9rem' }}>Grand Prix</span>
+                                    </label>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: '#f8fafc', padding: '8px', borderRadius: '6px' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={editingDetails.sace || false}
+                                            onChange={(e) => handleDetailChange('sace', e.target.checked)}
+                                            style={{ width: '18px', height: '18px' }}
+                                        />
+                                        <span style={{ fontSize: '0.9rem' }}>SACE</span>
                                     </label>
                                     <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: '#f8fafc', padding: '8px', borderRadius: '6px' }}>
                                         <input
@@ -1768,6 +1790,15 @@ export default function CalendarView({
                                                 style={{ width: '16px', height: '16px' }}
                                             />
                                             <span style={{ fontSize: '0.85rem' }}>Grand Prix</span>
+                                        </label>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', background: '#f8fafc', padding: '6px', borderRadius: '6px' }}>
+                                            <input
+                                                type="checkbox"
+                                                checked={editingDetails.sace || false}
+                                                onChange={(e) => handleDetailChange('sace', e.target.checked)}
+                                                style={{ width: '16px', height: '16px' }}
+                                            />
+                                            <span style={{ fontSize: '0.85rem' }}>SACE</span>
                                         </label>
                                         <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', background: '#f8fafc', padding: '6px', borderRadius: '6px' }}>
                                             <input
@@ -2705,6 +2736,15 @@ export default function CalendarView({
                                     />
                                     <label htmlFor="isValedera" style={{ fontSize: '0.9rem' }}>Valedera</label>
                                 </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                    <input
+                                        type="checkbox"
+                                        id="isSACE"
+                                        checked={newTournament.sace}
+                                        onChange={e => setNewTournament({ ...newTournament, sace: e.target.checked })}
+                                    />
+                                    <label htmlFor="isSACE" style={{ fontSize: '0.9rem' }}>SACE</label>
+                                </div>
                             </div>
 
                             <select
@@ -2816,6 +2856,12 @@ export default function CalendarView({
                                         <span className="badge" style={{ backgroundColor: 'var(--color-valedera)', color: 'var(--color-valedera-text)', fontWeight: '700', display: 'inline-flex', alignItems: 'center' }}>
                                             <Trophy size={11} style={{ marginRight: '4px' }} strokeWidth={2.5} />
                                             VALEDERA
+                                        </span>
+                                    )}
+                                    {t.sace && (
+                                        <span className="badge" style={{ backgroundColor: '#2563eb', color: 'white', fontWeight: '700', display: 'inline-flex', alignItems: 'center' }}>
+                                            <Trophy size={11} style={{ marginRight: '4px' }} strokeWidth={2.5} />
+                                            SACE
                                         </span>
                                     )}
                                     {t.conflict && (
