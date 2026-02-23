@@ -232,3 +232,4 @@ Para trasladar estas funcionalidades al proyecto hermano en Next.js, deben repli
 *   **Estabilidad de Datos de Usuario:**
     *   **Perfil:** Se ha desactivado la sincronización en tiempo real de Firestore en `App.jsx` para evitar que datos antiguos sobrescriban los datos locales más recientes.
     *   **Backend Hándicap:** Se ha robustecido `get_handicap.php` para no devolver errores 500 si un usuario no tiene licencia configurada, mejorando la experiencia de usuarios nuevos o invitados.
+✅ Scorecard Mobile: Added '-' character to numpad to allow inputting scratched holes and raya.
