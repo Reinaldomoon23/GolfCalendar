@@ -257,43 +257,65 @@ export default function MonthGridView({ tournaments, onTournamentClick, onDateCl
                             </div>
 
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', overflowY: 'auto', maxHeight: '80px' }}>
-                                {dayEvents.map(event => (
-                                    <div
-                                        key={event.id}
-                                        style={{
-                                            ...getEventStyle(event),
-                                            whiteSpace: 'normal', // Allow wrapping for multi-line
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            gap: '2px'
-                                        }}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            if (onTournamentClick) onTournamentClick(event);
-                                        }}
-                                        title={`${event.name} (${event.course})`}
-                                    >
-                                        <div style={{ lineHeight: '1.1' }}>
-                                            {event.name}
-                                        </div>
-                                        {event.course && (
-                                            <div style={{
-                                                fontSize: '0.75rem',
-                                                opacity: 1,
-                                                fontWeight: '500',
+                                {dayEvents.map(event => {
+                                    const isPast = event.dates ? parseDateHelper(event.dates).end < new Date().setHours(0, 0, 0, 0) : false;
+
+                                    return (
+                                        <div
+                                            key={event.id}
+                                            style={{
+                                                ...getEventStyle(event),
+                                                opacity: isPast ? 0.6 : 1,
+                                                filter: isPast ? 'grayscale(80%)' : 'none',
+                                                whiteSpace: 'normal', // Allow wrapping for multi-line
                                                 display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '2px',
-                                                marginTop: '1px'
-                                            }}>
-                                                <MapPin size={8} style={{ flexShrink: 0 }} />
-                                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                    {event.course}
-                                                </span>
+                                                flexDirection: 'column',
+                                                gap: '2px'
+                                            }}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (onTournamentClick) onTournamentClick(event);
+                                            }}
+                                            title={`${event.name} (${event.course})`}
+                                        >
+                                            <div style={{ lineHeight: '1.1' }}>
+                                                {event.name}
                                             </div>
-                                        )}
-                                    </div>
-                                ))}
+                                            {event.course && (
+                                                <div style={{
+                                                    fontSize: '0.75rem',
+                                                    opacity: 1,
+                                                    fontWeight: '500',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '2px',
+                                                    marginTop: '1px'
+                                                }}>
+                                                    <MapPin size={8} style={{ flexShrink: 0 }} />
+                                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                        {event.course}
+                                                    </span>
+                                                </div>
+                                            )}
+                                            {isPast && (
+                                                <div style={{
+                                                    fontSize: '0.6rem',
+                                                    fontWeight: 'bold',
+                                                    color: 'white',
+                                                    backgroundColor: 'rgba(0,0,0,0.4)',
+                                                    padding: '1px 4px',
+                                                    borderRadius: '2px',
+                                                    display: 'inline-block',
+                                                    marginTop: '1px',
+                                                    alignSelf: 'flex-start',
+                                                    letterSpacing: '0.05em'
+                                                }}>
+                                                    JUGADO
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                     );
