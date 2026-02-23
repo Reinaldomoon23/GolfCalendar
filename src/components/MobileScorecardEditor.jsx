@@ -13,11 +13,18 @@ const MobileScorecardEditor = ({
     par
 }) => {
     const [activeField, setActiveField] = useState('strokes');
+    const [isFirstKey, setIsFirstKey] = useState(true);
 
-    // Reset active field when hole changes
+    // Reset active field and key state when hole changes
     useEffect(() => {
         setActiveField('strokes');
+        setIsFirstKey(true);
     }, [holeIdx]);
+
+    // Reset key state if user explicitly switches fields (like from strokes to putts)
+    useEffect(() => {
+        setIsFirstKey(true);
+    }, [activeField]);
 
     if (!card) return null;
 
@@ -28,14 +35,19 @@ const MobileScorecardEditor = ({
     const getNum = (val) => val === '' ? 0 : parseInt(val);
 
     const handleNumpad = (num) => {
-        const currentStr = String(activeField === 'strokes' ? strokes : putts);
         let val;
 
-        if (currentStr === '' || currentStr === '0') {
+        if (isFirstKey) {
             val = num.toString();
+            setIsFirstKey(false);
         } else {
-            val = currentStr + num.toString();
-            if (parseInt(val) > 99) val = currentStr;
+            const currentStr = String(activeField === 'strokes' ? strokes : putts);
+            if (currentStr === '' || currentStr === '0') {
+                val = num.toString();
+            } else {
+                val = currentStr + num.toString();
+                if (parseInt(val) > 99) val = currentStr;
+            }
         }
 
         onUpdate(holeIdx, activeField, parseInt(val));
