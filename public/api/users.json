@@ -63,7 +63,7 @@
         "photo_url": "profile.jpg"
     },
     "jordi": {
-        "password_hash": "$2y$12$kslrycJ42qoA6cF0HagXk.ZaLdZeP1zkbIEtDeVnTjJW8/uNsLH9u",
+        "password_hash": "$2y$12$Hpo6xopjsT8EESwfZ.lvGeo5dZJMieuwmQPmIxpAKCNfXxDiD01AK",
         "full_name": "Jordi",
         "federation_id": "",
         "photo_url": "profiles/jordi.jpg",
