@@ -2453,7 +2453,7 @@ export default function CalendarView({
                 </div>
 
                 {/* Mobile Scorecard Overlay - FIXED: Moved inside early return block */}
-                {mobileMode && (
+                {mobileMode && ReactDOM.createPortal(
                     <MobileScorecardEditor
                         card={formData.scorecards?.[mobileMode.cardIdx] || { strokes: [], putts: [], girs: [], pars: [] }}
                         holeIdx={mobileMode.holeIdx}
@@ -2473,7 +2473,8 @@ export default function CalendarView({
                             const prevHole = mobileMode.holeIdx - 1;
                             if (prevHole >= 0) setMobileMode(prev => ({ ...prev, holeIdx: prevHole }));
                         }}
-                    />
+                    />,
+                    document.body
                 )}
                 {renderContextMenu()}
             </div >
@@ -2990,7 +2991,7 @@ export default function CalendarView({
                 </div>
             )}
             {/* Mobile Scorecard Overlay */}
-            {mobileMode && (
+            {mobileMode && ReactDOM.createPortal(
                 <MobileScorecardEditor
                     card={formData.scorecards?.[mobileMode.cardIdx] || { strokes: [], putts: [], girs: [], pars: [] }}
                     holeIdx={mobileMode.holeIdx}
@@ -3011,7 +3012,8 @@ export default function CalendarView({
                         if (prevHole >= 0) setMobileMode(prev => ({ ...prev, holeIdx: prevHole }));
                     }}
                     onSave={handleSaveResults}
-                />
+                />,
+                document.body
             )}
 
             {renderContextMenu()}
