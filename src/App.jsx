@@ -534,15 +534,18 @@ function AppContent() {
             localStorage.setItem('golf_tracker_user', JSON.stringify(updatedUser));
           }
 
-          // Update Linked Users List
-          if (freshUser.managed_users && Array.isArray(freshUser.managed_users)) {
-            const managedProfiles = freshUser.managed_users.map(u => {
+          // Update Linked Users List based on Manager's profile, not just current child user
+          const sessionManagerId = user.manager_id || user.username;
+          const managerProfile = allUsers[sessionManagerId] ? { ...allUsers[sessionManagerId], username: sessionManagerId } : null;
+
+          if (managerProfile && managerProfile.managed_users && Array.isArray(managerProfile.managed_users)) {
+            const managedProfiles = managerProfile.managed_users.map(u => {
               const p = allUsers[u];
               return p ? { ...p, username: u } : null;
             }).filter(Boolean);
 
             // Include Manager (Self) + Managed Users, Deduplicated
-            const newLinked = [freshUser, ...managedProfiles].filter((v, i, a) => a.findIndex(t => t.username === v.username) === i);
+            const newLinked = [managerProfile, ...managedProfiles].filter((v, i, a) => a.findIndex(t => t.username === v.username) === i);
 
             setLinkedUsers(newLinked);
             localStorage.setItem('golf_tracker_linked_users', JSON.stringify(newLinked));
