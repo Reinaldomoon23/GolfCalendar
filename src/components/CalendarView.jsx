@@ -5,7 +5,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 // ... imports ...
 
 // ... imports ...
-import { ChevronLeft, ChevronRight, Info, Calendar, Trophy, Plus, MapPin, Trash2, Share2, Filter, CalendarDays, Save, X, AlertTriangle, List, MoreVertical, Copy, Edit } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Info, Calendar, Trophy, Plus, MapPin, Trash2, Share2, Filter, CalendarDays, Save, X, AlertTriangle, List, MoreVertical, Copy, Edit, Radio } from 'lucide-react';
 import MobileScorecardEditor from './MobileScorecardEditor';
 import spanishCourses from '../data/spanish_courses.json';
 import CalendarFilters from './CalendarFilters';
@@ -53,7 +53,10 @@ export default function CalendarView({
     hiddenGroups = [], // ["merit"] -> items to explicitly HIDE
     onUpdateGroups,
     customThemes = {}, // New Prop
-    onUpdateTheme // New Prop
+    onUpdateTheme, // New Prop
+    onSaveSpecificResult,
+    onDeleteResult,
+    user
 }) {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -588,6 +591,36 @@ export default function CalendarView({
         }
     };
 
+    // Auto-Save effect when editing results for real-time syncing
+    const saveTimeoutRef = useRef(null);
+    useEffect(() => {
+        if (!isEditingResults || !selectedTournament || !onSaveSpecificResult) return;
+
+        if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+
+        saveTimeoutRef.current = setTimeout(() => {
+            const validScores = formData.rounds.filter(r => r && !isNaN(r)).map(Number);
+            const total = validScores.reduce((a, b) => a + b, 0);
+            const average = validScores.length > 0 ? (total / validScores.length).toFixed(1) : 0;
+            const validStb = formData.stableford.filter(s => s && !isNaN(s)).map(Number);
+            const stablefordTotal = validStb.reduce((a, b) => a + b, 0);
+
+            const entry = {
+                ...formData,
+                total,
+                average,
+                stablefordTotal,
+                updatedAt: new Date().toISOString()
+            };
+
+            onSaveSpecificResult(selectedTournament.id, entry);
+        }, 1500);
+
+        return () => {
+            if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+        };
+    }, [formData, isEditingResults, selectedTournament]);
+
     const handleSaveResults = () => {
         if (!selectedTournament) return;
 
@@ -614,7 +647,6 @@ export default function CalendarView({
             if (!proceed) return;
         }
 
-        // Calculate totals logic (redundant info but good for display)
         const validScores = formData.rounds.filter(r => r && !isNaN(r)).map(Number);
         const total = validScores.reduce((a, b) => a + b, 0);
         const average = validScores.length > 0 ? (total / validScores.length).toFixed(1) : 0;
@@ -629,17 +661,26 @@ export default function CalendarView({
             updatedAt: new Date().toISOString()
         };
 
-        const newResults = { ...results, [selectedTournament.id]: entry };
-        if (onUpdateResults) onUpdateResults(newResults);
+        if (onSaveSpecificResult) {
+            onSaveSpecificResult(selectedTournament.id, entry);
+            alert("✅ Guardado correctamente.");
+        } else {
+            const newResults = { ...results, [selectedTournament.id]: entry };
+            if (onUpdateResults) onUpdateResults(newResults);
+        }
         // Do NOT close/deselect. Stay in detail/edit view.
     };
 
     const handleDeleteResult = () => {
         if (!selectedTournament) return;
         if (window.confirm('¿Seguro que quieres borrar estos resultados?')) {
-            const newResults = { ...results };
-            delete newResults[selectedTournament.id];
-            if (onUpdateResults) onUpdateResults(newResults);
+            if (onDeleteResult) {
+                onDeleteResult(selectedTournament.id);
+            } else {
+                const newResults = { ...results };
+                delete newResults[selectedTournament.id];
+                if (onUpdateResults) onUpdateResults(newResults);
+            }
             // Stay in detail view
         }
     };
@@ -1975,7 +2016,7 @@ export default function CalendarView({
                                         </div>
 
                                         {/* Toggle Detailed Scorecard */}
-                                        <div style={{ display: 'flex', gap: '10px', marginBottom: expandedRound === idx ? '1rem' : '0' }}>
+                                        <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
                                             <button
                                                 onClick={() => setExpandedRound(expandedRound === idx ? null : idx)}
                                                 style={{
@@ -1995,6 +2036,7 @@ export default function CalendarView({
                                                 onClick={(e) => {
                                                     e.preventDefault();
                                                     console.log('📱 Abriendo modo móvil para tarjeta:', idx);
+                                                    setIsEditingResults(true); // Track edit mode
 
                                                     // Robustly ensure card entry exists
                                                     setFormData(prev => {
@@ -2035,6 +2077,72 @@ export default function CalendarView({
                                                 }}
                                             >
                                                 <span>📱</span> Modo Móvil
+                                            </button>
+                                        </div>
+
+                                        {/* Social and Live Action Buttons */}
+                                        <div style={{ display: 'flex', gap: '10px', marginBottom: expandedRound === idx ? '1rem' : '0' }}>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    handleShareCard(idx);
+                                                }}
+                                                style={{
+                                                    flex: 1,
+                                                    padding: '8px',
+                                                    background: '#f0fdf4',
+                                                    border: '1px solid #10b981',
+                                                    borderRadius: '6px',
+                                                    cursor: 'pointer',
+                                                    fontSize: '0.85rem',
+                                                    color: '#10b981',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    gap: '6px',
+                                                    fontWeight: 'bold',
+                                                }}
+                                            >
+                                                <Share2 size={14} /> Compartir
+                                            </button>
+                                            <button
+                                                onClick={async (e) => {
+                                                    e.preventDefault();
+                                                    const baselink = window.location.origin + import.meta.env.BASE_URL.replace(/\/$/, '');
+                                                    const link = `${baselink}/live/${user?.username}/${t.id}`;
+                                                    if (navigator.share) {
+                                                        try {
+                                                            await navigator.share({
+                                                                title: `Resultados en Vivo - ${selectedTournament?.name || t.name}`,
+                                                                text: `Sigue mis resultados en directo en ${selectedTournament?.name || t.name}`,
+                                                                url: link
+                                                            });
+                                                        } catch (err) {
+                                                            console.log('Error sharing:', err);
+                                                        }
+                                                    } else {
+                                                        navigator.clipboard.writeText(link);
+                                                        alert('Enlace de resultados en vivo copiado:\n' + link);
+                                                    }
+                                                }}
+                                                style={{
+                                                    flex: 1,
+                                                    padding: '8px',
+                                                    background: '#eff6ff',
+                                                    border: '1px solid #3b82f6',
+                                                    borderRadius: '6px',
+                                                    cursor: 'pointer',
+                                                    fontSize: '0.85rem',
+                                                    color: '#3b82f6',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    gap: '6px',
+                                                    fontWeight: 'bold',
+                                                }}
+                                                title="Compartir enlace para seguir resultados en directo"
+                                            >
+                                                <Radio size={14} className="pulse-animation" /> Resultados en Vivo
                                             </button>
                                         </div>
 
@@ -2282,26 +2390,13 @@ export default function CalendarView({
                                                             border: '1px solid #ef4444',
                                                             padding: '4px 8px',
                                                             borderRadius: '4px',
-                                                            cursor: 'pointer'
+                                                            cursor: 'pointer',
+                                                            display: 'flex',
+                                                            alignItems: 'center'
                                                         }}
                                                     >
-                                                        <Trash2 size={12} style={{ marginRight: '4px', verticalAlign: 'middle' }} />
+                                                        <Trash2 size={12} style={{ marginRight: '4px' }} />
                                                         Resetear
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleShareCard(idx)}
-                                                        style={{
-                                                            fontSize: '0.8rem',
-                                                            color: '#10b981',
-                                                            background: 'none',
-                                                            border: '1px solid #10b981',
-                                                            padding: '4px 8px',
-                                                            borderRadius: '4px',
-                                                            cursor: 'pointer'
-                                                        }}
-                                                    >
-                                                        <Share2 size={12} style={{ marginRight: '4px', verticalAlign: 'middle' }} />
-                                                        Compartir
                                                     </button>
                                                 </div>
                                             </div>
@@ -2324,11 +2419,11 @@ export default function CalendarView({
                                         <div style={{ display: 'flex', justifyContent: 'center', gap: '40px', marginBottom: '30px' }}>
                                             <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.1)', padding: '20px', borderRadius: '12px', width: '150px' }}>
                                                 <div style={{ fontSize: '14px', textTransform: 'uppercase', opacity: 0.8 }}>Golpes</div>
-                                                <div style={{ fontSize: '48px', fontWeight: 'bold' }}>{formData.rounds[expandedRound]}</div>
+                                                <div style={{ fontSize: '48px', fontWeight: 'bold' }}>{formData.rounds[sharingRound]}</div>
                                             </div>
                                             <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.9)', color: '#064e3b', padding: '20px', borderRadius: '12px', width: '150px' }}>
                                                 <div style={{ fontSize: '14px', textTransform: 'uppercase', fontWeight: 'bold' }}>Stableford</div>
-                                                <div style={{ fontSize: '48px', fontWeight: 'bold' }}>{formData.stableford[expandedRound] || '-'}</div>
+                                                <div style={{ fontSize: '48px', fontWeight: 'bold' }}>{formData.stableford[sharingRound] || '-'}</div>
                                             </div>
                                         </div>
 
@@ -2341,15 +2436,15 @@ export default function CalendarView({
                                                 <div style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '14px' }}>IDA</div>
 
                                                 <div style={{ fontWeight: 'bold', fontSize: '12px', alignSelf: 'center', color: '#666' }}>PAR</div>
-                                                {[...Array(9)].map((_, i) => <div key={i} style={{ textAlign: 'center', fontSize: '14px' }}>{(formData.scorecards[expandedRound]?.pars || [])[i] || '-'}</div>)}
+                                                {[...Array(9)].map((_, i) => <div key={i} style={{ textAlign: 'center', fontSize: '14px' }}>{(formData.scorecards[sharingRound]?.pars || [])[i] || '-'}</div>)}
                                                 <div style={{ textAlign: 'center', fontSize: '14px', fontWeight: 'bold' }}>
-                                                    {(formData.scorecards[expandedRound]?.pars || []).slice(0, 9).reduce((a, b) => a + (Number(b) || 0), 0) || '-'}
+                                                    {(formData.scorecards[sharingRound]?.pars || []).slice(0, 9).reduce((a, b) => a + (Number(b) || 0), 0) || '-'}
                                                 </div>
 
                                                 <div style={{ fontWeight: 'bold', fontSize: '12px', alignSelf: 'center' }}>GOLPE</div>
                                                 {[...Array(9)].map((_, i) => {
-                                                    const par = parseInt((formData.scorecards[expandedRound]?.pars || [])[i]);
-                                                    const str = parseInt((formData.scorecards[expandedRound]?.strokes || [])[i]);
+                                                    const par = parseInt((formData.scorecards[sharingRound]?.pars || [])[i]);
+                                                    const str = parseInt((formData.scorecards[sharingRound]?.strokes || [])[i]);
                                                     let bg = '#f3f4f6';
                                                     let color = '#333';
                                                     if (par && str) {
@@ -2363,7 +2458,7 @@ export default function CalendarView({
                                                     );
                                                 })}
                                                 <div style={{ textAlign: 'center', fontSize: '14px', fontWeight: 'bold' }}>
-                                                    {(formData.scorecards[expandedRound]?.strokes || []).slice(0, 9).reduce((a, b) => a + (Number(b) || 0), 0) || '-'}
+                                                    {(formData.scorecards[sharingRound]?.strokes || []).slice(0, 9).reduce((a, b) => a + (Number(b) || 0), 0) || '-'}
                                                 </div>
                                             </div>
 
@@ -2374,15 +2469,15 @@ export default function CalendarView({
                                                 <div style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '14px' }}>VTA</div>
 
                                                 <div style={{ fontWeight: 'bold', fontSize: '12px', alignSelf: 'center', color: '#666' }}>PAR</div>
-                                                {[...Array(9)].map((_, i) => <div key={i + 9} style={{ textAlign: 'center', fontSize: '14px' }}>{(formData.scorecards[expandedRound]?.pars || [])[i + 9] || '-'}</div>)}
+                                                {[...Array(9)].map((_, i) => <div key={i + 9} style={{ textAlign: 'center', fontSize: '14px' }}>{(formData.scorecards[sharingRound]?.pars || [])[i + 9] || '-'}</div>)}
                                                 <div style={{ textAlign: 'center', fontSize: '14px', fontWeight: 'bold' }}>
-                                                    {(formData.scorecards[expandedRound]?.pars || []).slice(9, 18).reduce((a, b) => a + (Number(b) || 0), 0) || '-'}
+                                                    {(formData.scorecards[sharingRound]?.pars || []).slice(9, 18).reduce((a, b) => a + (Number(b) || 0), 0) || '-'}
                                                 </div>
 
                                                 <div style={{ fontWeight: 'bold', fontSize: '12px', alignSelf: 'center' }}>GOLPE</div>
                                                 {[...Array(9)].map((_, i) => {
-                                                    const par = parseInt((formData.scorecards[expandedRound]?.pars || [])[i + 9]);
-                                                    const str = parseInt((formData.scorecards[expandedRound]?.strokes || [])[i + 9]);
+                                                    const par = parseInt((formData.scorecards[sharingRound]?.pars || [])[i + 9]);
+                                                    const str = parseInt((formData.scorecards[sharingRound]?.strokes || [])[i + 9]);
                                                     let bg = '#f3f4f6';
                                                     let color = '#333';
                                                     if (par && str) {
@@ -2396,7 +2491,7 @@ export default function CalendarView({
                                                     );
                                                 })}
                                                 <div style={{ textAlign: 'center', fontSize: '14px', fontWeight: 'bold' }}>
-                                                    {(formData.scorecards[expandedRound]?.strokes || []).slice(9, 18).reduce((a, b) => a + (Number(b) || 0), 0) || '-'}
+                                                    {(formData.scorecards[sharingRound]?.strokes || []).slice(9, 18).reduce((a, b) => a + (Number(b) || 0), 0) || '-'}
                                                 </div>
                                             </div>
                                         </div>
@@ -2464,15 +2559,26 @@ export default function CalendarView({
                             track_girs: editingDetails.track_girs || t?.track_girs || false
                         }}
                         onUpdate={(hIdx, field, val) => handleHoleChange(mobileMode.cardIdx, hIdx, field, val)}
-                        onClose={() => setMobileMode(null)}
+                        onClose={() => {
+                            if (window.confirm("¿Validar y guardar resultados?")) {
+                                handleSaveResults();
+                            }
+                            setMobileMode(null);
+                        }}
                         onNext={() => {
-                            const nextHole = mobileMode.holeIdx + 1;
-                            if (nextHole < 18) setMobileMode(prev => ({ ...prev, holeIdx: nextHole }));
-                            else setMobileMode(null);
+                            if (window.confirm("¿Validar resultado?")) {
+                                handleSaveResults();
+                                const nextHole = mobileMode.holeIdx + 1;
+                                if (nextHole < 18) setMobileMode(prev => ({ ...prev, holeIdx: nextHole }));
+                                else setMobileMode(null);
+                            }
                         }}
                         onPrev={() => {
-                            const prevHole = mobileMode.holeIdx - 1;
-                            if (prevHole >= 0) setMobileMode(prev => ({ ...prev, holeIdx: prevHole }));
+                            if (window.confirm("¿Validar resultado?")) {
+                                handleSaveResults();
+                                const prevHole = mobileMode.holeIdx - 1;
+                                if (prevHole >= 0) setMobileMode(prev => ({ ...prev, holeIdx: prevHole }));
+                            }
                         }}
                     />,
                     document.body

@@ -9,6 +9,7 @@ import { Calendar as CalendarIcon, BarChart3, TrendingUp, User, X } from 'lucide
 import tournamentsData from './data/tournaments.json';
 
 import LoginView from './components/LoginView';
+import PublicScorecardView from './components/PublicScorecardView';
 import { LogOut } from 'lucide-react';
 
 // Firebase Imports
@@ -731,6 +732,7 @@ function AppContent() {
 
   const handleSaveSpecificResult = async (id, data) => {
     if (!user) return;
+    setResults(prev => ({ ...prev, [id]: data }));
     await setDoc(doc(db, "users", user.username, "results", String(id)), data);
   };
 
@@ -799,6 +801,15 @@ function AppContent() {
   const isCalendar = currentPath === '/';
   const isStats = currentPath === '/stats';
   const isHandicap = currentPath === '/handicap';
+  const isLive = currentPath.startsWith('/live/');
+
+  if (isLive) {
+    return (
+      <Routes>
+        <Route path="/live/:username/:id" element={<PublicScorecardView />} />
+      </Routes>
+    );
+  }
 
   if (!user && IS_MULTI) {
     return <LoginView onLogin={handleLogin} />;
@@ -1069,10 +1080,13 @@ function AppContent() {
               activeGroups={['txell', 'ona'].includes(user?.username?.toLowerCase()) ? [] : preferences.groups}
               hiddenGroups={['txell', 'ona'].includes(user?.username?.toLowerCase()) ? ['merit'] : []}
               customThemes={preferences.themes}
+              user={user}
               onUpdateGroups={handleUpdatePreferences}
               onUpdateTheme={handleUpdateTheme}
               onAddTournament={handleAddTournament}
               onUpdateResults={handleUpdateResults}
+              onSaveSpecificResult={handleSaveSpecificResult}
+              onDeleteResult={handleDeleteResult}
               onDeleteTournament={handleDeleteTournament}
               onUpdateTournament={handleUpdateTournament}
             />
@@ -1085,10 +1099,13 @@ function AppContent() {
               activeGroups={['txell', 'ona'].includes(user?.username?.toLowerCase()) ? [] : preferences.groups}
               hiddenGroups={['txell', 'ona'].includes(user?.username?.toLowerCase()) ? ['merit'] : []}
               customThemes={preferences.themes}
+              user={user}
               onUpdateGroups={handleUpdatePreferences}
               onUpdateTheme={handleUpdateTheme}
               onAddTournament={handleAddTournament}
               onUpdateResults={handleUpdateResults}
+              onSaveSpecificResult={handleSaveSpecificResult}
+              onDeleteResult={handleDeleteResult}
               onDeleteTournament={handleDeleteTournament}
               onUpdateTournament={handleUpdateTournament}
             />
