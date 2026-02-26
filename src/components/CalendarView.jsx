@@ -2560,25 +2560,33 @@ export default function CalendarView({
                         }}
                         onUpdate={(hIdx, field, val) => handleHoleChange(mobileMode.cardIdx, hIdx, field, val)}
                         onClose={() => {
-                            if (window.confirm("¿Validar y guardar resultados?")) {
+                            const lastStroke = formData.scorecards?.[mobileMode.cardIdx]?.strokes?.[mobileMode.holeIdx];
+                            if (lastStroke && window.confirm("¿Validar y guardar resultados?")) {
                                 handleSaveResults();
                             }
                             setMobileMode(null);
                         }}
                         onNext={() => {
-                            if (window.confirm("¿Validar resultado?")) {
-                                handleSaveResults();
-                                const nextHole = mobileMode.holeIdx + 1;
-                                if (nextHole < 18) setMobileMode(prev => ({ ...prev, holeIdx: nextHole }));
-                                else setMobileMode(null);
+                            const lastStroke = formData.scorecards?.[mobileMode.cardIdx]?.strokes?.[mobileMode.holeIdx];
+                            if (lastStroke) {
+                                handleSaveResults(); // auto-guardar si hay score
+                            }
+                            const nextHole = mobileMode.holeIdx + 1;
+                            if (nextHole < 18) setMobileMode(prev => ({ ...prev, holeIdx: nextHole }));
+                            else {
+                                if (lastStroke && window.confirm("¿Validar todos los resultados y cerrar?")) {
+                                    handleSaveResults();
+                                }
+                                setMobileMode(null);
                             }
                         }}
                         onPrev={() => {
-                            if (window.confirm("¿Validar resultado?")) {
-                                handleSaveResults();
-                                const prevHole = mobileMode.holeIdx - 1;
-                                if (prevHole >= 0) setMobileMode(prev => ({ ...prev, holeIdx: prevHole }));
+                            const lastStroke = formData.scorecards?.[mobileMode.cardIdx]?.strokes?.[mobileMode.holeIdx];
+                            if (lastStroke) {
+                                handleSaveResults(); // auto-guardar si hay score
                             }
+                            const prevHole = mobileMode.holeIdx - 1;
+                            if (prevHole >= 0) setMobileMode(prev => ({ ...prev, holeIdx: prevHole }));
                         }}
                     />,
                     document.body
