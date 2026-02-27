@@ -2578,7 +2578,7 @@ export default function CalendarView({
                         onUpdate={(hIdx, field, val) => handleHoleChange(mobileMode.cardIdx, hIdx, field, val)}
                         onClose={() => {
                             const lastStroke = formData.scorecards?.[mobileMode.cardIdx]?.strokes?.[mobileMode.holeIdx];
-                            if (lastStroke && window.confirm("¿Validar y guardar resultados?")) {
+                            if (lastStroke) {
                                 handleSaveResults();
                             }
                             setMobileMode(null);
@@ -2591,9 +2591,6 @@ export default function CalendarView({
                             const nextHole = mobileMode.holeIdx + 1;
                             if (nextHole < 18) setMobileMode(prev => ({ ...prev, holeIdx: nextHole }));
                             else {
-                                if (lastStroke && window.confirm("¿Validar todos los resultados y cerrar?")) {
-                                    handleSaveResults();
-                                }
                                 setMobileMode(null);
                             }
                         }}
