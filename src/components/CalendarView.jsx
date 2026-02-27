@@ -329,7 +329,7 @@ export default function CalendarView({
                 console.log(`No saved card for R${rIdx}, creating new.`);
                 return {
                     pars: defaultPars.map(p => p || ''),
-                    strokes: defaultPars.map(p => p || ''),
+                    strokes: Array(18).fill(''),
                     putts: Array(18).fill('')
                 };
             };
@@ -531,7 +531,7 @@ export default function CalendarView({
                     ...currentScorecards,
                     [roundIdx]: {
                         pars: defaultPars.map(p => p || ''),
-                        strokes: defaultPars.map(p => p || '')
+                        strokes: Array(18).fill('')
                     }
                 },
                 rounds: newRounds
@@ -2116,7 +2116,7 @@ export default function CalendarView({
                                                 onClick={async (e) => {
                                                     e.preventDefault();
                                                     const baselink = window.location.origin + import.meta.env.BASE_URL.replace(/\/$/, '');
-                                                    const link = `${baselink}/live/${user?.username}/${t.id}`;
+                                                    const link = `${baselink}/live/${user?.username}/${t.id}?r=${idx}`;
                                                     if (navigator.share) {
                                                         try {
                                                             await navigator.share({

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { ChevronLeft, Flag, Info } from 'lucide-react';
@@ -7,6 +7,9 @@ import tournamentsData from '../data/tournaments.json';
 
 export default function PublicScorecardView() {
     const { username, id: eventId } = useParams();
+    const location = useLocation();
+    const searchParams = new URLSearchParams(location.search);
+    const queryRIdx = searchParams.get('r');
 
     const [loading, setLoading] = useState(true);
     const [userProfile, setUserProfile] = useState(null);
@@ -194,23 +197,30 @@ export default function PublicScorecardView() {
                             const roundsKeys = Object.keys(result.scorecards || {});
                             if (roundsKeys.length === 0) return null;
 
-                            // We ONLY want to display the last played/active round
-                            // Find the highest round index that actually has strokes or manual scores
-                            let activeRIdx = roundsKeys[0];
-                            for (let i = roundsKeys.length - 1; i >= 0; i--) {
-                                const rIdx = roundsKeys[i];
-                                const card = result.scorecards[rIdx];
-                                const roundStr = parseInt(rIdx);
-                                const roundStrokes = (card.strokes || []).reduce((a, b) => a + (parseInt(b) || 0), 0);
-                                const manualStrokesTotal = result.rounds?.[roundStr];
-                                if (roundStrokes > 0 || (manualStrokesTotal && manualStrokesTotal > 0)) {
-                                    activeRIdx = rIdx;
-                                    break;
+                            // We want to display the specific round passed via URL query if available
+                            let displayRounds = [];
+
+                            if (queryRIdx !== null && roundsKeys.includes(queryRIdx)) {
+                                displayRounds = [queryRIdx];
+                            } else {
+                                // Find the highest round index that actually has strokes or manual scores
+                                let activeRIdx = roundsKeys[0];
+                                for (let i = roundsKeys.length - 1; i >= 0; i--) {
+                                    const rIdx = roundsKeys[i];
+                                    const card = result.scorecards[rIdx];
+                                    const roundStr = parseInt(rIdx);
+                                    const roundStrokes = (card.strokes || []).reduce((a, b) => a + (parseInt(b) || 0), 0);
+                                    const manualStrokesTotal = result.rounds?.[roundStr];
+                                    if (roundStrokes > 0 || (manualStrokesTotal && manualStrokesTotal > 0)) {
+                                        activeRIdx = rIdx;
+                                        break;
+                                    }
                                 }
+                                displayRounds = [activeRIdx];
                             }
 
-                            // Just map over that single active round
-                            return [activeRIdx].map((rIdx) => {
+                            // Map over the correct round(s)
+                            return displayRounds.map((rIdx) => {
                                 const roundStr = parseInt(rIdx);
                                 const card = result.scorecards[rIdx];
 
