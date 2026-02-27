@@ -261,8 +261,6 @@ export default function PublicScorecardView() {
                                 const manualStrokesTotal = result.rounds?.[roundStr];
                                 const displayTotal = holesPlayed > 0 ? playedStrokes : manualStrokesTotal;
 
-                                if (!displayTotal || displayTotal === '') return null; // Skip empty rounds
-
                                 let diffStr = 'E';
                                 let diffColor = '#94a3b8';
 
@@ -271,11 +269,16 @@ export default function PublicScorecardView() {
                                     diffStr = diff > 0 ? `+${diff}` : diff < 0 ? `${diff}` : 'E';
                                     diffColor = diff > 0 ? '#ef4444' : diff < 0 ? '#10b981' : '#94a3b8';
                                 } else {
-                                    // fallback for manual total score only
-                                    const totalPar = (card.pars || []).reduce((a, b) => a + (parseInt(b) || 0), 0) || 72;
-                                    const diff = displayTotal - totalPar;
-                                    diffStr = diff > 0 ? `+${diff}` : diff < 0 ? `${diff}` : 'E';
-                                    diffColor = diff > 0 ? '#ef4444' : diff < 0 ? '#10b981' : '#94a3b8';
+                                    if (!displayTotal || displayTotal === '') {
+                                        diffStr = '-';
+                                        diffColor = '#94a3b8';
+                                    } else {
+                                        // fallback for manual total score only
+                                        const totalPar = (card.pars || []).reduce((a, b) => a + (parseInt(b) || 0), 0) || 72;
+                                        const diff = displayTotal - totalPar;
+                                        diffStr = diff > 0 ? `+${diff}` : diff < 0 ? `${diff}` : 'E';
+                                        diffColor = diff > 0 ? '#ef4444' : diff < 0 ? '#10b981' : '#94a3b8';
+                                    }
                                 }
 
                                 return (
@@ -289,7 +292,7 @@ export default function PublicScorecardView() {
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                                             <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '1.1rem' }}>Ronda {roundStr + 1}</h3>
                                             <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                                                <span style={{ fontSize: '2rem', fontWeight: '900', color: 'white' }}>{displayTotal}</span>
+                                                <span style={{ fontSize: '2rem', fontWeight: '900', color: 'white' }}>{displayTotal || '-'}</span>
                                                 <span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: diffColor }}>
                                                     ({diffStr})
                                                 </span>
