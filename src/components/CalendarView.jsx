@@ -2179,8 +2179,52 @@ export default function CalendarView({
                                                 }}
                                                 title="Compartir enlace para seguir resultados en directo"
                                             >
-                                                <Radio size={14} className="pulse-animation" /> Resultados en Vivo
+                                                <Radio size={14} className="pulse-animation" /> En Vivo
                                             </button>
+
+                                            {/* Conditionally show MULTI-LIVE button if the user manages other players */}
+                                            {user?.managed_users && user.managed_users.length > 0 && (
+                                                <button
+                                                    onClick={async (e) => {
+                                                        e.preventDefault();
+                                                        const baselink = window.location.origin + import.meta.env.BASE_URL.replace(/\/$/, '');
+                                                        const players = [user.username, ...user.managed_users].filter(Boolean).join(',');
+                                                        const link = `${baselink}/live-team/${t.id}?players=${players}`;
+                                                        if (navigator.share) {
+                                                            try {
+                                                                await navigator.share({
+                                                                    title: `Resultados MULTI-Live - ${selectedTournament?.name || t.name}`,
+                                                                    text: `Sigue nuestros resultados en directo: ${selectedTournament?.name || t.name}`,
+                                                                    url: link
+                                                                });
+                                                            } catch (err) {
+                                                                console.log('Error sharing:', err);
+                                                            }
+                                                        } else {
+                                                            navigator.clipboard.writeText(link);
+                                                            alert('Enlace de MULTI-LIVE copiado:\n' + link);
+                                                        }
+                                                    }}
+                                                    style={{
+                                                        flex: 1,
+                                                        padding: '8px',
+                                                        background: '#fdf4ff',
+                                                        border: '1px solid #d946ef',
+                                                        borderRadius: '6px',
+                                                        cursor: 'pointer',
+                                                        fontSize: '0.85rem',
+                                                        color: '#d946ef',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        gap: '4px',
+                                                        fontWeight: 'bold',
+                                                    }}
+                                                    title="Compartir enlace para ver la tarjeta del equipo (Padre + Hijas)"
+                                                >
+                                                    <Users size={14} className="pulse-animation" /> Team Live
+                                                </button>
+                                            )}
                                         </div>
 
                                         {/* Detailed Scorecard Grid */}

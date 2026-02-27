@@ -10,6 +10,7 @@ import tournamentsData from './data/tournaments.json';
 
 import LoginView from './components/LoginView';
 import PublicScorecardView from './components/PublicScorecardView';
+import TeamLiveScorecard from './components/TeamLiveScorecard';
 import { LogOut } from 'lucide-react';
 
 // Firebase Imports
@@ -813,6 +814,7 @@ function AppContent() {
     return (
       <Routes>
         <Route path="/live/:username/:id" element={<PublicScorecardView />} />
+        <Route path="/live-team/:id" element={<TeamLiveScorecard />} />
       </Routes>
     );
   }
