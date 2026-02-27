@@ -32,30 +32,33 @@ export default function PublicScorecardView() {
     }, [username]);
 
     // Fetch tournament info
+    // IMPORTANT: Check user's custom_tournaments FIRST because they override official ones.
+    // (e.g. the user may have edited an official tournament - the custom version takes priority)
     useEffect(() => {
         const fetchTournament = async () => {
             try {
-                // Check local official json first
+                // 1. User's custom overrides (highest priority)
+                const customRef = doc(db, 'users', username, 'custom_tournaments', eventId);
+                const customSnap = await getDoc(customRef);
+                if (customSnap.exists()) {
+                    setTournament({ id: customSnap.id, ...customSnap.data() });
+                    return;
+                }
+
+                // 2. Local official JSON
                 const localOfficial = tournamentsData.find((t) => String(t.id) === String(eventId));
                 if (localOfficial) {
                     setTournament(localOfficial);
                     return;
                 }
 
-                // Check official tournaments in firebase if not local
+                // 3. Firebase official tournaments collection
                 const docRef = doc(db, 'tournaments', eventId);
                 const docSnap = await getDoc(docRef);
                 if (docSnap.exists()) {
                     setTournament({ id: docSnap.id, ...docSnap.data() });
                 } else {
-                    // Check custom tournaments for this user
-                    const customRef = doc(db, 'users', username, 'custom_tournaments', eventId);
-                    const customSnap = await getDoc(customRef);
-                    if (customSnap.exists()) {
-                        setTournament({ id: customSnap.id, ...customSnap.data() });
-                    } else {
-                        setError('Torneo no encontrado');
-                    }
+                    setError('Torneo no encontrado');
                 }
             } catch (err) {
                 console.error("Error fetching tournament", err);
