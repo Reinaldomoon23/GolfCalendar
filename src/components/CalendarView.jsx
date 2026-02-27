@@ -566,7 +566,7 @@ export default function CalendarView({
                         await navigator.share({
                             files: [file],
                             title: 'Mi Resultado de Golf',
-                            text: `¡He hecho ${formData.rounds[roundIdx]} golpes en ${selectedTournament.name}! 🏌️‍♂️`
+                            text: `¡He hecho ${formData.rounds[roundIdx]} golpes en ${editingDetails.name || selectedTournament.name}! 🏌️‍♂️`
                         });
                     } catch (err) {
                         console.log('Error sharing:', err);
@@ -2412,8 +2412,9 @@ export default function CalendarView({
                                 {sharingRound !== null && formData.rounds[sharingRound] && (
                                     <>
                                         <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-                                            <h2 style={{ fontSize: '28px', margin: '0 0 10px 0', textShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>{selectedTournament?.name}</h2>
-                                            <p style={{ opacity: 0.8, fontSize: '16px' }}>{getRoundDates(selectedTournament?.dates)[sharingRound]?.toLocaleDateString()}</p>
+                                            <h2 style={{ fontSize: '28px', margin: '0 0 10px 0', textShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>{editingDetails.name || selectedTournament?.name}</h2>
+                                            <p style={{ opacity: 0.9, fontSize: '18px', fontWeight: 'bold' }}>{editingDetails.course || selectedTournament?.course}</p>
+                                            <p style={{ opacity: 0.8, fontSize: '16px', marginTop: '5px' }}>{getRoundDates(editingDetails.dates || selectedTournament?.dates)[sharingRound]?.toLocaleDateString()}</p>
                                         </div>
 
                                         <div style={{ display: 'flex', justifyContent: 'center', gap: '40px', marginBottom: '30px' }}>
