@@ -303,7 +303,7 @@ export default function PublicScorecardView() {
                                                 <div style={{ display: 'inline-flex', flexDirection: 'column', minWidth: '100%', border: '1px solid #334155', borderRadius: '8px', overflow: 'hidden' }}>
                                                     {/* Row: Headers */}
                                                     <div style={{ display: 'flex', background: '#0f172a', fontWeight: 'bold', fontSize: '0.8rem', color: '#94a3b8' }}>
-                                                        <div style={{ width: '45px', padding: '8px', borderRight: '1px solid #334155', flexShrink: 0, textAlign: 'center', boxSizing: 'border-box' }}>Hoyo</div>
+                                                        <div style={{ width: '60px', padding: '8px', borderRight: '1px solid #334155', flexShrink: 0, textAlign: 'center', boxSizing: 'border-box' }}>Hoyo</div>
                                                         {[...Array(9)].map((_, i) => (
                                                             <div key={i} style={{ flex: '1 1 0%', padding: '8px 0', borderRight: i < 8 ? '1px solid #334155' : 'none', textAlign: 'center', boxSizing: 'border-box', minWidth: 0 }}>
                                                                 {i + 1}
@@ -313,7 +313,7 @@ export default function PublicScorecardView() {
 
                                                     {/* Row: Par */}
                                                     <div style={{ display: 'flex', background: '#1e293b', fontSize: '0.8rem', color: '#cbd5e1' }}>
-                                                        <div style={{ width: '45px', padding: '8px', borderRight: '1px solid #334155', borderTop: '1px solid #334155', flexShrink: 0, textAlign: 'center', fontWeight: 'bold', boxSizing: 'border-box' }}>Par</div>
+                                                        <div style={{ width: '60px', padding: '8px', borderRight: '1px solid #334155', borderTop: '1px solid #334155', flexShrink: 0, textAlign: 'center', fontWeight: 'bold', boxSizing: 'border-box' }}>Par</div>
                                                         {[...Array(9)].map((_, i) => (
                                                             <div key={i} style={{ flex: '1 1 0%', padding: '8px 0', borderRight: i < 8 ? '1px solid #334155' : 'none', borderTop: '1px solid #334155', textAlign: 'center', boxSizing: 'border-box', minWidth: 0 }}>
                                                                 {card.pars?.[i] || '-'}
@@ -323,7 +323,7 @@ export default function PublicScorecardView() {
 
                                                     {/* Row: Strokes */}
                                                     <div style={{ display: 'flex', background: '#334155', fontSize: '1rem', fontWeight: 'bold' }}>
-                                                        <div style={{ width: '45px', padding: '8px', borderRight: '1px solid #1e293b', borderTop: '1px solid #1e293b', flexShrink: 0, textAlign: 'center', color: 'white', boxSizing: 'border-box' }}>Score</div>
+                                                        <div style={{ width: '60px', padding: '8px', borderRight: '1px solid #1e293b', borderTop: '1px solid #1e293b', flexShrink: 0, textAlign: 'center', color: 'white', boxSizing: 'border-box' }}>Score</div>
                                                         {[...Array(9)].map((_, i) => {
                                                             const stroke = card.strokes?.[i] || '';
                                                             const par = parseInt(card.pars?.[i]) || 0;
@@ -365,7 +365,7 @@ export default function PublicScorecardView() {
                                                 <div style={{ display: 'inline-flex', flexDirection: 'column', minWidth: '100%', border: '1px solid #334155', borderRadius: '8px', overflow: 'hidden' }}>
                                                     {/* Row: Headers */}
                                                     <div style={{ display: 'flex', background: '#0f172a', fontWeight: 'bold', fontSize: '0.8rem', color: '#94a3b8' }}>
-                                                        <div style={{ width: '45px', padding: '8px', borderRight: '1px solid #334155', flexShrink: 0, textAlign: 'center', boxSizing: 'border-box' }}>Hoyo</div>
+                                                        <div style={{ width: '60px', padding: '8px', borderRight: '1px solid #334155', flexShrink: 0, textAlign: 'center', boxSizing: 'border-box' }}>Hoyo</div>
                                                         {[...Array(9)].map((_, i) => (
                                                             <div key={i + 9} style={{ flex: '1 1 0%', padding: '8px 0', borderRight: i < 8 ? '1px solid #334155' : 'none', textAlign: 'center', boxSizing: 'border-box', minWidth: 0 }}>
                                                                 {i + 10}
@@ -375,7 +375,7 @@ export default function PublicScorecardView() {
 
                                                     {/* Row: Par */}
                                                     <div style={{ display: 'flex', background: '#1e293b', fontSize: '0.8rem', color: '#cbd5e1' }}>
-                                                        <div style={{ width: '45px', padding: '8px', borderRight: '1px solid #334155', borderTop: '1px solid #334155', flexShrink: 0, textAlign: 'center', fontWeight: 'bold', boxSizing: 'border-box' }}>Par</div>
+                                                        <div style={{ width: '60px', padding: '8px', borderRight: '1px solid #334155', borderTop: '1px solid #334155', flexShrink: 0, textAlign: 'center', fontWeight: 'bold', boxSizing: 'border-box' }}>Par</div>
                                                         {[...Array(9)].map((_, i) => (
                                                             <div key={i + 9} style={{ flex: '1 1 0%', padding: '8px 0', borderRight: i < 8 ? '1px solid #334155' : 'none', borderTop: '1px solid #334155', textAlign: 'center', boxSizing: 'border-box', minWidth: 0 }}>
                                                                 {card.pars?.[i + 9] || '-'}
@@ -385,7 +385,7 @@ export default function PublicScorecardView() {
 
                                                     {/* Row: Strokes */}
                                                     <div style={{ display: 'flex', background: '#334155', fontSize: '1rem', fontWeight: 'bold' }}>
-                                                        <div style={{ width: '45px', padding: '8px', borderRight: '1px solid #1e293b', borderTop: '1px solid #1e293b', flexShrink: 0, textAlign: 'center', color: 'white', boxSizing: 'border-box' }}>Score</div>
+                                                        <div style={{ width: '60px', padding: '8px', borderRight: '1px solid #1e293b', borderTop: '1px solid #1e293b', flexShrink: 0, textAlign: 'center', color: 'white', boxSizing: 'border-box' }}>Score</div>
                                                         {[...Array(9)].map((_, i) => {
                                                             const stroke = card.strokes?.[i + 9] || '';
                                                             const par = parseInt(card.pars?.[i + 9]) || 0;
