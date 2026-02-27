@@ -2553,12 +2553,9 @@ export default function CalendarView({
                             <div style={{ display: 'flex', gap: '1rem' }}>
                                 {results[t.id] && (
                                     <button className="btn" style={{ flex: 1, color: '#ef4444', border: '1px solid #ef4444' }} onClick={handleDeleteResult}>
-                                        <Trash2 size={18} style={{ marginRight: '8px' }} /> Borrar
+                                        <Trash2 size={18} style={{ marginRight: '8px' }} /> Borrar Resultados
                                     </button>
                                 )}
-                                <button className="btn btn-primary" style={{ flex: 2 }} onClick={handleSaveResults}>
-                                    <Save size={18} style={{ marginRight: '8px' }} /> Guardar Resultados
-                                </button>
                             </div>
                         </div>
                     ) : (

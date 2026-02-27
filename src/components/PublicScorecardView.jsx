@@ -204,14 +204,31 @@ export default function PublicScorecardView() {
                                 displayRounds = [queryRIdx];
                             } else {
                                 // Find the highest round index that actually has strokes or manual scores
+                                // Ignore rounds that perfectly match pars for all 18 holes (old auto-populate bug)
                                 let activeRIdx = roundsKeys[0];
                                 for (let i = roundsKeys.length - 1; i >= 0; i--) {
                                     const rIdx = roundsKeys[i];
                                     const card = result.scorecards[rIdx];
                                     const roundStr = parseInt(rIdx);
-                                    const roundStrokes = (card.strokes || []).reduce((a, b) => a + (parseInt(b) || 0), 0);
+
+                                    let playedHoles = 0;
+                                    let strokesMatchParsPrecisely = true;
+
+                                    for (let h = 0; h < 18; h++) {
+                                        const s = String(card.strokes?.[h] || '');
+                                        const p = String(card.pars?.[h] || '');
+                                        if (s !== '' && s !== '-') {
+                                            playedHoles++;
+                                        }
+                                        if (s !== p) {
+                                            strokesMatchParsPrecisely = false;
+                                        }
+                                    }
+
+                                    const isAutoPopulatedDummy = (playedHoles === 18 && strokesMatchParsPrecisely);
                                     const manualStrokesTotal = result.rounds?.[roundStr];
-                                    if (roundStrokes > 0 || (manualStrokesTotal && manualStrokesTotal > 0)) {
+
+                                    if ((playedHoles > 0 && !isAutoPopulatedDummy) || (manualStrokesTotal && manualStrokesTotal > 0)) {
                                         activeRIdx = rIdx;
                                         break;
                                     }
