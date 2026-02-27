@@ -528,17 +528,44 @@ export default function CalendarView({
                 spanishCourses.find(c => c.name.toLowerCase().includes(selectedTournament.course.toLowerCase()) || selectedTournament.course.toLowerCase().includes(c.name.toLowerCase()));
             const defaultPars = courseData?.pars || Array(18).fill('');
 
-            return {
+            const newCardInfo = {
+                pars: defaultPars.map(p => p || ''),
+                strokes: Array(18).fill(''),
+                putts: Array(18).fill(''),
+                girs: Array(18).fill('')
+            };
+
+            const newFormData = {
                 ...prev,
                 scorecards: {
                     ...currentScorecards,
-                    [roundIdx]: {
-                        pars: defaultPars.map(p => p || ''),
-                        strokes: Array(18).fill('')
-                    }
+                    [roundIdx]: newCardInfo
                 },
                 rounds: newRounds
             };
+
+            // INMEDIATE PUSH
+            if (onSaveSpecificResult && selectedTournament) {
+                const validScores = newFormData.rounds.filter(r => r && !isNaN(r)).map(Number);
+                const total = validScores.reduce((a, b) => a + b, 0);
+                const average = validScores.length > 0 ? (total / validScores.length).toFixed(1) : 0;
+                const validStb = (newFormData.stableford || []).filter(s => s && !isNaN(s)).map(Number);
+                const stablefordTotal = validStb.reduce((a, b) => a + b, 0);
+
+                const entry = {
+                    ...newFormData,
+                    total,
+                    average,
+                    stablefordTotal,
+                    updatedAt: new Date().toISOString(),
+                    tournamentName: editingDetails.name || selectedTournament.name,
+                    tournamentCourse: editingDetails.course || selectedTournament.course,
+                    tournamentDates: editingDetails.dates || selectedTournament.dates
+                };
+                onSaveSpecificResult(selectedTournament.id, entry);
+            }
+
+            return newFormData;
         });
     };
 
