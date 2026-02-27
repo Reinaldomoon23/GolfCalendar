@@ -738,11 +738,17 @@ function AppContent() {
 
   const handleDeleteResult = async (id) => {
     if (!user) return;
-    // deleteDoc ... imports needed
-    // const { deleteDoc } = await import('firebase/firestore'); 
-    // await deleteDoc(doc(db, "users", user.username, "results", String(id)));
-
-    // I need to import deleteDoc at top.
+    try {
+      setResults(prev => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      const { deleteDoc, doc } = await import('firebase/firestore');
+      await deleteDoc(doc(db, "users", user.username, "results", String(id)));
+    } catch (err) {
+      console.error("Error deleting result", err);
+    }
   };
 
   const handleDeleteTournament = async (id) => {
