@@ -2448,8 +2448,14 @@ export default function CalendarView({
                                                     let bg = '#f3f4f6';
                                                     let color = '#333';
                                                     if (par && str) {
-                                                        if (str < par) { bg = '#dcfce7'; color = '#15803d'; } // Birdie
-                                                        if (str > par) { bg = '#fee2e2'; color = '#b91c1c'; } // Bogey
+                                                        const diff = str - par;
+                                                        color = 'white';
+                                                        if (diff <= -2) bg = '#eab308';
+                                                        else if (diff === -1) bg = '#10b981';
+                                                        else if (diff === 0) bg = '#3b82f6';
+                                                        else if (diff === 1) bg = '#f97316';
+                                                        else if (diff === 2) bg = '#ef4444';
+                                                        else bg = '#000000';
                                                     }
                                                     return (
                                                         <div key={i} style={{ textAlign: 'center', fontSize: '14px', fontWeight: 'bold', background: bg, color: color, borderRadius: '4px', padding: '2px 0' }}>
@@ -2481,8 +2487,14 @@ export default function CalendarView({
                                                     let bg = '#f3f4f6';
                                                     let color = '#333';
                                                     if (par && str) {
-                                                        if (str < par) { bg = '#dcfce7'; color = '#15803d'; } // Birdie
-                                                        if (str > par) { bg = '#fee2e2'; color = '#b91c1c'; } // Bogey
+                                                        const diff = str - par;
+                                                        color = 'white';
+                                                        if (diff <= -2) bg = '#eab308';
+                                                        else if (diff === -1) bg = '#10b981';
+                                                        else if (diff === 0) bg = '#3b82f6';
+                                                        else if (diff === 1) bg = '#f97316';
+                                                        else if (diff === 2) bg = '#ef4444';
+                                                        else bg = '#000000';
                                                     }
                                                     return (
                                                         <div key={i + 9} style={{ textAlign: 'center', fontSize: '14px', fontWeight: 'bold', background: bg, color: color, borderRadius: '4px', padding: '2px 0' }}>

@@ -80,11 +80,12 @@ export default function PublicScorecardView() {
     const getScoreColor = (strokes, par) => {
         if (!strokes || !par || strokes === '-' || strokes === 0) return 'transparent';
         const diff = strokes - (par || 4); // Default par 4 fallback
-        if (diff <= -2) return '#d946ef'; // Eagle
-        if (diff === -1) return '#3b82f6'; // Birdie 
-        if (diff === 0) return '#10b981'; // Par
-        if (diff === 1) return '#f97316'; // Bogey
-        return '#ef4444'; // DB+
+        if (diff <= -2) return '#eab308'; // Eagle (amarillo)
+        if (diff === -1) return '#10b981'; // Birdie (verde)
+        if (diff === 0) return '#3b82f6'; // Par (azul)
+        if (diff === 1) return '#f97316'; // Bogey (naranja)
+        if (diff === 2) return '#ef4444'; // Doble bogey (rojo)
+        return '#000000'; // Triple bogey o peor (negro)
     };
 
     if (error) {
