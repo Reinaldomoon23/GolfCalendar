@@ -65,14 +65,22 @@ export default function PublicScorecardView() {
         fetchTournament();
     }, [eventId, username]);
 
-    // Listen to live results
+    // Listen to live results — independent of tournament lookup
     useEffect(() => {
-        if (!tournament) return;
-
         const resultRef = doc(db, 'users', username, 'results', eventId);
         const unsubscribe = onSnapshot(resultRef, (docSnap) => {
             if (docSnap.exists()) {
-                setResult(docSnap.data());
+                const data = docSnap.data();
+                setResult(data);
+                // If result has embedded tournament metadata, use it directly
+                if (data.tournamentName && !tournament) {
+                    setTournament({
+                        id: eventId,
+                        name: data.tournamentName,
+                        course: data.tournamentCourse || '',
+                        dates: data.tournamentDates || ''
+                    });
+                }
             } else {
                 setResult(null);
             }
@@ -83,7 +91,7 @@ export default function PublicScorecardView() {
         });
 
         return () => unsubscribe();
-    }, [tournament, username, eventId]);
+    }, [username, eventId]);
 
     const getScoreColor = (strokes, par) => {
         if (!strokes || !par || strokes === '-' || strokes === 0) return 'transparent';
@@ -106,7 +114,15 @@ export default function PublicScorecardView() {
         );
     }
 
-    if (loading || !tournament) {
+    // Show loading only if we have neither tournament data nor result with embedded metadata
+    const tournamentInfo = tournament || (result?.tournamentName ? {
+        id: eventId,
+        name: result.tournamentName,
+        course: result.tournamentCourse || '',
+        dates: result.tournamentDates || ''
+    } : null);
+
+    if (loading || !tournamentInfo) {
         return (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: 'white' }}>
                 <p>Cargando datos en vivo...</p>
@@ -152,10 +168,10 @@ export default function PublicScorecardView() {
                             </div>
                         </div>
                         <h1 style={{ margin: 0, fontSize: '1rem', color: '#94a3b8' }}>
-                            {tournament.name}
+                            {result?.tournamentName || tournament?.name}
                         </h1>
                         <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '4px' }}>
-                            {tournament.course}
+                            {result?.tournamentCourse || tournament?.course}
                         </div>
                     </div>
                 </div>

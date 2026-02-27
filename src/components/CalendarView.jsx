@@ -610,7 +610,11 @@ export default function CalendarView({
                 total,
                 average,
                 stablefordTotal,
-                updatedAt: new Date().toISOString()
+                updatedAt: new Date().toISOString(),
+                // Store tournament metadata so PublicScorecardView always shows correct info
+                tournamentName: editingDetails.name || selectedTournament.name,
+                tournamentCourse: editingDetails.course || selectedTournament.course,
+                tournamentDates: editingDetails.dates || selectedTournament.dates
             };
 
             onSaveSpecificResult(selectedTournament.id, entry);
@@ -658,7 +662,10 @@ export default function CalendarView({
             total,
             average,
             stablefordTotal,
-            updatedAt: new Date().toISOString()
+            updatedAt: new Date().toISOString(),
+            tournamentName: editingDetails.name || selectedTournament.name,
+            tournamentCourse: editingDetails.course || selectedTournament.course,
+            tournamentDates: editingDetails.dates || selectedTournament.dates
         };
 
         if (onSaveSpecificResult) {
