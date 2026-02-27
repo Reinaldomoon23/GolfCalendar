@@ -470,6 +470,7 @@ export default function CalendarView({
     };
 
     const handleRoundChange = (idx, field, value) => {
+        setIsEditingResults(true); // Track edit mode so autosave works
         const updated = [...formData[field]];
         updated[idx] = value;
         setFormData(prev => ({ ...prev, [field]: updated }));
@@ -480,6 +481,7 @@ export default function CalendarView({
     const [sharingRound, setSharingRound] = useState(null); // idx of round being shared (for hidden capture)
 
     const handleHoleChange = (roundIdx, holeIdx, field, value) => {
+        setIsEditingResults(true); // Track edit mode so autosave works
         // field = 'pars' or 'strokes'
         setFormData(prev => {
             const currentScorecards = prev.scorecards || {};
@@ -515,6 +517,7 @@ export default function CalendarView({
     const handleResetCard = (roundIdx) => {
         if (!window.confirm('¿Seguro que quieres borrar todos los datos de esta tarjeta?')) return;
 
+        setIsEditingResults(true); // Track edit mode so autosave works
         setFormData(prev => {
             const currentScorecards = prev.scorecards || {};
             const newRounds = [...prev.rounds];
@@ -2530,7 +2533,10 @@ export default function CalendarView({
                                         type="text"
                                         placeholder="Ej: T5"
                                         value={formData.position}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, position: e.target.value }))}
+                                        onChange={(e) => {
+                                            setIsEditingResults(true);
+                                            setFormData(prev => ({ ...prev, position: e.target.value }));
+                                        }}
                                         style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
                                     />
                                 </div>
@@ -2541,7 +2547,10 @@ export default function CalendarView({
                                         step="0.1"
                                         placeholder="Ej: 14.5"
                                         value={formData.handicap || ''}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, handicap: e.target.value }))}
+                                        onChange={(e) => {
+                                            setIsEditingResults(true);
+                                            setFormData(prev => ({ ...prev, handicap: e.target.value }));
+                                        }}
                                         style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
                                     />
                                 </div>
