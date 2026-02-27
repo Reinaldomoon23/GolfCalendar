@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { ChevronLeft, Flag, Info } from 'lucide-react';
+import tournamentsData from '../data/tournaments.json';
 
 export default function PublicScorecardView() {
     const { username, id: eventId } = useParams();
@@ -34,7 +35,14 @@ export default function PublicScorecardView() {
     useEffect(() => {
         const fetchTournament = async () => {
             try {
-                // Check official tournaments first
+                // Check local official json first
+                const localOfficial = tournamentsData.find((t) => String(t.id) === String(eventId));
+                if (localOfficial) {
+                    setTournament(localOfficial);
+                    return;
+                }
+
+                // Check official tournaments in firebase if not local
                 const docRef = doc(db, 'tournaments', eventId);
                 const docSnap = await getDoc(docRef);
                 if (docSnap.exists()) {
