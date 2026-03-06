@@ -37,8 +37,8 @@ $pdfUrl = '';
 // Priority 1: License passed via URL (from Firestore/Frontend)
 if (!empty($passedLicense)) {
     if (preg_match('/(\d+)$/', $passedLicense, $matches)) {
-        $shortId = substr($matches[1], -6);
-        $pdfUrl = 'https://api.rfeg.es/files/summaryhandicap/' . $shortId . '.pdf';
+        $shortId = substr($matches[1], -6); // Get last 6 digits
+        $pdfUrl = 'https://api.rfeg.es/files/summaryhandicap/' . ltrim($shortId, '0') . '.pdf';
     }
 }
 
@@ -47,13 +47,13 @@ if (empty($pdfUrl) && file_exists($usersFile)) {
     $users = json_decode(file_get_contents($usersFile), true);
     if (isset($users[$username])) {
         $userData = $users[$username];
-        if (!empty($userData['handicap_url'])) {
-            $pdfUrl = $userData['handicap_url'];
-        } elseif (!empty($userData['federation_id'])) {
-             if (preg_match('/(\d+)$/', $userData['federation_id'], $matches)) {
+        if (!empty($userData['federation_id'])) {
+            if (preg_match('/(\d+)$/', $userData['federation_id'], $matches)) {
                 $shortId = substr($matches[1], -6);
-                $pdfUrl = 'https://api.rfeg.es/files/summaryhandicap/' . $shortId . '.pdf';
+                $pdfUrl = 'https://api.rfeg.es/files/summaryhandicap/' . ltrim($shortId, '0') . '.pdf';
             }
+        } elseif (!empty($userData['handicap_url'])) {
+            $pdfUrl = $userData['handicap_url'];
         }
     }
 }
@@ -101,54 +101,8 @@ try {
         $handicapValue = $matches[1];
         echo json_encode([
             'handicap' => $handicapValue,
-            'pdf_url' => $pdfUrl
+            'pdf_url'  => $pdfUrl
         ]);
-        
-        // --- AUTO-SAVE LOGIC PER USER ---
-        $clean_username = preg_replace('/[^a-zA-Z0-9_-]/', '', $username);
-        $historyFile = __DIR__ . '/../data/handicap_history_' . $clean_username . '.json';
-        
-        // Ensure data dir exists
-        if (!file_exists(dirname($historyFile))) {
-             mkdir(dirname($historyFile), 0777, true);
-        }
-
-        $today = date('Y-m-d');
-        
-        $historyData = [];
-        if (file_exists($historyFile)) {
-            $content = file_get_contents($historyFile);
-            $historyData = json_decode($content, true);
-            if (!is_array($historyData)) $historyData = [];
-        }
-
-        // Check if today already exists
-        $exists = false;
-        // Check if today already exists and update it, or add new
-        $exists = false;
-        foreach ($historyData as &$entry) {
-            if (isset($entry['date']) && $entry['date'] === $today) {
-                $entry['handicap'] = (float)$handicapValue;
-                $exists = true;
-                break;
-            }
-        }
-        unset($entry); // Break reference
-
-        if (!$exists) {
-            $historyData[] = [
-                'date' => $today,
-                'handicap' => (float)$handicapValue
-            ];
-        }
-        
-        // Sort by date just in case
-        usort($historyData, function($a, $b) {
-            return strcmp($a['date'], $b['date']);
-        });
-        
-        file_put_contents($historyFile, json_encode($historyData, JSON_PRETTY_PRINT));
-        // -----------------------
     } else {
         echo json_encode(['error' => 'Handicap not found in PDF']);
     }

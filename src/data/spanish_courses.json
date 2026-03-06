@@ -2888,7 +2888,7 @@
         "web": "https://rfegolf.es/club/club_de_golf_corta_atalaya?id=335"
     },
     {
-        "name": "Club de Golf Costa Brava",
+        "name": "Club de Golf Costa Brava (Recorrido Verde)",
         "pars": [
             4,
             4,
@@ -2905,6 +2905,29 @@
             5,
             5,
             3,
+            4,
+            3,
+            4
+        ]
+    },
+    {
+        "name": "Club de Golf Costa Brava (Recorrido Rojo)",
+        "pars": [
+            4,
+            5,
+            3,
+            5,
+            5,
+            3,
+            4,
+            4,
+            5,
+            4,
+            4,
+            4,
+            3,
+            4,
+            5,
             4,
             3,
             4
@@ -11542,7 +11565,7 @@
             3,
             4,
             4,
-            5,
+            4,
             3,
             5,
             4

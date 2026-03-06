@@ -1,92 +1,81 @@
 const FtpDeploy = require("ftp-deploy");
 const ftpDeploy = new FtpDeploy();
+const ftpDeploy2 = new FtpDeploy();
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-console.log("🚀 Starting Single User (Nicole) Deployment...");
+console.log("🚀 Iniciando despliegue de la versión de equipo (GolfTeam)...");
 
-// 0. Build for Single Mode
-try {
-    console.log("🔨 Building project for mode: VITE_APP_MODE=single ...");
-    execSync('VITE_APP_MODE=single npm run build', { stdio: 'inherit' });
-} catch (err) {
-    console.error("❌ Build failed:", err);
-    process.exit(1);
-}
-
-// Backup Logic
-function performBackup() {
-    const backupBaseDir = path.join(__dirname, 'build_backups');
-    const distDir = path.join(__dirname, 'dist');
-    // ... logic continues ...
-    // Create backup directory if it doesn't exist
-    if (!fs.existsSync(backupBaseDir)) {
-        fs.mkdirSync(backupBaseDir);
-    }
-    //...
-    // ...
-    // ...
-    // Generate Timestamp: YYYY-MM-DD_HH-mm-ss
-    const now = new Date();
-    const timestamp = now.toISOString().replace(/T/, '_').replace(/:/g, '-').split('.')[0];
-
-    // Read version from package.json
-    const packageJson = require('./package.json');
-    const version = packageJson.version || '0.0.0';
-
-    const versionDir = path.join(backupBaseDir, `build_v${version}_${timestamp}_single`); // Added version prefix
+(async () => {
+    // 1. Construir el proyecto para el modo Multi/Equipo
     try {
-        if (fs.existsSync(distDir)) {
-            // recursive copy
-            execSync(`cp -r "${distDir}" "${versionDir}"`);
-        } else {
-            console.error("Dist folder not found, skipping backup.");
-            return;
+        console.log("🔨 Construyendo el proyecto para modo: VITE_APP_MODE=multi ...");
+        execSync('VITE_APP_MODE=multi npm run build', { stdio: 'inherit' });
+    } catch (err) {
+        console.error("❌ Fallo en la construcción:", err);
+        process.exit(1);
+    }
+
+    // 2. Corregir .htaccess para que apunte solo a /GolfTeam/
+    try {
+        console.log("🔧 Configurando .htaccess para /GolfTeam/ ...");
+        const htaccessPath = path.join(__dirname, 'dist', '.htaccess');
+        if (fs.existsSync(htaccessPath)) {
+            let content = fs.readFileSync(htaccessPath, 'utf8');
+            // Aseguramos que todas las reglas apunten a /GolfTeam/
+            content = content.replace(/\/Nicole26\//g, '/GolfTeam/');
+            fs.writeFileSync(htaccessPath, content);
+            console.log("✅ .htaccess actualizado.");
         }
     } catch (err) {
-        console.error("Error creating backup:", err);
-        return;
+        console.error("❌ No se pudo actualizar el .htaccess:", err);
     }
 
-    // Rotation Logic: Keep last 5
+    // 3. Configuración FTP para el Frontend
+    const config = {
+        user: "jordi@reinaldomoon.top",
+        password: "DanzigXtothec23$",
+        host: "ftp.reinaldomoon.top",
+        port: 21,
+        localRoot: __dirname + "/dist",
+        remoteRoot: "/public_html/GolfTeam/",
+        include: ["*", "**/*", ".htaccess"],
+        exclude: [
+            "dist/**/*.map",
+            ".git/**"
+            // Ya no hace falta excluir los json antiguos porque no los usamos,
+            // pero mantenemos la precaución de no borrar nada por error en el servidor.
+        ],
+        deleteRemote: false,
+        forcePasv: true,
+        sftp: false
+    };
+
+    // 4. Configuración FTP para el Backend (Archivos PHP de la API)
+    const backendConfig = {
+        user: "jordi@reinaldomoon.top",
+        password: "DanzigXtothec23$",
+        host: "ftp.reinaldomoon.top",
+        port: 21,
+        localRoot: __dirname + "/public/api",
+        remoteRoot: "/public_html/GolfTeam/api/",
+        include: ["*.php"],
+        exclude: ["**/*.json", "**/*.log", "users.json"],
+        deleteRemote: false,
+        forcePasv: true,
+        sftp: false
+    };
+
     try {
-        const backups = fs.readdirSync(backupBaseDir)
-            .filter(file => file.startsWith('build_') && fs.statSync(path.join(backupBaseDir, file)).isDirectory())
-            .sort().reverse(); // Newest first
+        console.log("📤 Subiendo Frontend a " + config.remoteRoot + "...");
+        await ftpDeploy.deploy(config);
+        console.log("✅ Frontend desplegado con éxito!");
 
-        if (backups.length > 5) {
-            const toDelete = backups.slice(5);
-            toDelete.forEach(dir => {
-                const fullPath = path.join(backupBaseDir, dir);
-                console.log(`Deleting old backup: ${fullPath}`);
-                fs.rmSync(fullPath, { recursive: true, force: true });
-            });
-        }
+        console.log("📤 Subiendo Backend (PHP) a " + backendConfig.remoteRoot + "...");
+        await ftpDeploy2.deploy(backendConfig);
+        console.log("✅ Backend desplegado con éxito! Todo listo.");
     } catch (err) {
-        console.error("Error rotating backups:", err);
+        console.log("❌ Error en el despliegue:", err);
     }
-}
-
-performBackup();
-
-const config = {
-    user: "jordi@reinaldomoon.top",
-    password: "DanzigXtothec23$",
-    host: "ftp.reinaldomoon.top",
-    port: 21,
-    localRoot: __dirname + "/dist", // Vite builds to /dist by default
-    remoteRoot: "/public_html/Nicole26/",
-    include: ["*", "**/*", ".htaccess"],
-    exclude: ["dist/**/*.map", ".git/**", "results.json"],
-    deleteRemote: false,
-    forcePasv: true,
-    sftp: false
-};
-
-console.log("Starting deployment to " + config.remoteRoot + "...");
-
-ftpDeploy
-    .deploy(config)
-    .then(res => console.log("Deployment finished successfully!"))
-    .catch(err => console.log("Deployment failed:", err));
+})();

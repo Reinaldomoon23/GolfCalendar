@@ -3,6 +3,15 @@ import { useParams, Link, useLocation } from 'react-router-dom';
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { ChevronLeft, Flag, Info } from 'lucide-react';
+
+const R2_PUBLIC_URL = "https://pub-23c281cf1ae04def9102341cf7d87837.r2.dev";
+
+const getPhotoUrl = (photoPath, username) => {
+    if (!photoPath) return `https://ui-avatars.com/api/?name=${username || 'Golf'}`;
+    if (photoPath.startsWith('http')) return photoPath;
+    const fileName = photoPath.split('/').pop() || 'profile.jpg';
+    return `${R2_PUBLIC_URL}/${fileName}`;
+};
 import tournamentsData from '../data/tournaments.json';
 
 export default function PublicScorecardView() {
@@ -17,18 +26,16 @@ export default function PublicScorecardView() {
     const [result, setResult] = useState(null);
     const [error, setError] = useState(null);
 
-    // Fetch user info
+    // Fetch user info from Firestore
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                const baselink = import.meta.env.BASE_URL.replace(/\/$/, '');
-                const res = await fetch(`${baselink}/api/users.json?t=${Date.now()}`);
-                const data = await res.json();
-                if (data[username]) {
-                    setUserProfile(data[username]);
+                const userSnap = await getDoc(doc(db, "users", username));
+                if (userSnap.exists()) {
+                    setUserProfile({ ...userSnap.data(), username });
                 }
             } catch (err) {
-                console.error("Error fetching user profile", err);
+                console.error("Error fetching user profile from Firestore", err);
             }
         };
         fetchUser();
@@ -77,6 +84,21 @@ export default function PublicScorecardView() {
         const unsubscribe = onSnapshot(resultRef, (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
+
+                // HOTFIX: Salamanca Forum Golf hole 15 par correction
+                if (data.scorecards) {
+                    Object.keys(data.scorecards).forEach(rIdx => {
+                        const card = data.scorecards[rIdx];
+                        if (card.pars && card.pars[14] === 5) {
+                            // Verify course name
+                            const courseName = (data.tournamentCourse || tournament?.course || '').toLowerCase();
+                            if (courseName.includes('salamanca forum')) {
+                                card.pars[14] = 4;
+                            }
+                        }
+                    });
+                }
+
                 setResult(data);
                 // If result has embedded tournament metadata, use it directly
                 if (data.tournamentName && !tournament) {
@@ -157,10 +179,7 @@ export default function PublicScorecardView() {
                     <div style={{ textAlign: 'center', flex: 1 }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '8px' }}>
                             {userProfile?.photo_url && (
-                                <img
-                                    src={`${import.meta.env.BASE_URL.replace(/\/$/, '')}/${userProfile.photo_url}`}
-                                    alt="Profile"
-                                    style={{ width: '40px', height: '40px', borderRadius: '50%', border: '2px solid #10b981', objectFit: 'cover' }}
+                                <img src={getPhotoUrl(userProfile?.photo_url, userProfile?.full_name || username)} alt={username} style={{ width: '60px', height: '60px', borderRadius: '50%', border: '2px solid #fff', objectFit: 'cover' }}
                                     onError={(e) => { e.target.onerror = null; e.target.src = "https://ui-avatars.com/api/?name=" + username }}
                                 />
                             )}

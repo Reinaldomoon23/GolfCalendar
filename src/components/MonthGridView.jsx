@@ -111,9 +111,6 @@ export default function MonthGridView({ tournaments, onTournamentClick, onDateCl
             'DEFAULT': { bg: '#FFFFFF', border: '#333333', text: '#000000' }
         };
 
-        // Custom pink highlight for the user request similarity (like "Torremirona") 
-        // We can just use the standard organizer colors for now, 
-        // but let's make them look like "strips"
         const theme = ORGANIZER_COLORS[t.organizer] || ORGANIZER_COLORS['DEFAULT'];
 
         return {
@@ -131,6 +128,15 @@ export default function MonthGridView({ tournaments, onTournamentClick, onDateCl
             fontWeight: '600',
             boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
         };
+    };
+
+    // Shorten long course names for the calendar grid display
+    const shortenCourse = (course) => {
+        if (!course) return '';
+        return course
+            .replace(/^Club de Golf /i, '')
+            .replace(/^Club Golf /i, '')
+            .replace(/^Golf /i, '');
     };
 
     return (
@@ -267,33 +273,35 @@ export default function MonthGridView({ tournaments, onTournamentClick, onDateCl
                                                 ...getEventStyle(event),
                                                 opacity: isPast ? 0.6 : 1,
                                                 filter: isPast ? 'grayscale(80%)' : 'none',
-                                                whiteSpace: 'normal', // Allow wrapping for multi-line
-                                                display: 'flex',
-                                                flexDirection: 'column',
-                                                gap: '2px'
+                                                overflow: 'hidden',
+                                                whiteSpace: 'nowrap',
+                                                textOverflow: 'ellipsis',
+                                                display: 'block',
                                             }}
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 if (onTournamentClick) onTournamentClick(event);
                                             }}
-                                            title={`${event.name} (${event.course})`}
+                                            title={`${event.name}${event.course ? ' · ' + event.course : ''}`}
                                         >
-                                            <div style={{ lineHeight: '1.1' }}>
+                                            <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: '1.1' }}>
                                                 {event.name}
                                             </div>
                                             {event.course && (
                                                 <div style={{
-                                                    fontSize: '0.75rem',
-                                                    opacity: 1,
+                                                    fontSize: '0.7rem',
+                                                    opacity: 0.8,
                                                     fontWeight: '500',
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     gap: '2px',
-                                                    marginTop: '1px'
+                                                    marginTop: '1px',
+                                                    overflow: 'hidden',
+                                                    whiteSpace: 'nowrap',
                                                 }}>
                                                     <MapPin size={8} style={{ flexShrink: 0 }} />
                                                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                        {event.course}
+                                                        {shortenCourse(event.course)}
                                                     </span>
                                                 </div>
                                             )}

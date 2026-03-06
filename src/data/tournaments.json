@@ -195,7 +195,7 @@
         "id": 15,
         "dates": "16/05/2026 - 17/05/2026",
         "name": "Campionat de Catalunya Infantil",
-        "course": "Costa Brava",
+        "course": "Club de Golf Costa Brava (Recorrido Verde)",
         "organizer": "FCG",
         "type": "regional_championship",
         "groups": [
@@ -372,7 +372,7 @@
         "id": 104,
         "dates": "27/09/2026",
         "name": "XXV Junior & Baby Cup",
-        "course": "Costa Brava",
+        "course": "Club de Golf Costa Brava (Recorrido Verde)",
         "organizer": "FCG",
         "type": "junior_cup",
         "grand_prix": true,

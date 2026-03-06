@@ -24,7 +24,7 @@ ChartJS.register(
     Legend
 );
 
-export default function StatsView({ results = {}, tournaments = [] }) {
+export default function StatsView({ user, linkedUsers = [], results = {}, tournaments = [] }) {
     const [stats, setStats] = useState({
         roundsPlayed: 0,
         average: 0,
@@ -32,7 +32,7 @@ export default function StatsView({ results = {}, tournaments = [] }) {
         worstRound: '-',
         history: [], // Recent rounds history
         // Stableford Stats
-        stbTotal: 0,
+        stbCount: 0,
         stbAverage: 0,
         stbBest: '-',
         stbWorst: '-',
@@ -49,6 +49,14 @@ export default function StatsView({ results = {}, tournaments = [] }) {
     const [availableMonths, setAvailableMonths] = useState([]);
     const [availableYears, setAvailableYears] = useState([]);
 
+    // Comparativa
+    const [compareTo, setCompareTo] = useState('');
+    const [compareStats, setCompareStats] = useState(null);
+    const [isLoadingCompare, setIsLoadingCompare] = useState(false);
+
+    // Lista de candidatas excluyendo a nosotros mismos
+    const validComparisons = linkedUsers.filter(u => u.username !== user?.username);
+
     useEffect(() => {
         // If no results, reset stats and return
         if (!results || Object.keys(results).length === 0) {
@@ -58,7 +66,7 @@ export default function StatsView({ results = {}, tournaments = [] }) {
                 bestRound: '-',
                 worstRound: '-',
                 history: [],
-                stbTotal: 0,
+                stbCount: 0,
                 stbAverage: 0,
                 stbBest: '-',
                 stbWorst: '-',
@@ -140,6 +148,102 @@ export default function StatsView({ results = {}, tournaments = [] }) {
 
         processData(filteredResults, tournaments || []);
     }, [results, tournaments, filterMode, filterValue]);
+
+    // EFECTO CARGAR COMPARATIVA
+    useEffect(() => {
+        const fetchCompareUser = async () => {
+            if (!compareTo) {
+                setCompareStats(null);
+                return;
+            }
+            setIsLoadingCompare(true);
+            try {
+                const { collection, getDocs } = await import('firebase/firestore');
+                const { db } = await import('../firebase');
+
+                // 1. Obtener sus resultados de firebase
+                const resultsRef = collection(db, "users", compareTo, "results");
+                const snapshot = await getDocs(resultsRef);
+                const cResults = {};
+                snapshot.forEach(doc => { cResults[doc.id] = doc.data(); });
+
+                // 2. Mapeo igual que el propio jugador
+                const tournMap = new Map((tournaments || []).map(t => [t.id, t]));
+                const sortedEntries = Object.entries(cResults).map(([id, data]) => {
+                    let date = new Date().getTime();
+                    if (data.updatedAt) date = new Date(data.updatedAt).getTime();
+                    else if (tournMap.has(id)) {
+                        const t = tournMap.get(id);
+                        if (t.dates) {
+                            const parts = t.dates.split('/').map(Number);
+                            if (parts.length >= 3) date = new Date(parts[2], parts[1] - 1, parts[0]).getTime();
+                        }
+                    }
+                    return { id, data, date };
+                }).sort((a, b) => b.date - a.date);
+
+                // 3. Aplicar mis mismos filtros a sus torneos
+                let filteredEntries = [];
+                if (filterMode === 'count') {
+                    if (filterValue === 'all') filteredEntries = sortedEntries;
+                    else filteredEntries = sortedEntries.slice(0, parseInt(filterValue) || 5);
+                } else if (filterMode === 'month') {
+                    const targetMonth = filterValue && filterValue !== '5' && filterValue !== '10' && filterValue !== '15' && filterValue !== '20' && filterValue !== 'all' ? filterValue : '';
+                    filteredEntries = sortedEntries.filter(entry => {
+                        const d = new Date(entry.date);
+                        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` === targetMonth;
+                    });
+                } else if (filterMode === 'year') {
+                    const targetYear = (filterValue && filterValue.length === 4) ? filterValue : '';
+                    filteredEntries = sortedEntries.filter(entry => {
+                        const d = new Date(entry.date);
+                        return d.getFullYear().toString() === targetYear;
+                    });
+                }
+
+                // 4. Calcular stats para el jugador de comparacion
+                const allRounds = [];
+                const allStableford = [];
+                const allPutts = [];
+
+                filteredEntries.forEach(e => {
+                    const entry = e.data;
+                    if (entry.rounds) entry.rounds.forEach(r => { const val = Number(r); if (!isNaN(val) && val > 0) allRounds.push(val); });
+                    if (entry.stableford) entry.stableford.forEach(s => { const val = Number(s); if (!isNaN(val) && val > 0) allStableford.push(val); });
+                    if (entry.rounds && Array.isArray(entry.rounds)) {
+                        entry.rounds.forEach((r, idx) => {
+                            let puttsVal = 0;
+                            if (entry.totalPutts && entry.totalPutts[idx]) puttsVal = parseInt(entry.totalPutts[idx]) || 0;
+                            else if (entry.scorecards && entry.scorecards[idx] && entry.scorecards[idx].putts) {
+                                puttsVal = entry.scorecards[idx].putts.reduce((acc, p) => acc + (parseInt(p) || 0), 0);
+                            }
+                            if (puttsVal > 0) allPutts.push(puttsVal);
+                        });
+                    }
+                });
+
+                // Extraemos lo esencial que vamos a comparar
+                setCompareStats({
+                    roundsPlayed: allRounds.length,
+                    average: allRounds.length > 0 ? (allRounds.reduce((a, b) => a + b, 0) / allRounds.length).toFixed(1) : 0,
+                    bestRound: allRounds.length > 0 ? Math.min(...allRounds) : '-',
+                    worstRound: allRounds.length > 0 ? Math.max(...allRounds) : '-',
+                    stbCount: allStableford.length,
+                    stbAverage: allStableford.length > 0 ? (allStableford.reduce((a, b) => a + b, 0) / allStableford.length).toFixed(1) : 0,
+                    stbBest: allStableford.length > 0 ? Math.max(...allStableford) : '-',
+                    stbWorst: allStableford.length > 0 ? Math.min(...allStableford) : '-',
+                    puttsAverage: allPutts.length > 0 ? (allPutts.reduce((a, b) => a + b, 0) / allPutts.length).toFixed(1) : 0,
+                    puttsBest: allPutts.length > 0 ? Math.min(...allPutts) : '-',
+                });
+            } catch (e) {
+                console.error("Comparison load error", e);
+                setCompareStats(null);
+            } finally {
+                setIsLoadingCompare(false);
+            }
+        };
+        fetchCompareUser();
+    }, [compareTo, filterMode, filterValue]); // Si cambias el filtro, vuelve a calcular la de tu amiga
 
     const processData = (data, tournList) => {
         if (!data) return;
@@ -278,18 +382,17 @@ export default function StatsView({ results = {}, tournaments = [] }) {
         }
 
         // Calculate Stableford Stats
-        let stbTotal = 0;
+        let stbCount = 0;
         let stbAvg = 0;
         let stbMin = '-';
         let stbMax = '-';
 
         if (allStableford.length > 0) {
-            stbTotal = allStableford.reduce((a, b) => a + b, 0);
-            stbAvg = (stbTotal / allStableford.length).toFixed(1);
-            stbMin = Math.min(...allStableford); // Technically "worst" stableford
-            stbMax = Math.max(...allStableford); // Technically "best" stableford
-            stbMin = Math.min(...allStableford); // Technically "worst" stableford
-            stbMax = Math.max(...allStableford); // Technically "best" stableford
+            stbCount = allStableford.length;
+            const stbTotal = allStableford.reduce((a, b) => a + b, 0);
+            stbAvg = (stbTotal / stbCount).toFixed(1);
+            stbMin = Math.min(...allStableford);
+            stbMax = Math.max(...allStableford);
         }
 
         // Calculate Putt Stats
@@ -311,7 +414,7 @@ export default function StatsView({ results = {}, tournaments = [] }) {
             bestRound: min,
             worstRound: max,
             history: recentHistory,
-            stbTotal,
+            stbCount,
             stbAverage: stbAvg,
             stbBest: stbMax !== '-' ? stbMax : '-',
             stbWorst: stbMin !== '-' ? stbMin : '-',
@@ -463,6 +566,22 @@ export default function StatsView({ results = {}, tournaments = [] }) {
                         </select>
                     )}
                 </div>
+
+                {validComparisons.length > 0 && (
+                    <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}>
+                        <select
+                            value={compareTo}
+                            onChange={(e) => setCompareTo(e.target.value)}
+                            style={{ padding: '6px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '0.9rem', backgroundColor: '#f8fafc' }}
+                        >
+                            <option value="">-- Comparar con compañera --</option>
+                            {validComparisons.map(u => (
+                                <option key={u.username} value={u.username}>{u.full_name}</option>
+                            ))}
+                        </select>
+                        {isLoadingCompare && <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Cargando...</span>}
+                    </div>
+                )}
             </div>
 
             <div style={{
@@ -476,14 +595,24 @@ export default function StatsView({ results = {}, tournaments = [] }) {
                     <h3 style={{ fontSize: '0.8rem', fontWeight: '500', marginBottom: '1.5rem', borderBottom: '1px solid #E5E1DE', paddingBottom: '0.5rem', letterSpacing: '0.1em' }}>STROKE PLAY</h3>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
                         {[
-                            { label: 'RONDAS', val: stats.roundsPlayed },
-                            { label: 'MEDIA', val: stats.average },
-                            { label: 'MEJOR', val: stats.bestRound },
-                            { label: 'ALTA', val: stats.worstRound }
+                            { label: 'RONDAS', val: stats.roundsPlayed, cKey: 'roundsPlayed' },
+                            { label: 'MEDIA', val: stats.average, cKey: 'average', isLowerBetter: true },
+                            { label: 'MEJOR', val: stats.bestRound, cKey: 'bestRound', isLowerBetter: true },
+                            { label: 'ALTA', val: stats.worstRound, cKey: 'worstRound', isLowerBetter: true }
                         ].map(item => (
                             <div key={item.label} style={{ textAlign: 'center', padding: '1rem', background: 'var(--color-surface-soft)', borderRadius: '2px' }}>
                                 <div style={{ fontSize: '0.6rem', color: 'var(--color-text-muted)', marginBottom: '0.4rem', letterSpacing: '0.05em' }}>{item.label}</div>
                                 <div style={{ fontSize: '1.5rem', fontWeight: '200' }}>{item.val}</div>
+                                {compareTo && compareStats && compareStats[item.cKey] !== 0 && compareStats[item.cKey] !== '-' && item.val !== '-' && (
+                                    <div style={{ marginTop: '0.4rem', fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '2px', color: '#64748b' }}>
+                                        <span style={{ fontWeight: '600' }}>vs {validComparisons.find(u => u.username === compareTo)?.full_name?.split(' ')[0] || compareTo}</span>
+                                        <span style={{
+                                            color: (Number(item.val) > Number(compareStats[item.cKey]) ? (item.isLowerBetter ? '#ef4444' : '#10b981') : (Number(item.val) < Number(compareStats[item.cKey]) ? (item.isLowerBetter ? '#10b981' : '#ef4444') : '#6b7280'))
+                                        }}>
+                                            {compareStats[item.cKey]} ({(Number(item.val) - Number(compareStats[item.cKey])) > 0 ? '+' : ''}{(Number(item.val) - Number(compareStats[item.cKey])).toFixed(1)})
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>
@@ -494,14 +623,24 @@ export default function StatsView({ results = {}, tournaments = [] }) {
                     <h3 style={{ fontSize: '0.8rem', fontWeight: '500', marginBottom: '1.5rem', borderBottom: '1px solid #E5E1DE', paddingBottom: '0.5rem', letterSpacing: '0.1em' }}>STABLEFORD</h3>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
                         {[
-                            { label: 'TOTAL', val: stats.stbTotal },
-                            { label: 'MEDIA', val: stats.stbAverage },
-                            { label: 'MEJOR', val: stats.stbBest },
-                            { label: 'PEOR', val: stats.stbWorst }
+                            { label: 'RONDAS', val: stats.stbCount, cKey: 'stbCount' },
+                            { label: 'MEDIA', val: stats.stbAverage, cKey: 'stbAverage', isLowerBetter: false },
+                            { label: 'MEJOR', val: stats.stbBest, cKey: 'stbBest', isLowerBetter: false },
+                            { label: 'PEOR', val: stats.stbWorst, cKey: 'stbWorst', isLowerBetter: false }
                         ].map(item => (
                             <div key={item.label} style={{ textAlign: 'center', padding: '1rem', background: 'var(--color-surface-soft)', borderRadius: '2px' }}>
                                 <div style={{ fontSize: '0.6rem', color: 'var(--color-text-muted)', marginBottom: '0.4rem', letterSpacing: '0.05em' }}>{item.label}</div>
                                 <div style={{ fontSize: '1.5rem', fontWeight: '200' }}>{item.val}</div>
+                                {compareTo && compareStats && compareStats[item.cKey] !== 0 && compareStats[item.cKey] !== '-' && item.val !== '-' && (
+                                    <div style={{ marginTop: '0.4rem', fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '2px', color: '#64748b' }}>
+                                        <span style={{ fontWeight: '600' }}>vs {validComparisons.find(u => u.username === compareTo)?.full_name?.split(' ')[0] || compareTo}</span>
+                                        <span style={{
+                                            color: (Number(item.val) > Number(compareStats[item.cKey]) ? (item.isLowerBetter ? '#ef4444' : '#10b981') : (Number(item.val) < Number(compareStats[item.cKey]) ? (item.isLowerBetter ? '#10b981' : '#ef4444') : '#6b7280'))
+                                        }}>
+                                            {compareStats[item.cKey]} ({(Number(item.val) - Number(compareStats[item.cKey])) > 0 ? '+' : ''}{(Number(item.val) - Number(compareStats[item.cKey])).toFixed(1)})
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>
@@ -514,14 +653,24 @@ export default function StatsView({ results = {}, tournaments = [] }) {
                     <h3 style={{ fontSize: '0.8rem', fontWeight: '500', marginBottom: '1.5rem', borderBottom: '1px solid #E5E1DE', paddingBottom: '0.5rem', letterSpacing: '0.1em' }}>PUTTS</h3>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
                         {[
-                            { label: 'RONDAS', val: stats.puttStats?.rounds || 0 },
-                            { label: 'MEDIA', val: stats.puttStats?.average || 0 },
-                            { label: 'MEJOR', val: stats.puttStats?.best || '-' },
-                            { label: 'TOTAL', val: stats.puttStats?.total || 0 }
+                            { label: 'RONDAS', val: stats.puttStats?.rounds || 0, cKey: null },
+                            { label: 'MEDIA', val: stats.puttStats?.average || 0, cKey: 'puttsAverage', isLowerBetter: true },
+                            { label: 'MEJOR', val: stats.puttStats?.best || '-', cKey: 'puttsBest', isLowerBetter: true },
+                            { label: 'TOTAL', val: stats.puttStats?.total || 0, cKey: null }
                         ].map(item => (
                             <div key={item.label} style={{ textAlign: 'center', padding: '1rem', background: 'var(--color-surface-soft)', borderRadius: '2px' }}>
                                 <div style={{ fontSize: '0.6rem', color: 'var(--color-text-muted)', marginBottom: '0.4rem', letterSpacing: '0.05em' }}>{item.label}</div>
                                 <div style={{ fontSize: '1.5rem', fontWeight: '200' }}>{item.val}</div>
+                                {compareTo && compareStats && item.cKey && compareStats[item.cKey] !== 0 && compareStats[item.cKey] !== '-' && item.val !== '-' && item.val !== 0 && (
+                                    <div style={{ marginTop: '0.4rem', fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '2px', color: '#64748b' }}>
+                                        <span style={{ fontWeight: '600' }}>vs {validComparisons.find(u => u.username === compareTo)?.full_name?.split(' ')[0] || compareTo}</span>
+                                        <span style={{
+                                            color: (Number(item.val) > Number(compareStats[item.cKey]) ? (item.isLowerBetter ? '#ef4444' : '#10b981') : (Number(item.val) < Number(compareStats[item.cKey]) ? (item.isLowerBetter ? '#10b981' : '#ef4444') : '#6b7280'))
+                                        }}>
+                                            {compareStats[item.cKey]} ({(Number(item.val) - Number(compareStats[item.cKey])) > 0 ? '+' : ''}{(Number(item.val) - Number(compareStats[item.cKey])).toFixed(1)})
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>

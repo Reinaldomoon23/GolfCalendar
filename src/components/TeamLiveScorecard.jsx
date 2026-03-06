@@ -4,6 +4,15 @@ import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { ChevronLeft, Info } from 'lucide-react';
 
+const R2_PUBLIC_URL = "https://pub-23c281cf1ae04def9102341cf7d87837.r2.dev";
+
+const getPhotoUrl = (photoPath, username) => {
+    if (!photoPath) return `https://ui-avatars.com/api/?name=${username || 'Golf'}`;
+    if (photoPath.startsWith('http')) return photoPath;
+    const fileName = photoPath.split('/').pop() || 'profile.jpg';
+    return `${R2_PUBLIC_URL}/${fileName}`;
+};
+
 export default function TeamLiveScorecard() {
     const { id: eventId } = useParams();
     const location = useLocation();
@@ -17,25 +26,24 @@ export default function TeamLiveScorecard() {
     const [results, setResults] = useState({});
     const [error, setError] = useState(null);
 
-    // Fetch unified users info
+    // Fetch unified users info from Firestore
     useEffect(() => {
         const fetchUsers = async () => {
             try {
-                const baselink = import.meta.env.BASE_URL.replace(/\/$/, '');
-                const res = await fetch(`${baselink}/api/users.json?t=${Date.now()}`);
-                const data = await res.json();
-                
                 const matchedProfiles = {};
-                playersList.forEach(p => {
-                    if (data[p]) matchedProfiles[p] = data[p];
-                });
+                for (const p of playersList) {
+                    const userSnap = await getDoc(doc(db, "users", p));
+                    if (userSnap.exists()) {
+                        matchedProfiles[p] = { ...userSnap.data(), username: p };
+                    }
+                }
                 setProfiles(matchedProfiles);
             } catch (err) {
-                console.error("Error fetching user profiles", err);
+                console.error("Error fetching user profiles from Firestore", err);
             }
         };
-        fetchUsers();
-    }, [playersStr]);
+        if (playersList.length > 0) fetchUsers();
+    }, [playersList.join(',')]);
 
     // Fetch tournament (from one of the players, assume same data for now, or official)
     useEffect(() => {
@@ -59,7 +67,7 @@ export default function TeamLiveScorecard() {
                     setTournament({ id: offSnap.id, ...offSnap.data() });
                     return;
                 }
-                
+
                 // Fallback basic
                 setTournament({ id: eventId, name: 'Torneo en Seguimiento' });
 
@@ -78,7 +86,23 @@ export default function TeamLiveScorecard() {
             const ref = doc(db, 'users', player, 'results', eventId);
             const unsub = onSnapshot(ref, (snap) => {
                 if (snap.exists()) {
-                    setResults(prev => ({ ...prev, [player]: snap.data() }));
+                    const data = snap.data();
+
+                    // HOTFIX: Salamanca Forum Golf hole 15 par correction
+                    if (data.scorecards) {
+                        Object.keys(data.scorecards).forEach(rIdx => {
+                            const card = data.scorecards[rIdx];
+                            if (card.pars && card.pars[14] === 5) {
+                                // Verify course name
+                                const courseName = (data.tournamentCourse || tournament?.course || '').toLowerCase();
+                                if (courseName.includes('salamanca forum')) {
+                                    card.pars[14] = 4;
+                                }
+                            }
+                        });
+                    }
+
+                    setResults(prev => ({ ...prev, [player]: data }));
                 } else {
                     setResults(prev => ({ ...prev, [player]: null }));
                 }
@@ -107,7 +131,129 @@ export default function TeamLiveScorecard() {
     };
 
     if (!playersStr) return <div>Faltan jugadores en el enlace (ej: ?players=nicole,maria)</div>;
-    if (loading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#0f172a', color: 'white' }}>Cargando datos en vivo de múltiples jugadoras...</div>;
+
+    if (loading) return (
+        <div style={{
+            minHeight: '100vh',
+            background: '#0f172a',
+            color: '#f8fafc',
+            fontFamily: '"Inter", -apple-system, sans-serif',
+            display: 'flex',
+            flexDirection: 'column',
+        }}>
+            <style>{`
+                @keyframes shimmer {
+                    0% { background-position: -400px 0; }
+                    100% { background-position: 400px 0; }
+                }
+                @keyframes livePulse {
+                    0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(16,185,129,0.7); }
+                    50% { opacity: 0.8; transform: scale(1.15); box-shadow: 0 0 0 8px rgba(16,185,129,0); }
+                }
+                @keyframes spin {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
+                }
+                @keyframes fadeInUp {
+                    from { opacity: 0; transform: translateY(16px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                .skeleton-block {
+                    background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+                    background-size: 400px 100%;
+                    animation: shimmer 1.4s infinite;
+                    border-radius: 6px;
+                }
+            `}</style>
+
+            {/* Header skeleton */}
+            <div style={{
+                background: '#1e293b',
+                padding: '1rem',
+                borderBottom: '1px solid #334155',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexDirection: 'column',
+                gap: '8px'
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{
+                        width: '8px', height: '8px', borderRadius: '50%',
+                        backgroundColor: '#10b981',
+                        animation: 'livePulse 1.5s infinite'
+                    }} />
+                    <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#10b981', letterSpacing: '0.1em' }}>
+                        CONECTANDO EN DIRECTO...
+                    </span>
+                </div>
+                <div className="skeleton-block" style={{ width: '180px', height: '18px', marginTop: '4px' }} />
+                <div className="skeleton-block" style={{ width: '120px', height: '13px' }} />
+            </div>
+
+            {/* Player skeleton cards */}
+            <div style={{ padding: '1.5rem', maxWidth: '800px', margin: '0 auto', width: '100%' }}>
+                {(playersList.length > 0 ? playersList : ['', '']).map((_, idx) => (
+                    <div key={idx} style={{
+                        marginBottom: '3rem',
+                        animation: `fadeInUp 0.5s ease ${idx * 0.15}s both`
+                    }}>
+                        {/* Player header skeleton */}
+                        <div style={{
+                            display: 'flex', alignItems: 'center', gap: '12px',
+                            marginBottom: '1rem', paddingBottom: '0.75rem',
+                            borderBottom: '2px solid #334155'
+                        }}>
+                            <div className="skeleton-block" style={{ width: '40px', height: '40px', borderRadius: '50%', flexShrink: 0 }} />
+                            <div className="skeleton-block" style={{ width: '160px', height: '22px', borderRadius: '8px' }} />
+                        </div>
+
+                        {/* Scorecard skeleton */}
+                        <div style={{ background: '#1e293b', borderRadius: '16px', padding: '1.5rem' }}>
+                            {/* Round header row */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                                <div className="skeleton-block" style={{ width: '80px', height: '20px' }} />
+                                <div className="skeleton-block" style={{ width: '60px', height: '32px', borderRadius: '8px' }} />
+                            </div>
+                            {/* Two rows of holes */}
+                            {[0, 1].map(row => (
+                                <div key={row} style={{
+                                    border: '1px solid #334155', borderRadius: '8px',
+                                    overflow: 'hidden', marginBottom: '10px'
+                                }}>
+                                    <div style={{ display: 'flex', background: '#0f172a', padding: '8px 0', gap: '4px', justifyContent: 'space-around' }}>
+                                        <div className="skeleton-block" style={{ width: '40px', height: '12px', margin: '0 4px' }} />
+                                        {[...Array(9)].map((_, i) => (
+                                            <div key={i} className="skeleton-block" style={{ flex: 1, height: '12px', margin: '0 2px' }} />
+                                        ))}
+                                    </div>
+                                    <div style={{ display: 'flex', background: '#334155', padding: '8px 0', gap: '4px', justifyContent: 'space-around' }}>
+                                        <div className="skeleton-block" style={{ width: '40px', height: '24px', margin: '0 4px', borderRadius: '4px' }} />
+                                        {[...Array(9)].map((_, i) => (
+                                            <div key={i} style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+                                                <div className="skeleton-block" style={{ width: '24px', height: '24px', borderRadius: '50%' }} />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ))}
+
+                {/* Spinner central */}
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px', marginTop: '1rem', color: '#475569' }}>
+                    <div style={{
+                        width: '20px', height: '20px', borderRadius: '50%',
+                        border: '2px solid #334155',
+                        borderTopColor: '#10b981',
+                        animation: 'spin 0.8s linear infinite'
+                    }} />
+                    <span style={{ fontSize: '0.85rem' }}>Cargando datos en vivo...</span>
+                </div>
+            </div>
+        </div>
+    );
 
     return (
         <div style={{
@@ -144,11 +290,11 @@ export default function TeamLiveScorecard() {
                 {playersList.map(player => {
                     const result = results[player];
                     const profile = profiles[player] || { full_name: player };
-                    
+
                     return (
                         <div key={player} style={{ marginBottom: '3rem' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1rem', paddingBottom: '0.5rem', borderBottom: '2px solid #334155' }}>
-                                <img src={profile.photo_url || `https://ui-avatars.com/api/?name=${player}&background=random`} alt={player} style={{ width: '40px', height: '40px', borderRadius: '50%', border: '2px solid #fff' }} />
+                                <img src={getPhotoUrl(profile.photo_url, profile.full_name || player)} alt={player} style={{ width: '40px', height: '40px', borderRadius: '50%', border: '2px solid #fff', objectFit: 'cover' }} />
                                 <h2 style={{ fontSize: '1.4rem', margin: 0, color: 'white' }}>{profile.full_name || profile.username || player}</h2>
                             </div>
 
@@ -298,7 +444,7 @@ export default function TeamLiveScorecard() {
                                                                     })}
                                                                 </div>
                                                             </div>
-                                                            
+
                                                             {/* Second 9 Holes */}
                                                             <div style={{ display: 'inline-flex', flexDirection: 'column', minWidth: '100%', border: '1px solid #334155', borderRadius: '8px', overflow: 'hidden' }}>
                                                                 <div style={{ display: 'flex', background: '#0f172a', fontWeight: 'bold', fontSize: '0.8rem', color: '#94a3b8' }}>
