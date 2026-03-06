@@ -16,6 +16,35 @@ import { LogOut } from 'lucide-react';
 // Firebase Imports
 import { db } from './firebase';
 import { collection, doc, getDoc, getDocs, setDoc, onSnapshot, query, where } from 'firebase/firestore';
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+
+// Cloudflare R2 Config
+const R2_CONFIG = {
+  accessKeyId: "453a6e48294058bb766317b31c742af8",
+  secretAccessKey: "c4bc610a94cd5c1c18db535a1610f83df61a93836feea811999a6c4fa171ac7b",
+  endpoint: "https://1e8f9eaa8024f1354556923930ad0acb.r2.cloudflarestorage.com",
+  bucketName: "golf-profiles-bucket",
+  publicUrl: "https://pub-23c281cf1ae04def9102341cf7d87837.r2.dev"
+};
+
+const s3Client = new S3Client({
+  region: "auto",
+  endpoint: R2_CONFIG.endpoint,
+  credentials: {
+    accessKeyId: R2_CONFIG.accessKeyId,
+    secretAccessKey: R2_CONFIG.secretAccessKey,
+  },
+});
+
+// Photo URL Helper
+const getPhotoUrl = (photoPath, username) => {
+  if (!photoPath) return `https://ui-avatars.com/api/?name=${username || 'Golf'}`;
+  if (photoPath.startsWith('http')) return photoPath;
+
+  // Strip 'profiles/' if present and get filename
+  const fileName = photoPath.includes('/') ? photoPath.split('/').pop() : photoPath;
+  return `${R2_CONFIG.publicUrl}/${fileName || 'profile.jpg'}`;
+};
 
 // Environment Mode: 'single' (Nicole) or 'multi' (Team)
 const APP_MODE = import.meta.env.VITE_APP_MODE || 'single';
@@ -25,7 +54,7 @@ const IS_MULTI = APP_MODE === 'multi';
 const DEFAULT_USER = {
   username: 'nicole',
   full_name: 'Calendario Nicole Likhomanova',
-  photo_url: 'profile.jpg',
+  photo_url: 'nicole.jpg',
 };
 
 function AppContent() {
@@ -37,27 +66,43 @@ function AppContent() {
     updateServiceWorker,
   } = useRegisterSW({
     onRegistered(r) {
-      console.log('SW Registered: ' + r);
-      // Periodic check for updates (every 30 mins)
-      if (r) {
-        setInterval(() => {
-          console.log('Checking for app updates...');
-          r.update().catch(err => console.log('SW Update check failed', err));
-        }, 30 * 60 * 1000);
-      }
+      if (!r) return;
+      console.log('SW Registered');
+
+      // 1. Periodic check every 10 minutes
+      setInterval(() => {
+        r.update().catch(() => { });
+      }, 10 * 60 * 1000);
+
+      // 2. Check for updates every time app comes to foreground (critical for iOS PWA)
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          r.update().catch(() => { });
+        }
+      });
     },
     onRegisterError(error) {
-      console.log('SW registration error', error)
+      console.log('SW registration error', error);
     },
-  })
+  });
+
+  // 3. Auto-reload when a new SW takes control (iOS PWA safe)
+  //    With autoUpdate registerType, skipWaiting is called automatically
+  //    and controllerchange fires → we reload to get fresh JS/CSS
+  useEffect(() => {
+    const handleControllerChange = () => {
+      console.log('New SW controller detected, reloading…');
+      window.location.reload();
+    };
+    navigator.serviceWorker?.addEventListener('controllerchange', handleControllerChange);
+    return () => {
+      navigator.serviceWorker?.removeEventListener('controllerchange', handleControllerChange);
+    };
+  }, []);
 
   const handleAppUpdate = () => {
-    console.log('Updating service worker...');
     updateServiceWorker(true);
-    // Fallback reload for iOS standalone mode
-    setTimeout(() => {
-      window.location.reload();
-    }, 1500);
+    setTimeout(() => window.location.reload(), 1000);
   };
 
   const [user, setUser] = useState(() => {
@@ -145,68 +190,46 @@ function AppContent() {
   }, [user]);
 
   const handlePhotoClick = () => {
-    fileInputRef.current.click();
+    if (fileInputRef.current) fileInputRef.current.click();
   };
 
   const handlePhotoUpload = async (e) => {
-    // Keep existing upload logic via PHP for now as storage bucket setup requires rules
-    // Eventually we should move to Firebase Storage
     const file = e.target.files[0];
     if (!file) return;
 
     setIsUploadingPhoto(true);
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('username', user.username);
-
-    const baselink = import.meta.env.BASE_URL.replace(/\/$/, '');
 
     try {
-      const res = await fetch(`${baselink}/api/upload_profile.php`, {
-        method: 'POST',
-        body: formData
+      // 1. Upload to Cloudflare R2
+      const fileName = `${user.username}_${Math.floor(Date.now() / 1000)}.jpg`;
+      const arrayBuffer = await file.arrayBuffer();
+
+      const command = new PutObjectCommand({
+        Bucket: R2_CONFIG.bucketName,
+        Key: fileName,
+        Body: new Uint8Array(arrayBuffer),
+        ContentType: file.type || 'image/jpeg'
       });
 
-      const data = await res.json();
+      await s3Client.send(command);
+      const newPhotoUrl = `${R2_CONFIG.publicUrl}/${fileName}`;
 
-      if (res.ok) {
-        // Update user photo in state and storage
-        const updatedUser = { ...user, photo_url: data.url };
-        setUser(updatedUser);
-        if (IS_MULTI) {
-          localStorage.setItem('golf_tracker_user', JSON.stringify(updatedUser));
+      // 2. Persist to Firebase
+      await setDoc(doc(db, "users", user.username), {
+        photo_url: newPhotoUrl
+      }, { merge: true });
 
-          // Persist photo URL to Firebase DB
-          await setDoc(doc(db, "users", user.username), {
-            photo_url: data.url
-          }, { merge: true });
+      // 3. Update local state
+      const updatedUser = { ...user, photo_url: newPhotoUrl };
+      setUser(updatedUser);
+      localStorage.setItem('golf_tracker_user', JSON.stringify(updatedUser));
 
-          // Sync to PHP users.json so other devices get updated avatars for linked accounts
-          try {
-            await fetch(`${baselink}/api/update_user.php`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                username: user.username,
-                photo_url: data.url,
-                full_name: user.full_name || '',
-                federation_id: user.federation_id || '',
-                email: user.email || ''
-              })
-            });
-          } catch (e) {
-            console.error("PHP profile sync failed", e);
-          }
-        }
-
-        setPhotoVersion(Date.now()); // Force refresh
-        alert('¡Foto actualizada correctamente!');
-      } else {
-        alert('Error al subir la foto.');
-      }
+      setPhotoVersion(Date.now());
+      alert('¡Foto actualizada en Cloudflare!');
     } catch (err) {
-      console.error(err);
-      alert('Error de conexión al subir la foto');
+      console.error("R2 Upload error details:", err);
+      const errorMsg = err.message || 'Error desconocido';
+      alert(`Error al subir a Cloudflare. Posible problema de CORS o permisos.\nDetalle: ${errorMsg}`);
     } finally {
       setIsUploadingPhoto(false);
     }
@@ -217,20 +240,16 @@ function AppContent() {
     setIsUpdatingProfile(true);
 
     try {
-      // 1. Update in Firebase (Best effort)
-      try {
-        await setDoc(doc(db, "users", user.username), {
-          full_name: editFullName,
-          federation_id: editFederationId,
-          email: editEmail
-        }, { merge: true });
-      } catch (e) {
-        console.warn("Firestore update failed, falling back to PHP only", e);
-      }
+      // Update in Firebase (Now primary source of truth)
+      await setDoc(doc(db, "users", user.username), {
+        full_name: editFullName,
+        federation_id: editFederationId,
+        email: editEmail
+      }, { merge: true });
 
-      // 2. Update in PHP Backend (Reliable for Legacy/Hybrid)
+      // Keep PHP update for legacy shared cards while we finish migration
       const baselink = import.meta.env.BASE_URL.replace(/\/$/, '');
-      const res = await fetch(`${baselink}/api/update_user.php`, {
+      await fetch(`${baselink}/api/update_user.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -241,25 +260,17 @@ function AppContent() {
         })
       });
 
-      if (!res.ok) {
-        throw new Error('Failed to update user on server');
-      }
-
-      const updatedUser = { ...user, full_name: editFullName, federation_id: editFederationId };
+      const updatedUser = { ...user, full_name: editFullName, federation_id: editFederationId, email: editEmail };
       setUser(updatedUser);
       if (IS_MULTI) {
         localStorage.setItem('golf_tracker_user', JSON.stringify(updatedUser));
       }
       setIsProfileModalOpen(false);
       alert('Perfil actualizado correctamente');
-
-      // Force refresh handicap with new license
-      // passing it explicitly because state might take a tick to update
       refreshHandicap();
-
     } catch (err) {
       console.error(err);
-      alert('Error de conexión al actualizar perfil');
+      alert('Error al actualizar perfil');
     } finally {
       setIsUpdatingProfile(false);
     }
@@ -285,45 +296,32 @@ function AppContent() {
     // If userData has 'managed_users', fetch them.
     if (userData.managed_users && Array.isArray(userData.managed_users)) {
       try {
-        const baselink = import.meta.env.BASE_URL.replace(/\/$/, '');
-        const res = await fetch(`${baselink}/api/users.json?t=${Date.now()}`);
-        const allUsers = await res.json();
+        const managedProfiles = [];
+        // Add manager first
+        managedProfiles.push({ ...userData });
 
-        // Inject username into objects and filter nulls
-        const managedProfiles = userData.managed_users.map(u => {
-          const profile = allUsers[u];
-          return profile ? { ...profile, username: u } : null;
-        }).filter(Boolean);
+        for (const childId of userData.managed_users) {
+          const childSnap = await getDoc(doc(db, "users", childId));
+          if (childSnap.exists()) {
+            managedProfiles.push({ ...childSnap.data(), username: childId });
+          }
+        }
 
-        // Include Manager (Self) + Managed Users
-        // Ensure userData (Manager) also has 'username' if it's missing (though it should have it from login)
-        const managerProfile = { ...userData };
-        if (!managerProfile.username) managerProfile.username = userData.username || 'manager'; // Fallback
-
-        // Combine and Deduplicate
-        newLinkedUsers = [managerProfile, ...managedProfiles].filter((v, i, a) => a.findIndex(t => t.username === v.username) === i);
+        newLinkedUsers = managedProfiles.filter((v, i, a) => a.findIndex(t => t.username === v.username) === i);
 
         if (newLinkedUsers.length > 0) {
-          // Set the FIRST child as active 'user' but store others in 'linkedUsers'.
-          // We must ensure activeUser has the 'username' property!
-          // We use the profile from newLinkedUsers to be safe.
-          // Let's find the first managed user in our new list.
+          // Set the first child as active or stay as manager if preferred
           const firstChild = newLinkedUsers.find(u => userData.managed_users.includes(u.username));
-
           if (firstChild) {
             activeUser = firstChild;
-          } else {
-            activeUser = managerProfile;
           }
-
-          // We attach the manager info to the active user object so we can persist it
           activeUser.manager_id = userData.username;
 
           setLinkedUsers(newLinkedUsers);
           localStorage.setItem('golf_tracker_linked_users', JSON.stringify(newLinkedUsers));
         }
       } catch (e) {
-        console.error("Error fetching managed users", e);
+        console.error("Error fetching managed users from Firestore", e);
       }
     } else {
       setLinkedUsers([]);
@@ -339,7 +337,13 @@ function AppContent() {
       try {
         const userDoc = await getDoc(doc(db, "users", activeUser.username));
         if (userDoc.exists()) {
-          const fullProfile = { ...activeUser, ...userDoc.data() };
+          const freshData = userDoc.data();
+          const fullProfile = {
+            ...activeUser,
+            ...freshData,
+            // Preserve manager info if it was already set during login/selection
+            manager_id: activeUser.manager_id
+          };
           setUser(fullProfile);
           localStorage.setItem('golf_tracker_user', JSON.stringify(fullProfile));
         }
@@ -492,14 +496,12 @@ function AppContent() {
     ...baseTournaments.filter(t => {
       // Filter hidden
       if (preferences.hiddenIds?.includes(t.id)) return false;
-      if (preferences.hiddenIds?.includes(String(t.id))) return false; // Handle string ID mismatch
+      if (preferences.hiddenIds?.includes(String(t.id))) return false;
 
       // Strict Filter for Jordi (Only Orden de Merito)
       if (user?.username === 'jordi') {
         if (t.type !== 'merit') return false;
       }
-
-
 
       // Hard Override (same ID)
       if (customTournaments.some(ct => String(ct.id) === String(t.id))) return false;
@@ -510,63 +512,63 @@ function AppContent() {
     ...customTournaments
   ], [baseTournaments, preferences.hiddenIds, customTournaments, user?.username]);
 
-  // Auto-refresh user profile to detect Linked Accounts (managed_users) for existing sessions
+  // Real-time synchronization for Profile and Linked Accounts via Firestore
   useEffect(() => {
-    const fetchFreshProfile = async () => {
-      if (!user?.username) return;
-      try {
-        const baselink = import.meta.env.BASE_URL.replace(/\/$/, '');
-        const res = await fetch(`${baselink}/api/users.json?t=${Date.now()}`);
-        if (!res.ok) return;
+    if (!user?.username) return;
 
-        const allUsers = await res.json();
-        if (allUsers[user.username]) {
-          const freshUser = { ...allUsers[user.username], username: user.username };
+    const unsubProfile = onSnapshot(doc(db, "users", user.username), (snapshot) => {
+      if (snapshot.exists()) {
+        const freshData = snapshot.data();
 
-          // Update User State if changed (e.g. managed_users added)
-          // Robust check to avoid loops: only if managed_users changed length or content
-          // Simple JSON stringify is ok for small array
-          const oldManaged = user.managed_users || [];
-          const newManaged = freshUser.managed_users || [];
+        // Update local state if crucial data changed (like managed_users)
+        const oldManaged = user.managed_users || [];
+        const newManaged = freshData.managed_users || [];
 
-          if (JSON.stringify(oldManaged) !== JSON.stringify(newManaged)) {
-            console.log("Detected new managed_users in profile, updating...", newManaged);
-            const updatedUser = { ...user, ...freshUser };
-            setUser(updatedUser);
-            localStorage.setItem('golf_tracker_user', JSON.stringify(updatedUser));
-          }
-
-          // Update Linked Users List based on Manager's profile, not just current child user
-          const sessionManagerId = user.manager_id || user.username;
-          const managerProfile = allUsers[sessionManagerId] ? { ...allUsers[sessionManagerId], username: sessionManagerId } : null;
-
-          if (managerProfile && managerProfile.managed_users && Array.isArray(managerProfile.managed_users)) {
-            const managedProfiles = managerProfile.managed_users.map(u => {
-              const p = allUsers[u];
-              return p ? { ...p, username: u } : null;
-            }).filter(Boolean);
-
-            // Include Manager (Self) + Managed Users, Deduplicated
-            const newLinked = [managerProfile, ...managedProfiles].filter((v, i, a) => a.findIndex(t => t.username === v.username) === i);
-
-            setLinkedUsers(newLinked);
-            localStorage.setItem('golf_tracker_linked_users', JSON.stringify(newLinked));
-          } else {
-            setLinkedUsers([]);
-            localStorage.removeItem('golf_tracker_linked_users');
-          }
+        if (JSON.stringify(oldManaged) !== JSON.stringify(newManaged)) {
+          console.log("Managed users updated in Firestore, refreshing...");
+          const updatedUser = {
+            ...user,
+            ...freshData,
+            // Very important: don't lose the manager context when syncing child profile
+            manager_id: user.manager_id
+          };
+          setUser(updatedUser);
+          localStorage.setItem('golf_tracker_user', JSON.stringify(updatedUser));
         }
-      } catch (e) {
-        console.error("Error refreshing profile", e);
-      }
-    };
 
-    if (user) fetchFreshProfile();
-  }, [user?.username]); // Dependency on user.username prevents loop if we only update other fields, 
-  // BUT we update 'user' state inside. 
-  // If we update 'user', this effect might re-run?
-  // Yes, because 'user' changes.
-  // But we check JSON stringify. If it matches, we don't setUser. Loop broken.
+        // Handle Linked Users (Manager Mode)
+        if (newManaged.length > 0) {
+          const fetchLinked = async () => {
+            try {
+              const profiles = [];
+              // Add manager first
+              profiles.push({ ...freshData, username: user.username });
+
+              for (const childId of newManaged) {
+                const childSnap = await getDoc(doc(db, "users", childId));
+                if (childSnap.exists()) {
+                  profiles.push({ ...childSnap.data(), username: childId });
+                }
+              }
+
+              const uniqueProfiles = profiles.filter((v, i, a) => a.findIndex(t => t.username === v.username) === i);
+              setLinkedUsers(uniqueProfiles);
+              localStorage.setItem('golf_tracker_linked_users', JSON.stringify(uniqueProfiles));
+            } catch (e) {
+              console.error("Error fetching linked profiles", e);
+            }
+          };
+          fetchLinked();
+        } else if (freshData.role !== 'manager' && !user.manager_id) {
+          // If NOT a manager AND NOT currently being managed by someone else, clear list
+          setLinkedUsers([]);
+          localStorage.removeItem('golf_tracker_linked_users');
+        }
+      }
+    });
+
+    return () => unsubProfile();
+  }, [user?.username]);
 
 
 
@@ -865,22 +867,26 @@ function AppContent() {
               {/* Current Active User big */}
               <div style={{ position: 'relative' }}>
                 <img
-                  src={(user.photo_url && (user.photo_url.startsWith('/') || user.photo_url.startsWith('http'))
-                    ? user.photo_url
-                    : `${import.meta.env.BASE_URL.replace(/\/$/, '')}/${user.photo_url || 'profile.jpg'}`) + `?v=${Math.floor(Date.now() / 300000)}`}
+                  src={getPhotoUrl(user.photo_url, user.full_name || user.username)}
                   style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--color-primary)' }}
-                  onError={(e) => { e.target.onerror = null; e.target.src = "https://ui-avatars.com/api/?name=" + user.username }}
+                  onError={(e) => {
+                    if (!e.target.src.includes('ui-avatars')) {
+                      e.target.src = "https://ui-avatars.com/api/?name=" + (user.full_name || user.username);
+                    }
+                  }}
                 />
               </div>
               {/* Other Linked Users small */}
               {linkedUsers.filter(u => u.username !== user.username).map(u => (
                 <div key={u.username} onClick={() => handleSwitchUser(u)} style={{ cursor: 'pointer', opacity: 0.6, transition: 'opacity 0.2s', display: 'flex', alignItems: 'center' }} title={`Cambiar a ${u.full_name}`}>
                   <img
-                    src={(u.photo_url && (u.photo_url.startsWith('/') || u.photo_url.startsWith('http'))
-                      ? u.photo_url
-                      : `${import.meta.env.BASE_URL.replace(/\/$/, '')}/${u.photo_url || 'profile.jpg'}`) + `?v=${Math.floor(Date.now() / 300000)}`}
+                    src={getPhotoUrl(u.photo_url, u.full_name || u.username)}
                     style={{ width: '50px', height: '50px', borderRadius: '50%', objectFit: 'cover', border: '2px solid transparent' }}
-                    onError={(e) => { e.target.onerror = null; e.target.src = "https://ui-avatars.com/api/?name=" + u.username }}
+                    onError={(e) => {
+                      if (!e.target.src.includes('ui-avatars')) {
+                        e.target.src = "https://ui-avatars.com/api/?name=" + (u.full_name || u.username);
+                      }
+                    }}
                   />
                 </div>
               ))}
@@ -925,10 +931,12 @@ function AppContent() {
               title="Cambiar foto de perfil"
             >
               <img
-                src={(user.photo_url && (user.photo_url.startsWith('/') || user.photo_url.startsWith('http'))
-                  ? user.photo_url
-                  : `${import.meta.env.BASE_URL.replace(/\/$/, '')}/${user.photo_url || 'profile.jpg'}`) + `?v=${Math.floor(Date.now() / 300000)}`}
-                onError={(e) => { e.target.onerror = null; e.target.src = "https://ui-avatars.com/api/?name=" + user.username }}
+                src={getPhotoUrl(user.photo_url, user.full_name || user.username)}
+                onError={(e) => {
+                  if (!e.target.src.includes('ui-avatars')) {
+                    e.target.src = "https://ui-avatars.com/api/?name=" + (user.full_name || user.username);
+                  }
+                }}
                 alt={user.full_name}
                 style={{ width: '120px', height: '120px', borderRadius: '50%', objectFit: 'cover', border: '4px solid white', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
               />
@@ -1097,6 +1105,7 @@ function AppContent() {
               onDeleteResult={handleDeleteResult}
               onDeleteTournament={handleDeleteTournament}
               onUpdateTournament={handleUpdateTournament}
+              managedUsers={linkedUsers.map(u => u.username)}
             />
           } />
           <Route path="/event/:id" element={
@@ -1116,9 +1125,10 @@ function AppContent() {
               onDeleteResult={handleDeleteResult}
               onDeleteTournament={handleDeleteTournament}
               onUpdateTournament={handleUpdateTournament}
+              managedUsers={linkedUsers.map(u => u.username)}
             />
           } />
-          <Route path="/stats" element={<StatsView results={results} tournaments={tournaments} />} />
+          <Route path="/stats" element={<StatsView user={user} linkedUsers={linkedUsers} results={results} tournaments={tournaments} />} />
           <Route path="/handicap" element={<HandicapView user={user} currentHandicap={handicap} results={results} tournaments={tournaments} />} />
         </Routes>
       </main>

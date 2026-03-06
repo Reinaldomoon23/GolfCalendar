@@ -5,7 +5,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 // ... imports ...
 
 // ... imports ...
-import { ChevronLeft, ChevronRight, Info, Calendar, Trophy, Plus, MapPin, Trash2, Share2, Filter, CalendarDays, Save, X, AlertTriangle, List, MoreVertical, Copy, Edit, Radio } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Info, Calendar, Trophy, Plus, MapPin, Trash2, Share2, Filter, CalendarDays, Save, X, AlertTriangle, List, MoreVertical, Copy, Edit, Radio, Users } from 'lucide-react';
 import MobileScorecardEditor from './MobileScorecardEditor';
 import spanishCourses from '../data/spanish_courses.json';
 import CalendarFilters from './CalendarFilters';
@@ -56,7 +56,8 @@ export default function CalendarView({
     onUpdateTheme, // New Prop
     onSaveSpecificResult,
     onDeleteResult,
-    user
+    user,
+    managedUsers = []
 }) {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -113,8 +114,31 @@ export default function CalendarView({
 
     // --- NEW: Editing Tournament Details State ---
     const [editingDetails, setEditingDetails] = useState({});
-    const [mobileMode, setMobileMode] = useState(null); // { cardIdx, holeIdx }
+    const [mobileMode, setMobileMode] = useState(() => {
+        try {
+            const saved = localStorage.getItem('golf_tracker_mobile_mode');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (parsed.tournamentId && parsed.tournamentId === id && parsed.cardIdx !== undefined && parsed.holeIdx !== undefined) {
+                    return { cardIdx: parsed.cardIdx, holeIdx: parsed.holeIdx };
+                }
+            }
+        } catch (e) { }
+        return null; // { cardIdx, holeIdx }
+    });
     const [isEditing, setIsEditing] = useState(false);
+
+    useEffect(() => {
+        if (mobileMode && id) {
+            localStorage.setItem('golf_tracker_mobile_mode', JSON.stringify({
+                cardIdx: mobileMode.cardIdx,
+                holeIdx: mobileMode.holeIdx,
+                tournamentId: id
+            }));
+        } else {
+            localStorage.removeItem('golf_tracker_mobile_mode');
+        }
+    }, [mobileMode, id]);
 
     useEffect(() => {
         if (selectedTournament) {
@@ -316,8 +340,11 @@ export default function CalendarView({
                     const currentPars = card.pars || Array(18).fill('');
 
                     // If all pars are empty (or we want to force fill missing ones), merge defaultPars
-                    // Let's safe-fill: only fill empty slots
-                    const mergedPars = currentPars.map((p, i) => p || defaultPars[i] || '');
+                    // Safe-fill: only fill empty slots, but for Salamanca Forum Golf hole 15, we force update if it's 5
+                    const mergedPars = currentPars.map((p, i) => {
+                        if (t.course?.toLowerCase().includes('salamanca forum') && i === 14 && p === 5) return 4;
+                        return p || defaultPars[i] || '';
+                    });
 
                     return {
                         ...card,
@@ -1313,6 +1340,7 @@ export default function CalendarView({
                                         const validRoundsCount = (r.rounds || []).filter(v => (parseInt(v) || 0) > 0).length;
 
                                         let basePar = t.par || 72;
+                                        if (t.course?.toLowerCase().includes('salamanca forum') && (basePar === 71 || !t.par)) basePar = 70;
                                         let totalPar = basePar;
 
                                         if (validRoundsCount > 1 && basePar < 100) {
@@ -1606,6 +1634,7 @@ export default function CalendarView({
                                     <option value="CAMIRAL">CAMIRAL</option>
                                     <option value="LEGACY">LEGACY</option>
                                     <option value="JUNIOR BABY CUP">JUNIOR BABY CUP</option>
+                                    <option value="Circuito Amateur">Circuito Amateur</option>
                                 </select>
                             </div>
 
@@ -1842,6 +1871,7 @@ export default function CalendarView({
                                                 <option value="CAMIRAL">CAMIRAL</option>
                                                 <option value="LEGACY">LEGACY</option>
                                                 <option value="JUNIOR BABY CUP">JUNIOR BABY CUP</option>
+                                                <option value="Circuito Amateur">Circuito Amateur</option>
                                             </select>
                                         </div>
                                     </div>
@@ -2182,13 +2212,13 @@ export default function CalendarView({
                                                 <Radio size={14} className="pulse-animation" /> En Vivo
                                             </button>
 
-                                            {/* Conditionally show MULTI-LIVE button if the user manages other players */}
-                                            {user?.managed_users && user.managed_users.length > 0 && (
+                                            {/* Conditionally show MULTI-LIVE button if the user manages other players or is in a team context */}
+                                            {((user?.managed_users && user.managed_users.length > 0) || managedUsers.length > 1) && (
                                                 <button
                                                     onClick={async (e) => {
                                                         e.preventDefault();
                                                         const baselink = window.location.origin + import.meta.env.BASE_URL.replace(/\/$/, '');
-                                                        const players = [user.username, ...user.managed_users].filter(Boolean).join(',');
+                                                        const players = managedUsers.length > 0 ? managedUsers.join(',') : [user?.username, ...(user?.managed_users || [])].filter(Boolean).join(',');
                                                         const link = `${baselink}/live-team/${t.id}?players=${players}`;
                                                         if (navigator.share) {
                                                             try {
@@ -2656,6 +2686,11 @@ export default function CalendarView({
                             track_girs: editingDetails.track_girs || t?.track_girs || false
                         }}
                         onUpdate={(hIdx, field, val) => handleHoleChange(mobileMode.cardIdx, hIdx, field, val)}
+                        onJumpToHole={(hIdx) => {
+                            const lastStroke = formData.scorecards?.[mobileMode.cardIdx]?.strokes?.[mobileMode.holeIdx];
+                            if (lastStroke) handleSaveResults();
+                            setMobileMode(prev => ({ ...prev, holeIdx: hIdx }));
+                        }}
                         onClose={() => {
                             const lastStroke = formData.scorecards?.[mobileMode.cardIdx]?.strokes?.[mobileMode.holeIdx];
                             if (lastStroke) {
@@ -2833,7 +2868,6 @@ export default function CalendarView({
                                     cursor: 'pointer',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     boxShadow: calendarType === 'month' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                                    transition: 'all 0.2s ease'
                                 }}
                                 title="Cambiar a Vista Mensual"
                             >
@@ -2965,6 +2999,10 @@ export default function CalendarView({
                                 <option value="CLUB">CLUB</option>
                                 <option value="RFEG">RFEG</option>
                                 <option value="FCG">FCG</option>
+                                <option value="CAMIRAL">CAMIRAL</option>
+                                <option value="LEGACY">LEGACY</option>
+                                <option value="JUNIOR BABY CUP">JUNIOR BABY CUP</option>
+                                <option value="Circuito Amateur">Circuito Amateur</option>
                             </select>
 
                             <button className="btn btn-primary" style={{ justifyContent: 'center', marginTop: '1rem' }} onClick={handleAddTournament}>
@@ -3154,7 +3192,8 @@ export default function CalendarView({
                                                                         {result.total}
                                                                         <span style={{ fontSize: '0.8rem', fontWeight: 'normal', color: 'var(--color-text-muted)' }}>golpes</span>
                                                                         {(() => {
-                                                                            const par = t.par || 72;
+                                                                            let par = t.par || 72;
+                                                                            if (t.course?.toLowerCase().includes('salamanca forum') && (par === 71 || !t.par)) par = 70;
                                                                             const diff = result.total - par;
                                                                             const diffStr = diff > 0 ? `(+${diff})` : diff < 0 ? `(${diff})` : '(E)';
                                                                             const color = diff > 0 ? '#ef4444' : diff < 0 ? '#22c55e' : '#64748b';
@@ -3211,6 +3250,11 @@ export default function CalendarView({
                         track_girs: editingDetails.track_girs || selectedTournament?.track_girs || false
                     }}
                     onUpdate={(hIdx, field, val) => handleHoleChange(mobileMode.cardIdx, hIdx, field, val)}
+                    onJumpToHole={(hIdx) => {
+                        const lastStroke = formData.scorecards?.[mobileMode.cardIdx]?.strokes?.[mobileMode.holeIdx];
+                        if (lastStroke) handleSaveResults();
+                        setMobileMode(prev => ({ ...prev, holeIdx: hIdx }));
+                    }}
                     onClose={() => setMobileMode(null)}
                     onNext={() => {
                         const nextHole = mobileMode.holeIdx + 1;

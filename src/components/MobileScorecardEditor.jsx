@@ -11,15 +11,18 @@ const MobileScorecardEditor = ({
     onSave,
     config, // { track_putts, track_girs }
     par,
-    courseName = 'Campo de Golf'
+    courseName = 'Campo de Golf',
+    onJumpToHole
 }) => {
     const [activeField, setActiveField] = useState('strokes');
     const [isFirstKey, setIsFirstKey] = useState(true);
+    const [showHoleSelector, setShowHoleSelector] = useState(false);
 
     // Reset active field and key state when hole changes
     useEffect(() => {
         setActiveField('strokes');
         setIsFirstKey(true);
+        setShowHoleSelector(false);
     }, [holeIdx]);
 
     // Reset key state if user explicitly switches fields (like from strokes to putts)
@@ -77,14 +80,14 @@ const MobileScorecardEditor = ({
         if (s === 1) { scoreLabel = 'HOYO EN UNO 🎯'; scoreColor = '#f59e0b'; }
         else if (scoreDiff <= -3) { scoreLabel = 'Albatros (-3)'; scoreColor = '#ec4899'; }
         else if (scoreDiff === -2) { scoreLabel = 'Eagle (-2)'; scoreColor = '#d946ef'; }
-        else if (scoreDiff === -1) { scoreLabel = 'Birdie (-1)'; scoreColor = '#3b82f6'; } // changed to blue for visibility in dark mode
-        else if (scoreDiff === 0) { scoreLabel = 'Par (E)'; scoreColor = '#10b981'; } // Emerald for Par
+        else if (scoreDiff === -1) { scoreLabel = 'Birdie (-1)'; scoreColor = '#3b82f6'; }
+        else if (scoreDiff === 0) { scoreLabel = 'Par (E)'; scoreColor = '#10b981'; }
         else if (scoreDiff === 1) { scoreLabel = 'Bogey (+1)'; scoreColor = '#f97316'; }
-        else if (scoreDiff === 2) { scoreLabel = 'Doble Bogey (+2)'; scoreColor = '#ef4444'; } // Red
-        else { scoreLabel = `+${scoreDiff}`; scoreColor = '#b91c1c'; } // Dark Red
+        else if (scoreDiff === 2) { scoreLabel = 'Doble Bogey (+2)'; scoreColor = '#ef4444'; }
+        else { scoreLabel = `+${scoreDiff}`; scoreColor = '#b91c1c'; }
     } else if (strokes === '-') {
         scoreLabel = 'Raya / NR';
-        scoreColor = '#64748b'; // Slate 500
+        scoreColor = '#64748b';
     }
 
     const valStr = activeField === 'strokes' ? String(strokes || '-') :
@@ -154,20 +157,83 @@ const MobileScorecardEditor = ({
     return (
         <div style={{
             position: 'fixed', inset: 0, zIndex: 9999,
-            backgroundColor: '#0f172a', // slate-900 absolute dark theme
+            backgroundColor: '#0f172a',
             display: 'flex', flexDirection: 'column',
             animation: 'fadeIn 0.2s ease-out',
             color: 'white',
             fontFamily: 'Inter, system-ui, sans-serif'
         }}>
+            {/* Hole Selector Overlay */}
+            {showHoleSelector && (
+                <div style={{
+                    position: 'absolute', inset: 0, zIndex: 10000,
+                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    padding: '2rem', animation: 'fadeIn 0.2s ease',
+                    backdropFilter: 'blur(10px)'
+                }}>
+                    <h3 style={{ marginBottom: '1.5rem', fontSize: '1.2rem', fontWeight: '800', color: '#94a3b8' }}>SELECCIONAR HOYO</h3>
+                    <div style={{
+                        display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '0.6rem',
+                        maxWidth: '400px', width: '100%'
+                    }}>
+                        {Array.from({ length: 18 }).map((_, i) => {
+                            const isCurrent = i === holeIdx;
+                            const hStrokes = (card.strokes || [])[i];
+                            const hasScore = hStrokes !== '' && hStrokes !== undefined && hStrokes !== null;
+
+                            return (
+                                <button
+                                    key={i}
+                                    onClick={() => {
+                                        if (onJumpToHole) onJumpToHole(i);
+                                        setShowHoleSelector(false);
+                                    }}
+                                    style={{
+                                        aspectRatio: '1', borderRadius: '12px', border: 'none',
+                                        backgroundColor: isCurrent ? '#3b82f6' : (hasScore ? '#1e293b' : '#334155'),
+                                        color: isCurrent ? 'white' : (hasScore ? '#e2e8f0' : '#94a3b8'),
+                                        fontWeight: '800', fontSize: '1.1rem', cursor: 'pointer',
+                                        border: hasScore && !isCurrent ? '1px solid #3b82f640' : 'none',
+                                        position: 'relative',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                    }}
+                                >
+                                    {i + 1}
+                                    {hasScore && !isCurrent && (
+                                        <div style={{
+                                            position: 'absolute', bottom: '2px', width: '4px', height: '4px',
+                                            borderRadius: '50%', backgroundColor: '#3b82f6'
+                                        }} />
+                                    )}
+                                </button>
+                            );
+                        })}
+                    </div>
+                    <button
+                        onClick={() => setShowHoleSelector(false)}
+                        style={{
+                            marginTop: '2.5rem', padding: '0.75rem 2rem', borderRadius: '12px',
+                            backgroundColor: '#334155', color: 'white', border: 'none',
+                            fontWeight: '700', cursor: 'pointer'
+                        }}
+                    >
+                        CANCELAR
+                    </button>
+                </div>
+            )}
+
             {/* Header */}
             <div style={{ padding: '1rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <button onClick={onClose} style={{ color: '#94a3b8', background: 'transparent', border: 'none', padding: '0.25rem', cursor: 'pointer' }}>
                     <X size={24} />
                 </button>
-                <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                    <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        {courseName}
+                <div
+                    onClick={() => setShowHoleSelector(true)}
+                    style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '2px', cursor: 'pointer' }}
+                >
+                    <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                        {courseName} <ChevronRight size={10} style={{ transform: 'rotate(90deg)' }} />
                     </div>
                     <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: '8px' }}>
                         <h2 style={{ fontSize: '1.5rem', fontWeight: '800', margin: 0, letterSpacing: '0.05em', color: 'white' }}>HOYO {holeIdx + 1}</h2>
@@ -247,7 +313,7 @@ const MobileScorecardEditor = ({
 
             {/* Keyboard Grid & Navigation inside premium dock container */}
             <div style={{
-                backgroundColor: '#1e293b', // slate-800
+                backgroundColor: '#1e293b',
                 padding: '1rem',
                 borderTopLeftRadius: '24px',
                 borderTopRightRadius: '24px',
