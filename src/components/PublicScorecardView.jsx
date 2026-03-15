@@ -1,16 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, getDocs, collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
-import { ChevronLeft, Flag, Info } from 'lucide-react';
+import { ChevronLeft, Flag, Info, MapPin, Wind, Thermometer, CloudRain, Cloud, Sun } from 'lucide-react';
+import { fetchUserProfileByUsername } from '../utils/userProfiles';
 
-const R2_PUBLIC_URL = "https://pub-23c281cf1ae04def9102341cf7d87837.r2.dev";
+const R2_PUBLIC_URL = "https://golf-cdn.misterpotatolightyear.workers.dev";
 
-const getPhotoUrl = (photoPath, username) => {
-    if (!photoPath) return `https://ui-avatars.com/api/?name=${username || 'Golf'}`;
-    if (photoPath.startsWith('http')) return photoPath;
-    const fileName = photoPath.split('/').pop() || 'profile.jpg';
-    return `${R2_PUBLIC_URL}/${fileName}`;
+// Photo URL Helper with robust fallbacks and encoding
+const getPhotoUrl = (photoPath, username, version) => {
+    const safeName = encodeURIComponent(username || 'Golf');
+    const avatarUrl = `https://ui-avatars.com/api/?name=${safeName}&background=0D8ABC&color=fff&size=256`;
+
+    if (!photoPath || String(photoPath).trim() === '') return avatarUrl;
+
+    let url = photoPath;
+
+    if (url.includes('pub-23c281cf1ae04def9102341cf7d87837.r2.dev')) {
+        const fileName = url.split('/').pop() || 'profile.jpg';
+        url = `${R2_PUBLIC_URL}/${fileName}`;
+    } else if (!url.startsWith('http')) {
+        const fileName = url.includes('/') ? url.split('/').pop() : url;
+        url = `${R2_PUBLIC_URL}/${fileName || 'profile.jpg'}`;
+    } else if (url.includes('reinaldomoon.top/GolfTeam/profiles/')) {
+        const fileName = url.split('/').pop() || 'profile.jpg';
+        url = `${R2_PUBLIC_URL}/${fileName}`;
+    }
+
+    return version ? `${url}${url.includes('?') ? '&' : '?'}v=${version}` : url;
 };
 import tournamentsData from '../data/tournaments.json';
 
@@ -25,14 +42,101 @@ export default function PublicScorecardView() {
     const [tournament, setTournament] = useState(null);
     const [result, setResult] = useState(null);
     const [error, setError] = useState(null);
+    const [currentTime, setCurrentTime] = useState(new Date());
+    const [parStats, setParStats] = useState({ 3: '-', 4: '-', 5: '-' });
+    const [lang, setLang] = useState('es');
+    const [weather, setWeather] = useState(null);
+
+    const i18n = {
+        es: {
+            follow: 'Sigue los resultados de',
+            live: 'EN DIRECTO',
+            loading: 'Cargando datos en vivo...',
+            playingHole: 'Jugando Hoyo',
+            average: 'Promedio Par',
+            round: 'Ronda',
+            hole: 'Hoyo',
+            score: 'Score',
+            noResults: 'Todavía no hay resultados registrados para este torneo.',
+            par: 'Par',
+            wind: 'Viento',
+            temp: 'Temp',
+            humidity: 'Hum'
+        },
+        en: {
+            follow: 'Following results of',
+            live: 'LIVE',
+            loading: 'Loading live data...',
+            playingHole: 'Playing Hole',
+            average: 'Avg Par',
+            round: 'Round',
+            hole: 'Hole',
+            score: 'Score',
+            noResults: 'No results recorded for this tournament yet.',
+            par: 'Par',
+            wind: 'Wind',
+            temp: 'Temp',
+            humidity: 'Hum'
+        }
+    };
+    const t = i18n[lang];
+
+    // Current Time Clock
+    useEffect(() => {
+        const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+        return () => clearInterval(timer);
+    }, []);
+
+    // Calculate historical par averages for the player
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const resultsRef = collection(db, 'users', username, 'results');
+                const snapshot = await getDocs(resultsRef);
+                const totals = {
+                    3: { sum: 0, count: 0 },
+                    4: { sum: 0, count: 0 },
+                    5: { sum: 0, count: 0 }
+                };
+
+                snapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    if (data.scorecards) {
+                        Object.values(data.scorecards).forEach(card => {
+                            if (!card.pars || !card.strokes) return;
+                            for (let i = 0; i < 18; i++) {
+                                const par = parseInt(card.pars[i]);
+                                const stroke = parseInt(card.strokes[i]);
+                                if (par && stroke && stroke > 0) {
+                                    if (par === 3 || par === 4 || par === 5) {
+                                        totals[par].sum += stroke;
+                                        totals[par].count++;
+                                    }
+                                }
+                            }
+                        });
+                    }
+                });
+
+                setParStats({
+                    3: totals[3].count > 0 ? (totals[3].sum / totals[3].count).toFixed(2) : '-',
+                    4: totals[4].count > 0 ? (totals[4].sum / totals[4].count).toFixed(2) : '-',
+                    5: totals[5].count > 0 ? (totals[5].sum / totals[5].count).toFixed(2) : '-'
+                });
+            } catch (err) {
+                console.error("Error fetching stats", err);
+            }
+        };
+        fetchStats();
+    }, [username]);
 
     // Fetch user info from Firestore
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                const userSnap = await getDoc(doc(db, "users", username));
-                if (userSnap.exists()) {
-                    setUserProfile({ ...userSnap.data(), username });
+                const profile = await fetchUserProfileByUsername(db, username);
+                if (profile) {
+                    setUserProfile(profile);
                 }
             } catch (err) {
                 console.error("Error fetching user profile from Firestore", err);
@@ -40,6 +144,45 @@ export default function PublicScorecardView() {
         };
         fetchUser();
     }, [username]);
+
+    // Fetch weather info based on course location
+    useEffect(() => {
+        const courseName = result?.tournamentCourse || tournament?.course;
+        if (!courseName) return;
+
+        const fetchWeather = async () => {
+            try {
+                // 1. Geocode course name to get coordinates (using photon.komoot.io - no key needed)
+                const geoUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(courseName)}&limit=1`;
+                const geoRes = await fetch(geoUrl);
+                const geoData = await geoRes.json();
+
+                if (geoData.features && geoData.features.length > 0) {
+                    const [lon, lat] = geoData.features[0].geometry.coordinates;
+                    const locationName = geoData.features[0].properties.city || geoData.features[0].properties.name || '';
+
+                    // 2. Fetch weather from Open-Meteo (no key needed)
+                    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,wind_speed_10m&timezone=auto`;
+                    const weatherRes = await fetch(weatherUrl);
+                    const weatherData = await weatherRes.json();
+
+                    if (weatherData.current) {
+                        setWeather({
+                            temp: weatherData.current.temperature_2m,
+                            wind: weatherData.current.wind_speed_10m,
+                            humidity: weatherData.current.relative_humidity_2m,
+                            code: weatherData.current.weather_code,
+                            location: locationName
+                        });
+                    }
+                }
+            } catch (err) {
+                console.error("Error fetching weather", err);
+            }
+        };
+
+        fetchWeather();
+    }, [tournament?.course, result?.tournamentCourse]);
 
     // Fetch tournament info
     // IMPORTANT: Check user's custom_tournaments FIRST because they override official ones.
@@ -152,10 +295,56 @@ export default function PublicScorecardView() {
 
     if (loading || !tournamentInfo) {
         return (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: 'white' }}>
-                <p>Cargando datos en vivo...</p>
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: 'white', background: '#0f172a' }}>
+                <p>{t.loading}</p>
             </div>
         );
+    }
+
+    // Determine the active hole
+    let activeHole = null;
+    let activePar = null;
+
+    if (result && result.scorecards) {
+        const roundsKeys = Object.keys(result.scorecards).sort();
+        let foundActiveRIdx = roundsKeys.length > 0 ? roundsKeys[0] : null;
+
+        for (let i = roundsKeys.length - 1; i >= 0; i--) {
+            const rIdx = roundsKeys[i];
+            const card = result.scorecards[rIdx];
+
+            let playedHoles = 0;
+            let strokesMatchParsPrecisely = true;
+
+            for (let h = 0; h < 18; h++) {
+                const s = String(card.strokes?.[h] || '');
+                const p = String(card.pars?.[h] || '');
+                if (s !== '' && s !== '-') playedHoles++;
+                if (s !== p) strokesMatchParsPrecisely = false;
+            }
+
+            const isAutoPopulatedDummy = (playedHoles === 18 && strokesMatchParsPrecisely);
+            const manualStrokesTotal = result.rounds?.[parseInt(rIdx)];
+
+            if ((playedHoles > 0 && !isAutoPopulatedDummy) || (manualStrokesTotal && manualStrokesTotal > 0)) {
+                foundActiveRIdx = rIdx;
+                break;
+            }
+        }
+
+        if (foundActiveRIdx !== null) {
+            const card = result.scorecards[foundActiveRIdx];
+            if (card) {
+                for (let i = 0; i < 18; i++) {
+                    const stroke = String(card.strokes?.[i] || '');
+                    if (stroke === '' || stroke === '-' || stroke === '0') {
+                        activeHole = i + 1;
+                        activePar = parseInt(card.pars?.[i]) || 4;
+                        break;
+                    }
+                }
+            }
+        }
     }
 
     return (
@@ -166,38 +355,93 @@ export default function PublicScorecardView() {
             fontFamily: 'Inter, system-ui, sans-serif',
             paddingBottom: '3rem'
         }}>
+            <style>{`
+                @keyframes pulseLive {
+                    0% { opacity: 1; transform: scale(1); }
+                    50% { opacity: 0.4; transform: scale(1.1); }
+                    100% { opacity: 1; transform: scale(1); }
+                }
+                .live-dot {
+                    display: inline-block;
+                    animation: pulseLive 1.5s infinite ease-in-out;
+                    margin-left: 4px;
+                }
+            `}</style>
+
             {/* Header */}
             <header style={{
                 background: '#1e293b',
-                padding: '1rem',
+                padding: '1.2rem 1rem',
                 position: 'sticky',
                 top: 0,
                 zIndex: 10,
                 boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                    <div style={{ position: 'absolute', top: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                        <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                            {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                        <div style={{ display: 'flex', gap: '4px', background: '#0f172a', padding: '2px', borderRadius: '6px', border: '1px solid #334155' }}>
+                            <button onClick={() => setLang('es')} style={{ background: lang === 'es' ? '#3b82f6' : 'transparent', border: 'none', color: 'white', fontSize: '0.6rem', padding: '2px 6px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>ES</button>
+                            <button onClick={() => setLang('en')} style={{ background: lang === 'en' ? '#3b82f6' : 'transparent', border: 'none', color: 'white', fontSize: '0.6rem', padding: '2px 6px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>EN</button>
+                        </div>
+                    </div>
+
                     <div style={{ textAlign: 'center', flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '8px' }}>
-                            {userProfile?.photo_url && (
-                                <img src={getPhotoUrl(userProfile?.photo_url, userProfile?.full_name || username)} alt={username} style={{ width: '60px', height: '60px', borderRadius: '50%', border: '2px solid #fff', objectFit: 'cover' }}
-                                    onError={(e) => { e.target.onerror = null; e.target.src = "https://ui-avatars.com/api/?name=" + username }}
-                                />
-                            )}
-                            <div>
-                                <div style={{ fontSize: '0.7rem', color: '#10b981', fontWeight: 'bold', letterSpacing: '0.05em' }}>
-                                    EN DIRECTO 🔴
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '12px' }}>
+                            <img
+                                src={getPhotoUrl(userProfile?.photo_url || result?.photo_url, userProfile?.full_name || username)}
+                                alt={username}
+                                style={{ width: '64px', height: '64px', borderRadius: '50%', border: '2px solid #3b82f6', objectFit: 'cover' }}
+                                onError={(e) => { e.target.onerror = null; e.target.src = "https://ui-avatars.com/api/?name=" + username }}
+                            />
+                            <div style={{ textAlign: 'left' }}>
+                                <div style={{ fontSize: '0.75rem', color: '#ef4444', fontWeight: 'bold', letterSpacing: '0.05em', display: 'flex', alignItems: 'center' }}>
+                                    {t.live} <span className="live-dot">🔴</span>
                                 </div>
-                                <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
-                                    {userProfile ? userProfile.full_name : username}
+                                <div style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '2px' }}>
+                                    {t.follow}
+                                </div>
+                                <div style={{ fontWeight: 'bold', fontSize: '1.2rem', lineHeight: '1.2' }}>
+                                    {userProfile?.full_name || result?.full_name || username}
                                 </div>
                             </div>
                         </div>
-                        <h1 style={{ margin: 0, fontSize: '1rem', color: '#94a3b8' }}>
+                        <h1 style={{ margin: 0, fontSize: '1rem', color: '#cbd5e1' }}>
                             {result?.tournamentName || tournament?.name}
                         </h1>
-                        <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '4px' }}>
-                            {result?.tournamentCourse || tournament?.course}
+                        <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                            <MapPin size={12} /> {result?.tournamentCourse || tournament?.course}
                         </div>
+
+                        {weather && (
+                            <div style={{ display: 'flex', justifyContent: 'center', gap: '15px', marginTop: '10px', fontSize: '0.75rem', color: '#94a3b8' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <Thermometer size={14} color="#3b82f6" /> {weather.temp}°C
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <Wind size={14} color="#3b82f6" /> {weather.wind} km/h
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    {weather.code >= 60 ? <CloudRain size={14} color="#3b82f6" /> : <Cloud size={14} color="#3b82f6" />}
+                                    {weather.humidity}% {t.humidity}
+                                </div>
+                            </div>
+                        )}
+
+                        {activeHole && (
+                            <div style={{ background: '#334155', borderRadius: '12px', padding: '12px', marginTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #475569' }}>
+                                <div style={{ textAlign: 'left' }}>
+                                    <div style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t.playingHole}</div>
+                                    <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: 'white' }}>{activeHole} <span style={{ fontSize: '0.9rem', color: '#cbd5e1', fontWeight: 'normal' }}>({t.par} {activePar})</span></div>
+                                </div>
+                                <div style={{ textAlign: 'right' }}>
+                                    <div style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t.average} {activePar}</div>
+                                    <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#3b82f6' }}>{parStats[activePar]}</div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </header>
@@ -206,7 +450,7 @@ export default function PublicScorecardView() {
             {!result ? (
                 <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>
                     <Flag size={32} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
-                    <p>Todavía no hay resultados registrados para este torneo.</p>
+                    <p>{t.noResults}</p>
                 </div>
             ) : (
                 <div style={{ padding: '1rem' }}>
@@ -309,7 +553,7 @@ export default function PublicScorecardView() {
                                         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.2)'
                                     }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                                            <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '1.1rem' }}>Ronda {roundStr + 1}</h3>
+                                            <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '1.1rem' }}>{t.round} {roundStr + 1}</h3>
                                             <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
                                                 <span style={{ fontSize: '2rem', fontWeight: '900', color: 'white' }}>{displayTotal || '-'}</span>
                                                 <span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: diffColor }}>
@@ -325,7 +569,7 @@ export default function PublicScorecardView() {
                                                 <div style={{ display: 'inline-flex', flexDirection: 'column', minWidth: '100%', border: '1px solid #334155', borderRadius: '8px', overflow: 'hidden' }}>
                                                     {/* Row: Headers */}
                                                     <div style={{ display: 'flex', background: '#0f172a', fontWeight: 'bold', fontSize: '0.8rem', color: '#94a3b8' }}>
-                                                        <div style={{ width: '60px', padding: '8px', borderRight: '1px solid #334155', flexShrink: 0, textAlign: 'center', boxSizing: 'border-box' }}>Hoyo</div>
+                                                        <div style={{ width: '60px', padding: '8px', borderRight: '1px solid #334155', flexShrink: 0, textAlign: 'center', boxSizing: 'border-box' }}>{t.hole}</div>
                                                         {[...Array(9)].map((_, i) => (
                                                             <div key={i} style={{ flex: '1 1 0%', padding: '8px 0', borderRight: i < 8 ? '1px solid #334155' : 'none', textAlign: 'center', boxSizing: 'border-box', minWidth: 0 }}>
                                                                 {i + 1}
@@ -335,7 +579,7 @@ export default function PublicScorecardView() {
 
                                                     {/* Row: Par */}
                                                     <div style={{ display: 'flex', background: '#1e293b', fontSize: '0.8rem', color: '#cbd5e1' }}>
-                                                        <div style={{ width: '60px', padding: '8px', borderRight: '1px solid #334155', borderTop: '1px solid #334155', flexShrink: 0, textAlign: 'center', fontWeight: 'bold', boxSizing: 'border-box' }}>Par</div>
+                                                        <div style={{ width: '60px', padding: '8px', borderRight: '1px solid #334155', borderTop: '1px solid #334155', flexShrink: 0, textAlign: 'center', fontWeight: 'bold', boxSizing: 'border-box' }}>{t.par}</div>
                                                         {[...Array(9)].map((_, i) => (
                                                             <div key={i} style={{ flex: '1 1 0%', padding: '8px 0', borderRight: i < 8 ? '1px solid #334155' : 'none', borderTop: '1px solid #334155', textAlign: 'center', boxSizing: 'border-box', minWidth: 0 }}>
                                                                 {card.pars?.[i] || '-'}
@@ -345,7 +589,7 @@ export default function PublicScorecardView() {
 
                                                     {/* Row: Strokes */}
                                                     <div style={{ display: 'flex', background: '#334155', fontSize: '1rem', fontWeight: 'bold' }}>
-                                                        <div style={{ width: '60px', padding: '8px', borderRight: '1px solid #1e293b', borderTop: '1px solid #1e293b', flexShrink: 0, textAlign: 'center', color: 'white', boxSizing: 'border-box' }}>Score</div>
+                                                        <div style={{ width: '60px', padding: '8px', borderRight: '1px solid #1e293b', borderTop: '1px solid #1e293b', flexShrink: 0, textAlign: 'center', color: 'white', boxSizing: 'border-box' }}>{t.score}</div>
                                                         {[...Array(9)].map((_, i) => {
                                                             const stroke = card.strokes?.[i] || '';
                                                             const par = parseInt(card.pars?.[i]) || 0;
@@ -387,7 +631,7 @@ export default function PublicScorecardView() {
                                                 <div style={{ display: 'inline-flex', flexDirection: 'column', minWidth: '100%', border: '1px solid #334155', borderRadius: '8px', overflow: 'hidden' }}>
                                                     {/* Row: Headers */}
                                                     <div style={{ display: 'flex', background: '#0f172a', fontWeight: 'bold', fontSize: '0.8rem', color: '#94a3b8' }}>
-                                                        <div style={{ width: '60px', padding: '8px', borderRight: '1px solid #334155', flexShrink: 0, textAlign: 'center', boxSizing: 'border-box' }}>Hoyo</div>
+                                                        <div style={{ width: '60px', padding: '8px', borderRight: '1px solid #334155', flexShrink: 0, textAlign: 'center', boxSizing: 'border-box' }}>{t.hole}</div>
                                                         {[...Array(9)].map((_, i) => (
                                                             <div key={i + 9} style={{ flex: '1 1 0%', padding: '8px 0', borderRight: i < 8 ? '1px solid #334155' : 'none', textAlign: 'center', boxSizing: 'border-box', minWidth: 0 }}>
                                                                 {i + 10}
@@ -397,7 +641,7 @@ export default function PublicScorecardView() {
 
                                                     {/* Row: Par */}
                                                     <div style={{ display: 'flex', background: '#1e293b', fontSize: '0.8rem', color: '#cbd5e1' }}>
-                                                        <div style={{ width: '60px', padding: '8px', borderRight: '1px solid #334155', borderTop: '1px solid #334155', flexShrink: 0, textAlign: 'center', fontWeight: 'bold', boxSizing: 'border-box' }}>Par</div>
+                                                        <div style={{ width: '60px', padding: '8px', borderRight: '1px solid #334155', borderTop: '1px solid #334155', flexShrink: 0, textAlign: 'center', fontWeight: 'bold', boxSizing: 'border-box' }}>{t.par}</div>
                                                         {[...Array(9)].map((_, i) => (
                                                             <div key={i + 9} style={{ flex: '1 1 0%', padding: '8px 0', borderRight: i < 8 ? '1px solid #334155' : 'none', borderTop: '1px solid #334155', textAlign: 'center', boxSizing: 'border-box', minWidth: 0 }}>
                                                                 {card.pars?.[i + 9] || '-'}
@@ -407,7 +651,7 @@ export default function PublicScorecardView() {
 
                                                     {/* Row: Strokes */}
                                                     <div style={{ display: 'flex', background: '#334155', fontSize: '1rem', fontWeight: 'bold' }}>
-                                                        <div style={{ width: '60px', padding: '8px', borderRight: '1px solid #1e293b', borderTop: '1px solid #1e293b', flexShrink: 0, textAlign: 'center', color: 'white', boxSizing: 'border-box' }}>Score</div>
+                                                        <div style={{ width: '60px', padding: '8px', borderRight: '1px solid #1e293b', borderTop: '1px solid #1e293b', flexShrink: 0, textAlign: 'center', color: 'white', boxSizing: 'border-box' }}>{t.score}</div>
                                                         {[...Array(9)].map((_, i) => {
                                                             const stroke = card.strokes?.[i + 9] || '';
                                                             const par = parseInt(card.pars?.[i + 9]) || 0;

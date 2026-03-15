@@ -3,14 +3,19 @@ import { useParams, useLocation } from 'react-router-dom';
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { ChevronLeft, Info } from 'lucide-react';
+import { fetchUserProfileByUsername } from '../utils/userProfiles';
 
 const R2_PUBLIC_URL = "https://pub-23c281cf1ae04def9102341cf7d87837.r2.dev";
 
-const getPhotoUrl = (photoPath, username) => {
-    if (!photoPath) return `https://ui-avatars.com/api/?name=${username || 'Golf'}`;
-    if (photoPath.startsWith('http')) return photoPath;
-    const fileName = photoPath.split('/').pop() || 'profile.jpg';
-    return `${R2_PUBLIC_URL}/${fileName}`;
+const getPhotoUrl = (photoPath, username, version) => {
+    if (!photoPath) return `https://ui-avatars.com/api/?name=${encodeURIComponent(username || 'Golf')}`;
+
+    let url = photoPath;
+    if (!photoPath.startsWith('http')) {
+        const fileName = photoPath.includes('/') ? photoPath.split('/').pop() : photoPath;
+        url = `${R2_PUBLIC_URL}/${fileName || 'profile.jpg'}`;
+    }
+    return version ? `${url}?v=${version}` : url;
 };
 
 export default function TeamLiveScorecard() {
@@ -32,9 +37,9 @@ export default function TeamLiveScorecard() {
             try {
                 const matchedProfiles = {};
                 for (const p of playersList) {
-                    const userSnap = await getDoc(doc(db, "users", p));
-                    if (userSnap.exists()) {
-                        matchedProfiles[p] = { ...userSnap.data(), username: p };
+                    const profile = await fetchUserProfileByUsername(db, p);
+                    if (profile) {
+                        matchedProfiles[p] = profile;
                     }
                 }
                 setProfiles(matchedProfiles);

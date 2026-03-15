@@ -4,19 +4,31 @@ import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-do
 import CalendarView from './components/CalendarView';
 import StatsView from './components/StatsView';
 import HandicapView from './components/HandicapView';
-import { Calendar as CalendarIcon, BarChart3, TrendingUp, User, X } from 'lucide-react';
+import {
+  Calendar as CalendarIcon,
+  BarChart3,
+  TrendingUp,
+  User,
+  X,
+  LogOut,
+  Camera
+} from 'lucide-react';
 
 import tournamentsData from './data/tournaments.json';
-
-import LoginView from './components/LoginView';
+import LoginViewFirebase from './components/LoginViewFirebase';
 import PublicScorecardView from './components/PublicScorecardView';
 import TeamLiveScorecard from './components/TeamLiveScorecard';
-import { LogOut } from 'lucide-react';
 
 // Firebase Imports
-import { db } from './firebase';
-import { collection, doc, getDoc, getDocs, setDoc, onSnapshot, query, where } from 'firebase/firestore';
+import { auth, db } from './firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { collection, doc, getDoc, getDocs, onSnapshot, setDoc } from 'firebase/firestore';
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import {
+  ensureUsernameProfileDocument,
+  fetchUserProfileByUid,
+  fetchUserProfileByUsername
+} from './utils/userProfiles';
 
 // Cloudflare R2 Config
 const R2_CONFIG = {
@@ -24,7 +36,7 @@ const R2_CONFIG = {
   secretAccessKey: "c4bc610a94cd5c1c18db535a1610f83df61a93836feea811999a6c4fa171ac7b",
   endpoint: "https://1e8f9eaa8024f1354556923930ad0acb.r2.cloudflarestorage.com",
   bucketName: "golf-profiles-bucket",
-  publicUrl: "https://pub-23c281cf1ae04def9102341cf7d87837.r2.dev"
+  publicUrl: "https://golf-cdn.misterpotatolightyear.workers.dev"
 };
 
 const s3Client = new S3Client({
@@ -36,14 +48,29 @@ const s3Client = new S3Client({
   },
 });
 
-// Photo URL Helper
-const getPhotoUrl = (photoPath, username) => {
-  if (!photoPath) return `https://ui-avatars.com/api/?name=${username || 'Golf'}`;
-  if (photoPath.startsWith('http')) return photoPath;
+// Photo URL Helper with robust fallbacks and encoding
+const getPhotoUrl = (photoPath, username, version) => {
+  const safeName = encodeURIComponent(username || 'Golf');
+  const avatarUrl = `https://ui-avatars.com/api/?name=${safeName}&background=0D8ABC&color=fff&size=256`;
 
-  // Strip 'profiles/' if present and get filename
-  const fileName = photoPath.includes('/') ? photoPath.split('/').pop() : photoPath;
-  return `${R2_CONFIG.publicUrl}/${fileName || 'profile.jpg'}`;
+  if (!photoPath || String(photoPath).trim() === '') return avatarUrl;
+
+  let url = photoPath;
+
+  // Upgrade legacy R2 urls or local paths to the new Worker CDN
+  if (url.includes('pub-23c281cf1ae04def9102341cf7d87837.r2.dev')) {
+    const fileName = url.split('/').pop() || 'profile.jpg';
+    url = `${R2_CONFIG.publicUrl}/${fileName}`;
+  } else if (!url.startsWith('http')) {
+    const fileName = url.includes('/') ? url.split('/').pop() : url;
+    url = `${R2_CONFIG.publicUrl}/${fileName || 'profile.jpg'}`;
+  } else if (url.includes('reinaldomoon.top/GolfTeam/profiles/')) {
+    // Also upgrade legacy server urls to the new CDN since we migrated photos already
+    const fileName = url.split('/').pop() || 'profile.jpg';
+    url = `${R2_CONFIG.publicUrl}/${fileName}`;
+  }
+
+  return version ? `${url}${url.includes('?') ? '&' : '?'}v=${version}` : url;
 };
 
 // Environment Mode: 'single' (Nicole) or 'multi' (Team)
@@ -55,6 +82,12 @@ const DEFAULT_USER = {
   username: 'nicole',
   full_name: 'Calendario Nicole Likhomanova',
   photo_url: 'nicole.jpg',
+};
+
+const DEFAULT_PREFERENCES = {
+  groups: ['juvenil', 'rfeg', 'fcg', 'club', 'adultos'],
+  hiddenIds: [],
+  themes: {}
 };
 
 function AppContent() {
@@ -105,13 +138,8 @@ function AppContent() {
     setTimeout(() => window.location.reload(), 1000);
   };
 
-  const [user, setUser] = useState(() => {
-    if (!IS_MULTI) {
-      return DEFAULT_USER;
-    }
-    const saved = localStorage.getItem('golf_tracker_user');
-    return saved ? JSON.parse(saved) : null;
-  });
+  const [authReady, setAuthReady] = useState(!IS_MULTI);
+  const [user, setUser] = useState(() => (IS_MULTI ? null : DEFAULT_USER));
 
   const [handicap, setHandicap] = useState(null);
   const [pdfUrl, setPdfUrl] = useState(null);
@@ -225,11 +253,11 @@ function AppContent() {
       localStorage.setItem('golf_tracker_user', JSON.stringify(updatedUser));
 
       setPhotoVersion(Date.now());
-      alert('¡Foto actualizada en Cloudflare!');
+      alert('¡Foto actualizada en Cloudflare R2!');
     } catch (err) {
       console.error("R2 Upload error details:", err);
       const errorMsg = err.message || 'Error desconocido';
-      alert(`Error al subir a Cloudflare. Posible problema de CORS o permisos.\nDetalle: ${errorMsg}`);
+      alert(`Error al subir a Cloudflare R2: ${errorMsg}`);
     } finally {
       setIsUploadingPhoto(false);
     }
@@ -277,91 +305,206 @@ function AppContent() {
   };
 
 
-  const [linkedUsers, setLinkedUsers] = useState(() => {
-    if (!IS_MULTI) return [];
-    try {
-      return JSON.parse(localStorage.getItem('golf_tracker_linked_users') || '[]');
-    } catch { return []; }
-  });
+  const [linkedUsers, setLinkedUsers] = useState([]);
 
-  const handleLogin = async (userData) => {
-    // Check if manager
-    let activeUser = userData;
-    let newLinkedUsers = [];
-
-    // If logging in as manager (David), set active user to first managed child or keep manager context?
-    // User requested "David" has "Maria" and "Sofia".
-    // Let's set David as context holder but maybe active profile is first child.
-    // Actually, simpler: If userData has 'managed_users', fetch them.
-    // If userData has 'managed_users', fetch them.
-    if (userData.managed_users && Array.isArray(userData.managed_users)) {
-      try {
-        const managedProfiles = [];
-        // Add manager first
-        managedProfiles.push({ ...userData });
-
-        for (const childId of userData.managed_users) {
-          const childSnap = await getDoc(doc(db, "users", childId));
-          if (childSnap.exists()) {
-            managedProfiles.push({ ...childSnap.data(), username: childId });
-          }
-        }
-
-        newLinkedUsers = managedProfiles.filter((v, i, a) => a.findIndex(t => t.username === v.username) === i);
-
-        if (newLinkedUsers.length > 0) {
-          // Set the first child as active or stay as manager if preferred
-          const firstChild = newLinkedUsers.find(u => userData.managed_users.includes(u.username));
-          if (firstChild) {
-            activeUser = firstChild;
-          }
-          activeUser.manager_id = userData.username;
-
-          setLinkedUsers(newLinkedUsers);
-          localStorage.setItem('golf_tracker_linked_users', JSON.stringify(newLinkedUsers));
-        }
-      } catch (e) {
-        console.error("Error fetching managed users from Firestore", e);
-      }
-    } else {
-      setLinkedUsers([]);
-      localStorage.removeItem('golf_tracker_linked_users');
-    }
-
-    // Optimistically set user
-    setUser(activeUser);
-    localStorage.setItem('golf_tracker_user', JSON.stringify(activeUser));
-
-    // Fetch full profile from Firestore to get license/handicap if missing in auth response
-    if (activeUser?.username) {
-      try {
-        const userDoc = await getDoc(doc(db, "users", activeUser.username));
-        if (userDoc.exists()) {
-          const freshData = userDoc.data();
-          const fullProfile = {
-            ...activeUser,
-            ...freshData,
-            // Preserve manager info if it was already set during login/selection
-            manager_id: activeUser.manager_id
-          };
-          setUser(fullProfile);
-          localStorage.setItem('golf_tracker_user', JSON.stringify(fullProfile));
-        }
-      } catch (e) {
-        console.error("Error fetching full profile on login", e);
-      }
-    }
-  };
-
-  const handleLogout = () => {
+  const resetSessionState = () => {
     setUser(null);
     setLinkedUsers([]);
     localStorage.removeItem('golf_tracker_user');
     localStorage.removeItem('golf_tracker_results');
     localStorage.removeItem('golf_tracker_linked_users');
     setResults({});
+    setCustomTournaments([]);
+    setPreferences({ ...DEFAULT_PREFERENCES });
     setHandicap(null);
     setPdfUrl(null);
+  };
+
+  const loadManagedProfiles = async (ownerProfile) => {
+    if (!ownerProfile?.managed_users || !Array.isArray(ownerProfile.managed_users)) {
+      return [];
+    }
+
+    const profiles = [{ ...ownerProfile }];
+
+    for (const childUsername of ownerProfile.managed_users) {
+      const childProfile = await fetchUserProfileByUsername(db, childUsername);
+      if (childProfile) {
+        profiles.push(childProfile);
+      }
+    }
+
+    return profiles.filter((profile, index, array) => (
+      array.findIndex((candidate) => candidate.username === profile.username) === index
+    ));
+  };
+
+  useEffect(() => {
+    if (!IS_MULTI) return undefined;
+
+    let cancelled = false;
+
+    const unsubscribe = onAuthStateChanged(auth, (authUser) => {
+      void (async () => {
+        if (!authUser) {
+          if (!cancelled) {
+            resetSessionState();
+            setAuthReady(true);
+          }
+          return;
+        }
+
+        if (!cancelled) {
+          setAuthReady(false);
+        }
+
+        try {
+          const resolvedProfile = await fetchUserProfileByUid(db, authUser.uid, authUser.email);
+          const inferredUsername = resolvedProfile?.username || authUser.email?.split('@')[0] || '';
+
+          if (!inferredUsername) {
+            throw new Error('No se pudo resolver el perfil del usuario autenticado');
+          }
+
+          const ownerProfile = await ensureUsernameProfileDocument(db, {
+            ...resolvedProfile,
+            uid: authUser.uid,
+            username: inferredUsername,
+            email: resolvedProfile?.email || authUser.email || `${inferredUsername}@golfteam.app`,
+            full_name: resolvedProfile?.full_name || authUser.displayName || inferredUsername
+          }, inferredUsername);
+
+          let savedActiveUser = null;
+          try {
+            savedActiveUser = JSON.parse(localStorage.getItem('golf_tracker_user') || 'null');
+          } catch {
+            savedActiveUser = null;
+          }
+
+          const managedProfiles = await loadManagedProfiles(ownerProfile);
+          let activeUser = ownerProfile;
+
+          if (managedProfiles.length > 0) {
+            const preferredManagedUser = savedActiveUser?.manager_id === ownerProfile.username
+              ? managedProfiles.find((profile) => profile.username === savedActiveUser.username)
+              : null;
+            const firstManagedUser = managedProfiles.find((profile) => (
+              ownerProfile.managed_users || []
+            ).includes(profile.username));
+
+            activeUser = preferredManagedUser || firstManagedUser || ownerProfile;
+
+            if (activeUser.username !== ownerProfile.username) {
+              activeUser = { ...activeUser, manager_id: ownerProfile.username };
+            }
+
+            if (!cancelled) {
+              setLinkedUsers(managedProfiles);
+              localStorage.setItem('golf_tracker_linked_users', JSON.stringify(managedProfiles));
+            }
+          } else if (!cancelled) {
+            setLinkedUsers([]);
+            localStorage.removeItem('golf_tracker_linked_users');
+          }
+
+          if (!cancelled) {
+            setUser(activeUser);
+            localStorage.setItem('golf_tracker_user', JSON.stringify(activeUser));
+          }
+        } catch (error) {
+          console.error('Error resolving Firebase session', error);
+          if (!cancelled) {
+            resetSessionState();
+          }
+        } finally {
+          if (!cancelled) {
+            setAuthReady(true);
+          }
+        }
+      })();
+    });
+
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, []);
+
+  const handleRecoverProfile = async () => {
+    if (!user?.username) return;
+    setIsUpdatingProfile(true);
+    try {
+      const baselink = import.meta.env.BASE_URL.replace(/\/$/, '');
+      const res = await fetch(`${baselink}/api/users.json?t=${Date.now()}`);
+      const users = await res.json();
+      const legacy = users[user.username];
+
+      if (legacy) {
+        // Prepare update
+        const updates = {
+          full_name: legacy.full_name || user.full_name,
+          federation_id: legacy.federation_id || user.federation_id,
+          photo_url: legacy.photo_url || user.photo_url
+        };
+
+        // Push to Firestore
+        await setDoc(doc(db, "users", user.username), updates, { merge: true });
+
+        // Update local state
+        const updated = { ...user, ...updates };
+        setUser(updated);
+        localStorage.setItem('golf_tracker_user', JSON.stringify(updated));
+        setPhotoVersion(Date.now());
+
+        // Set form fields
+        setEditFullName(updated.full_name);
+        setEditFederationId(updated.federation_id || '');
+
+        alert("✅ Perfil restaurado correctamente desde la base de datos.");
+      } else {
+        alert("No se encontraron datos antiguos para este usuario.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error al recuperar datos.");
+    } finally {
+      setIsUpdatingProfile(false);
+    }
+  };
+
+  const handleLogin = async () => {
+    setAuthReady(false);
+  };
+
+  const handleHardReset = () => {
+    if (!window.confirm("¿Estás seguro? Esto cerrará la sesión y limpiará TODA la caché del móvil. Tendrás que volver a entrar.")) return;
+
+    // Clear everything
+    localStorage.clear();
+
+    // Unregister all service workers
+    if (navigator.serviceWorker) {
+      navigator.serviceWorker.getRegistrations().then(registrations => {
+        for (let registration of registrations) {
+          registration.unregister();
+        }
+      });
+    }
+
+    // Redirect to home and reload
+    window.location.href = window.location.origin + import.meta.env.BASE_URL;
+  };
+
+  const handleLogout = async () => {
+    if (!IS_MULTI) return;
+
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error('Error signing out from Firebase', error);
+      resetSessionState();
+      setAuthReady(true);
+    }
   };
 
   // Auto-login effect for Single Mode
@@ -373,11 +516,7 @@ function AppContent() {
 
   // Preferences State
   const [preferences, setPreferences] = useState(() => {
-    return {
-      groups: ['juvenil', 'rfeg', 'fcg', 'club', 'adultos'],
-      hiddenIds: [],
-      themes: {} // New: Custom colors
-    };
+    return { ...DEFAULT_PREFERENCES };
   });
 
   const handleUpdatePreferences = async (newGroups, newHiddenIds) => {
@@ -519,35 +658,54 @@ function AppContent() {
     const unsubProfile = onSnapshot(doc(db, "users", user.username), (snapshot) => {
       if (snapshot.exists()) {
         const freshData = snapshot.data();
+        const managedUsernames = Array.isArray(freshData.managed_users) ? freshData.managed_users : [];
 
-        // Update local state if crucial data changed (like managed_users)
-        const oldManaged = user.managed_users || [];
-        const newManaged = freshData.managed_users || [];
+        const currentPhoto = user.photo_url;
+        const incomingPhoto = freshData.photo_url;
+        const currentName = user.full_name;
+        const incomingName = freshData.full_name;
+        const currentManaged = JSON.stringify(user.managed_users || []);
+        const incomingManaged = JSON.stringify(managedUsernames);
 
-        if (JSON.stringify(oldManaged) !== JSON.stringify(newManaged)) {
-          console.log("Managed users updated in Firestore, refreshing...");
-          const updatedUser = {
-            ...user,
-            ...freshData,
-            // Very important: don't lose the manager context when syncing child profile
-            manager_id: user.manager_id
-          };
-          setUser(updatedUser);
-          localStorage.setItem('golf_tracker_user', JSON.stringify(updatedUser));
-        }
+        // Use functional update to ensure we use latest state and don't overwrite with empty values
+        setUser(prev => {
+          if (!prev || prev.username !== user.username) return prev;
+
+          // Only overwrite photo if incoming is valid and not empty
+          const photoToUse = (incomingPhoto && String(incomingPhoto).trim() !== '') ? incomingPhoto : prev.photo_url;
+
+          // Self-healing: If we have a local photo but Firestore is missing it, push it to Firestore
+          if (!incomingPhoto && prev.photo_url && String(prev.photo_url).trim() !== '') {
+            console.log("Self-healing: Synchronizing legacy photo to Firestore for", user.username);
+            setDoc(doc(db, "users", user.username), { photo_url: prev.photo_url }, { merge: true });
+          }
+
+          if (prev.photo_url !== photoToUse || prev.full_name !== incomingName || currentManaged !== incomingManaged) {
+            const updated = {
+              ...prev,
+              ...freshData,
+              photo_url: photoToUse,
+              manager_id: prev.manager_id
+            };
+            localStorage.setItem('golf_tracker_user', JSON.stringify(updated));
+            setPhotoVersion(Date.now());
+            return updated;
+          }
+          return prev;
+        });
 
         // Handle Linked Users (Manager Mode)
-        if (newManaged.length > 0) {
+        if (managedUsernames.length > 0) {
           const fetchLinked = async () => {
             try {
               const profiles = [];
               // Add manager first
               profiles.push({ ...freshData, username: user.username });
 
-              for (const childId of newManaged) {
-                const childSnap = await getDoc(doc(db, "users", childId));
-                if (childSnap.exists()) {
-                  profiles.push({ ...childSnap.data(), username: childId });
+              for (const childId of managedUsernames) {
+                const childProfile = await fetchUserProfileByUsername(db, childId);
+                if (childProfile) {
+                  profiles.push(childProfile);
                 }
               }
 
@@ -659,10 +817,21 @@ function AppContent() {
 
   // Initial Handicap Fetch on User Load
   useEffect(() => {
-    if (user?.federation_id) {
+    if (user?.username) {
       refreshHandicap();
     }
-  }, [user?.federation_id]);
+  }, [user?.username, user?.federation_id]);
+
+  const handleHandicapButtonClick = () => {
+    refreshHandicap();
+  };
+
+  const handleOpenHandicapPdf = (e) => {
+    e.stopPropagation();
+    if (pdfUrl) {
+      window.open(pdfUrl, '_blank');
+    }
+  };
 
   const handleUpdateResults = async (newResults) => {
     setResults(newResults); // Optimistic UI update
@@ -821,8 +990,18 @@ function AppContent() {
     );
   }
 
+  if (IS_MULTI && !authReady) {
+    return (
+      <div className="app-container fade-in" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="card" style={{ padding: '1.5rem 2rem', textAlign: 'center' }}>
+          Conectando con Firebase...
+        </div>
+      </div>
+    );
+  }
+
   if (!user && IS_MULTI) {
-    return <LoginView onLogin={handleLogin} />;
+    return <LoginViewFirebase onLogin={handleLogin} />;
   }
 
   // Fallback for single mode if user somehow is null (shouldn't happen due to init)
@@ -867,11 +1046,15 @@ function AppContent() {
               {/* Current Active User big */}
               <div style={{ position: 'relative' }}>
                 <img
-                  src={getPhotoUrl(user.photo_url, user.full_name || user.username)}
+                  key={`photo-${photoVersion}`}
+                  src={getPhotoUrl(user.photo_url, user.full_name || user.username, photoVersion)}
                   style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--color-primary)' }}
                   onError={(e) => {
-                    if (!e.target.src.includes('ui-avatars')) {
-                      e.target.src = "https://ui-avatars.com/api/?name=" + (user.full_name || user.username);
+                    const safeName = encodeURIComponent(user.full_name || user.username);
+                    const fallback = `https://ui-avatars.com/api/?name=${safeName}&background=0D8ABC&color=fff&size=256`;
+                    if (e.target.src !== fallback) {
+                      e.target.onerror = null;
+                      e.target.src = fallback;
                     }
                   }}
                 />
@@ -880,11 +1063,15 @@ function AppContent() {
               {linkedUsers.filter(u => u.username !== user.username).map(u => (
                 <div key={u.username} onClick={() => handleSwitchUser(u)} style={{ cursor: 'pointer', opacity: 0.6, transition: 'opacity 0.2s', display: 'flex', alignItems: 'center' }} title={`Cambiar a ${u.full_name}`}>
                   <img
-                    src={getPhotoUrl(u.photo_url, u.full_name || u.username)}
+                    key={`nav-photo-${u.username}-${photoVersion}`}
+                    src={getPhotoUrl(u.photo_url, u.full_name || u.username, photoVersion)}
                     style={{ width: '50px', height: '50px', borderRadius: '50%', objectFit: 'cover', border: '2px solid transparent' }}
                     onError={(e) => {
-                      if (!e.target.src.includes('ui-avatars')) {
-                        e.target.src = "https://ui-avatars.com/api/?name=" + (u.full_name || u.username);
+                      const safeName = encodeURIComponent(u.full_name || u.username);
+                      const fallback = `https://ui-avatars.com/api/?name=${safeName}&background=0D8ABC&color=fff&size=256`;
+                      if (e.target.src !== fallback) {
+                        e.target.onerror = null;
+                        e.target.src = fallback;
                       }
                     }}
                   />
@@ -931,10 +1118,14 @@ function AppContent() {
               title="Cambiar foto de perfil"
             >
               <img
-                src={getPhotoUrl(user.photo_url, user.full_name || user.username)}
+                key={`edit-photo-${photoVersion}`}
+                src={getPhotoUrl(user.photo_url, user.full_name || user.username, photoVersion)}
                 onError={(e) => {
-                  if (!e.target.src.includes('ui-avatars')) {
-                    e.target.src = "https://ui-avatars.com/api/?name=" + (user.full_name || user.username);
+                  const safeName = encodeURIComponent(user.full_name || user.username);
+                  const fallback = `https://ui-avatars.com/api/?name=${safeName}&background=0D8ABC&color=fff&size=256`;
+                  if (e.target.src !== fallback) {
+                    e.target.onerror = null;
+                    e.target.src = fallback;
                   }
                 }}
                 alt={user.full_name}
@@ -969,7 +1160,7 @@ function AppContent() {
                   justifyContent: 'center',
                   boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
                 }}>
-                  <span style={{ fontSize: '14px' }}>📷</span>
+                  <Camera size={18} />
                 </div>
               )}
             </div>
@@ -1028,40 +1219,63 @@ function AppContent() {
               <option key={year} value={year}>{year}</option>
             ))}
           </select>
-          <span style={{ fontSize: '0.8em', opacity: 0.7, color: 'var(--color-text-muted)' }}>(v2.4.2)</span>
+          <span style={{ fontSize: '0.8em', opacity: 0.7, color: 'var(--color-text-muted)' }}>(v2.4.8)</span>
         </div>
 
-        <button
-          className="handicap-btn fade-in"
-          onClick={() => pdfUrl && window.open(pdfUrl, '_blank')}
-          title={pdfUrl ? "Ver PDF del Hándicap" : "Hándicap actualizado"}
-          disabled={!pdfUrl}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-            background: 'var(--color-primary-light)',
-            color: 'var(--color-primary-dark)',
-            padding: '8px 24px',
-            borderRadius: '24px',
-            marginTop: '12px',
-            fontSize: '1.1rem',
-            fontWeight: '600',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-            border: '1px solid rgba(0,0,0,0.05)',
-            cursor: pdfUrl ? 'pointer' : 'default',
-            transition: 'all 0.2s ease',
-            width: '220px', // Fixed width to prevent jumping
-            maxWidth: '90vw',
-            overflow: 'hidden',
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginTop: '12px' }}>
+          <button
+            className="handicap-btn fade-in"
+            onClick={handleHandicapButtonClick}
+            title="Actualizar hándicap"
+            disabled={isUpdatingHandicap || !user?.username}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              background: 'var(--color-primary-light)',
+              color: 'var(--color-primary-dark)',
+              padding: '8px 24px',
+              borderRadius: '24px',
+              fontSize: '1.1rem',
+              fontWeight: '600',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+              border: '1px solid rgba(0,0,0,0.05)',
+              cursor: isUpdatingHandicap || !user?.username ? 'default' : 'pointer',
+              transition: 'all 0.2s ease',
+              width: '220px',
+              maxWidth: '75vw',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap'
+            }}>
+            <TrendingUp size={18} className={isUpdatingHandicap ? "spin-animation" : ""} />
+            <span>{isUpdatingHandicap ? 'Actualizando...' : (handicap ? `Hándicap: ${String(handicap).substring(0, 15)}` : 'Actualizar hándicap')}</span>
+          </button>
 
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap'
-          }}>
-          <TrendingUp size={18} className={isUpdatingHandicap ? "spin-animation" : ""} />
-          <span>{isUpdatingHandicap ? 'Actualizando...' : (handicap ? `Hándicap: ${String(handicap).substring(0, 15)}` : 'Hándicap: --')}</span>
-        </button>
+          {pdfUrl && (
+            <button
+              className="handicap-btn fade-in"
+              onClick={handleOpenHandicapPdf}
+              title="Abrir PDF del hándicap"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '44px',
+                height: '44px',
+                borderRadius: '999px',
+                border: '1px solid rgba(0,0,0,0.05)',
+                background: 'rgba(255,255,255,0.7)',
+                color: 'var(--color-primary-dark)',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                cursor: 'pointer'
+              }}
+            >
+              PDF
+            </button>
+          )}
+        </div>
       </header>
 
       {/* Navigation Tabs */}
@@ -1231,11 +1445,36 @@ function AppContent() {
               <button
                 type="submit"
                 className="btn btn-primary"
-                style={{ width: '100%' }}
+                style={{ width: '100%', marginBottom: '1rem' }}
                 disabled={isUpdatingProfile}
               >
                 {isUpdatingProfile ? 'Guardando...' : 'Guardar Cambios'}
               </button>
+
+              <button
+                type="button"
+                className="btn"
+                onClick={handleRecoverProfile}
+                style={{ width: '100%', background: 'rgba(5, 150, 105, 0.1)', color: '#059669', border: '1px solid rgba(5, 150, 105, 0.2)', fontSize: '0.85rem' }}
+              >
+                🔄 Restaurar Foto y Datos (Legacy)
+              </button>
+
+              <div style={{ marginTop: '2rem', borderTop: '1px dashed #E5E1DE', paddingTop: '1rem' }}>
+                <p style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textAlign: 'center', marginBottom: '10px' }}>
+                  ¿Problemas con el perfil? Prueba a limpiar la app:
+                </p>
+                <button
+                  type="button"
+                  onClick={handleHardReset}
+                  style={{ width: '100%', background: 'none', border: 'none', color: '#ef4444', fontSize: '0.75rem', textDecoration: 'underline', cursor: 'pointer' }}
+                >
+                  Borrar caché y resetear aplicación
+                </button>
+                <p style={{ fontSize: '0.6rem', color: 'var(--color-text-muted)', textAlign: 'center', marginTop: '5px', opacity: 0.5 }}>
+                  ID: {user.username} | Photo: {String(user.photo_url).substring(0, 20)}...
+                </p>
+              </div>
             </form>
           </div>
         </div>
