@@ -230,14 +230,29 @@ const MobileScorecardEditor = ({
                 </button>
                 <div
                     onClick={() => setShowHoleSelector(true)}
-                    style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '2px', cursor: 'pointer' }}
+                    style={{
+                        textAlign: 'center',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '2px',
+                        cursor: 'pointer',
+                        background: 'rgba(59, 130, 246, 0.1)',
+                        padding: '0.4rem 1.2rem',
+                        borderRadius: '16px',
+                        border: '1px solid rgba(59, 130, 246, 0.2)',
+                        minWidth: '160px',
+                        position: 'relative'
+                    }}
                 >
-                    <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                        {courseName} <ChevronRight size={10} style={{ transform: 'rotate(90deg)' }} />
+                    <div style={{ fontSize: '0.6rem', color: '#3b82f6', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '1px' }}>
+                        Toca para cambiar hoyo
                     </div>
                     <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: '8px' }}>
-                        <h2 style={{ fontSize: '1.5rem', fontWeight: '800', margin: 0, letterSpacing: '0.05em', color: 'white' }}>HOYO {holeIdx + 1}</h2>
-                        <span style={{ margin: 0, color: '#10b981', fontSize: '1.5rem', fontWeight: '900' }}>PAR {par}</span>
+                        <h2 style={{ fontSize: '1.4rem', fontWeight: '900', margin: 0, letterSpacing: '0.02em', color: 'white' }}>HOYO {holeIdx + 1}</h2>
+                        <span style={{ margin: 0, color: '#10b981', fontSize: '1.4rem', fontWeight: '900' }}>PAR {par}</span>
+                    </div>
+                    <div style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: '600', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {courseName}
                     </div>
                 </div>
                 <div style={{ width: '24px' }} />

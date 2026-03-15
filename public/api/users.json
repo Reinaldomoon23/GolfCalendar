@@ -20,13 +20,6 @@
     "photo_url": "profiles/ona.jpg",
     "handicap_url": ""
   },
-  "valentina": {
-    "password_hash": "$2y$12$22h2RVE.wztzjEupdlB0vOMv8/vF2lJV.NJjGaC3hMw8QWVfhVwGu",
-    "full_name": "Valentina Corretja de Miguel",
-    "federation_id": "CB01965090",
-    "photo_url": "profiles/valentina.jpg",
-    "handicap_url": ""
-  },
   "maria": {
     "full_name": "Maria Boixader",
     "federation_id": "CB65415931",
