@@ -27,6 +27,66 @@ spl_autoload_register(function ($class) {
 
 use Smalot\PdfParser\Parser;
 
+function looksLikePdfContent($content) {
+    if (!$content || !is_string($content)) return false;
+    return strpos(ltrim($content), '%PDF') === 0;
+}
+
+function fetchPdfContent($url) {
+    $urlWithInitParams = $url . (strpos($url, '?') === false ? '?' : '&') . 't=' . microtime(true);
+
+    $ch = curl_init();
+    curl_setopt_array($ch, [
+        CURLOPT_URL => $urlWithInitParams,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_TIMEOUT => 20,
+        CURLOPT_ENCODING => '',
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_USERAGENT => "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0 Safari/537.36",
+        CURLOPT_HTTPHEADER => [
+            "Cache-Control: no-cache",
+            "Pragma: no-cache",
+            "Accept: application/pdf,*/*"
+        ],
+    ]);
+
+    $content = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
+    curl_close($ch);
+
+    if ($httpCode === 200 && looksLikePdfContent($content)) {
+        return $content;
+    }
+
+    $context = stream_context_create([
+        'http' => [
+            'method' => 'GET',
+            'header' => implode("\r\n", [
+                'Cache-Control: no-cache',
+                'Pragma: no-cache',
+                'User-Agent: Mozilla/5.0 (compatible; GolfCalendar/1.0)',
+                'Accept: application/pdf,*/*'
+            ]),
+            'timeout' => 20,
+            'ignore_errors' => true,
+        ],
+        'ssl' => [
+            'verify_peer' => false,
+            'verify_peer_name' => false,
+        ],
+    ]);
+
+    $fallbackContent = @file_get_contents($urlWithInitParams, false, $context);
+    if (looksLikePdfContent($fallbackContent)) {
+        return $fallbackContent;
+    }
+
+    throw new Exception("Failed to fetch PDF. HTTP Code: " . $httpCode . " Error: " . $curlError);
+}
+
 $username = $_GET['username'] ?? 'nicole'; 
 $passedLicense = $_GET['license'] ?? '';
 
@@ -66,30 +126,7 @@ if (empty($pdfUrl)) {
 }
 
 try {
-    // 1. Fetch PDF content
-    // 1. Fetch PDF content with CURL and Cache Busting
-    $ch = curl_init();
-    $urlWithInitParams = $pdfUrl . (strpos($pdfUrl, '?') === false ? '?' : '&') . 't=' . microtime(true);
-    
-    curl_setopt($ch, CURLOPT_URL, $urlWithInitParams);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    // Mimic a browser to avoid getting cached/stale/blocked content
-    curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36");
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        "Cache-Control: no-cache",
-        "Pragma: no-cache"
-    ]);
-
-    $pdfContent = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $curlError = curl_error($ch);
-    curl_close($ch);
-
-    if ($httpCode !== 200 || !$pdfContent) {
-        throw new Exception("Failed to fetch PDF. HTTP Code: " . $httpCode . " Error: " . $curlError);
-    }
+    $pdfContent = fetchPdfContent($pdfUrl);
 
     // 2. Parse PDF
     $parser = new Parser();

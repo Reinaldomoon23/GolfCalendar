@@ -6,9 +6,8 @@ import {
     createUserWithEmailAndPassword,
     updateProfile
 } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
 import {
-    ensureUsernameProfileDocument,
+    ensureUserProfileDocument,
     fetchUserProfileByUid
 } from '../utils/userProfiles';
 
@@ -42,10 +41,12 @@ export default function LoginViewFirebase({ onLogin }) {
                     displayName: fullName
                 });
 
-                // Guardar datos adicionales en Firestore
-                await setDoc(doc(db, 'users', username.toLowerCase()), {
+                const normalizedUsername = username.toLowerCase();
+
+                // Guardar datos adicionales en Firestore con ownership canonico por uid
+                await ensureUserProfileDocument(db, {
                     uid: user.uid,
-                    username: username.toLowerCase(),
+                    username: normalizedUsername,
                     email: email,
                     full_name: fullName,
                     federation_id: federationId || '',
@@ -54,12 +55,13 @@ export default function LoginViewFirebase({ onLogin }) {
                     role: 'user',
                     managed_users: [],
                     created_at: new Date()
-                });
+                }, normalizedUsername);
 
                 // Cargar perfil y hacer login
                 const userData = {
                     uid: user.uid,
-                    username: username.toLowerCase(),
+                    username: normalizedUsername,
+                    docId: user.uid,
                     full_name: fullName,
                     federation_id: federationId,
                     email: email
@@ -73,7 +75,7 @@ export default function LoginViewFirebase({ onLogin }) {
                 const user = userCredential.user;
 
                 const profile = await fetchUserProfileByUid(db, user.uid, user.email);
-                const normalizedProfile = await ensureUsernameProfileDocument(db, {
+                const normalizedProfile = await ensureUserProfileDocument(db, {
                     ...profile,
                     uid: user.uid,
                     username: profile?.username || username.toLowerCase(),

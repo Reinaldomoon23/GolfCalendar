@@ -62,26 +62,58 @@ function buildPdfUrl($license) {
     return null;
 }
 
+function looksLikePdfContent($content) {
+    if (!$content || !is_string($content)) return false;
+    return strpos(ltrim($content), '%PDF') === 0;
+}
+
 function fetchPdf($url) {
-    $ch = curl_init();
     $urlT = $url . (strpos($url, '?') === false ? '?' : '&') . 't=' . microtime(true);
+    $ch = curl_init();
     curl_setopt_array($ch, [
         CURLOPT_URL            => $urlT,
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_FOLLOWLOCATION => true,
         CURLOPT_SSL_VERIFYPEER => false,
         CURLOPT_TIMEOUT        => 20,
+        CURLOPT_ENCODING       => '',
+        CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
         CURLOPT_USERAGENT      => "Mozilla/5.0 (compatible; GolfCalendar/1.0)",
-        CURLOPT_HTTPHEADER     => ["Cache-Control: no-cache", "Pragma: no-cache"],
+        CURLOPT_HTTPHEADER     => ["Cache-Control: no-cache", "Pragma: no-cache", "Accept: application/pdf,*/*"],
     ]);
     $content = curl_exec($ch);
     $code    = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $err     = curl_error($ch);
     curl_close($ch);
-    if ($code !== 200 || !$content) {
-        throw new Exception("PDF fetch failed. HTTP {$code}. {$err}");
+
+    if ($code === 200 && looksLikePdfContent($content)) {
+        return $content;
     }
-    return $content;
+
+    $context = stream_context_create([
+        'http' => [
+            'method' => 'GET',
+            'header' => implode("\r\n", [
+                'Cache-Control: no-cache',
+                'Pragma: no-cache',
+                'User-Agent: Mozilla/5.0 (compatible; GolfCalendar/1.0)',
+                'Accept: application/pdf,*/*'
+            ]),
+            'timeout' => 20,
+            'ignore_errors' => true,
+        ],
+        'ssl' => [
+            'verify_peer' => false,
+            'verify_peer_name' => false,
+        ],
+    ]);
+
+    $fallbackContent = @file_get_contents($urlT, false, $context);
+    if (looksLikePdfContent($fallbackContent)) {
+        return $fallbackContent;
+    }
+
+    throw new Exception("PDF fetch failed. HTTP {$code}. {$err}");
 }
 
 function calcBajada($history) {

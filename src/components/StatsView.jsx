@@ -12,6 +12,7 @@ import {
 } from 'chart.js';
 import { Bar, Line } from 'react-chartjs-2';
 import { TrendingUp, ArrowDown, ArrowUp, Activity, Star } from 'lucide-react';
+import { getUserSubcollectionRef } from '../utils/userProfiles';
 
 ChartJS.register(
     CategoryScale,
@@ -160,9 +161,12 @@ export default function StatsView({ user, linkedUsers = [], results = {}, tourna
             try {
                 const { collection, getDocs } = await import('firebase/firestore');
                 const { db } = await import('../firebase');
+                const compareProfile = validComparisons.find((candidate) => candidate.username === compareTo);
 
                 // 1. Obtener sus resultados de firebase
-                const resultsRef = collection(db, "users", compareTo, "results");
+                const resultsRef = compareProfile
+                    ? getUserSubcollectionRef(db, compareProfile, "results")
+                    : collection(db, "users", compareTo, "results");
                 const snapshot = await getDocs(resultsRef);
                 const cResults = {};
                 snapshot.forEach(doc => { cResults[doc.id] = doc.data(); });

@@ -3,7 +3,11 @@ import { useParams, useLocation } from 'react-router-dom';
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { ChevronLeft, Info } from 'lucide-react';
-import { fetchUserProfileByUsername } from '../utils/userProfiles';
+import {
+    fetchUserProfileByUsername,
+    getUserDocId,
+    getUserSubdocRef
+} from '../utils/userProfiles';
 
 const R2_PUBLIC_URL = "https://pub-23c281cf1ae04def9102341cf7d87837.r2.dev";
 
@@ -54,11 +58,12 @@ export default function TeamLiveScorecard() {
     useEffect(() => {
         if (playersList.length === 0) return;
         const mainPlayer = playersList[0];
+        const mainPlayerProfile = profiles[mainPlayer];
 
         const fetchTournament = async () => {
             try {
                 // Try custom first for that player
-                const customRef = doc(db, 'users', mainPlayer, 'custom_tournaments', eventId);
+                const customRef = getUserSubdocRef(db, mainPlayerProfile || mainPlayer, 'custom_tournaments', eventId);
                 const customSnap = await getDoc(customRef);
                 if (customSnap.exists()) {
                     setTournament({ id: customSnap.id, ...customSnap.data() });
@@ -81,14 +86,15 @@ export default function TeamLiveScorecard() {
             }
         };
         fetchTournament();
-    }, [eventId, playersStr]);
+    }, [eventId, playersStr, profiles]);
 
     // Setup Realtime listeners for all requested players
     useEffect(() => {
         const unsubscribes = [];
 
         playersList.forEach(player => {
-            const ref = doc(db, 'users', player, 'results', eventId);
+            const playerProfile = profiles[player];
+            const ref = getUserSubdocRef(db, playerProfile || player, 'results', eventId);
             const unsub = onSnapshot(ref, (snap) => {
                 if (snap.exists()) {
                     const data = snap.data();
@@ -122,7 +128,7 @@ export default function TeamLiveScorecard() {
         return () => {
             unsubscribes.forEach(fn => fn());
         };
-    }, [eventId, playersStr]);
+    }, [eventId, playersStr, profiles]);
 
     const getScoreColor = (strokes, par) => {
         if (!strokes || !par) return 'transparent';

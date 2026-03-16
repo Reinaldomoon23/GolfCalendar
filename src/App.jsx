@@ -22,12 +22,16 @@ import TeamLiveScorecard from './components/TeamLiveScorecard';
 // Firebase Imports
 import { auth, db } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { collection, doc, getDoc, getDocs, onSnapshot, setDoc } from 'firebase/firestore';
+import { collection, getDocs, onSnapshot, setDoc } from 'firebase/firestore';
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import {
-  ensureUsernameProfileDocument,
+  ensureUserProfileDocument,
   fetchUserProfileByUid,
-  fetchUserProfileByUsername
+  fetchUserProfileByUsername,
+  getUserDocId,
+  getUserProfileRef,
+  getUserSubcollectionRef,
+  getUserSubdocRef
 } from './utils/userProfiles';
 
 // Cloudflare R2 Config
@@ -140,6 +144,7 @@ function AppContent() {
 
   const [authReady, setAuthReady] = useState(!IS_MULTI);
   const [user, setUser] = useState(() => (IS_MULTI ? null : DEFAULT_USER));
+  const activeUserDocId = getUserDocId(user);
 
   const [handicap, setHandicap] = useState(null);
   const [pdfUrl, setPdfUrl] = useState(null);
@@ -178,7 +183,7 @@ function AppContent() {
         const { collection, getDocs, writeBatch, deleteDoc } = await import('firebase/firestore');
 
         // 1. Delete Results
-        const resultsRef = collection(db, "users", user.username, "results");
+        const resultsRef = getUserSubcollectionRef(db, user, "results");
         const resultsSnap = await getDocs(resultsRef);
         console.log(`Found ${resultsSnap.size} results. Deleting...`);
 
@@ -192,7 +197,7 @@ function AppContent() {
         });
 
         // 2. Delete Custom Tournaments
-        const customRef = collection(db, "users", user.username, "custom_tournaments");
+        const customRef = getUserSubcollectionRef(db, user, "custom_tournaments");
         const customSnap = await getDocs(customRef);
         console.log(`Found ${customSnap.size} custom tournaments. Deleting...`);
 
@@ -243,7 +248,7 @@ function AppContent() {
       const newPhotoUrl = `${R2_CONFIG.publicUrl}/${fileName}`;
 
       // 2. Persist to Firebase
-      await setDoc(doc(db, "users", user.username), {
+      await setDoc(getUserProfileRef(db, user), {
         photo_url: newPhotoUrl
       }, { merge: true });
 
@@ -269,7 +274,7 @@ function AppContent() {
 
     try {
       // Update in Firebase (Now primary source of truth)
-      await setDoc(doc(db, "users", user.username), {
+      await setDoc(getUserProfileRef(db, user), {
         full_name: editFullName,
         federation_id: editFederationId,
         email: editEmail
@@ -366,7 +371,7 @@ function AppContent() {
             throw new Error('No se pudo resolver el perfil del usuario autenticado');
           }
 
-          const ownerProfile = await ensureUsernameProfileDocument(db, {
+          const ownerProfile = await ensureUserProfileDocument(db, {
             ...resolvedProfile,
             uid: authUser.uid,
             username: inferredUsername,
@@ -448,7 +453,7 @@ function AppContent() {
         };
 
         // Push to Firestore
-        await setDoc(doc(db, "users", user.username), updates, { merge: true });
+        await setDoc(getUserProfileRef(db, user), updates, { merge: true });
 
         // Update local state
         const updated = { ...user, ...updates };
@@ -529,7 +534,7 @@ function AppContent() {
 
     if (user) {
       try {
-        await setDoc(doc(db, "users", user.username, "settings", "preferences"), newPrefs);
+        await setDoc(getUserSubdocRef(db, user, "settings", "preferences"), newPrefs);
       } catch (err) {
         console.error("Error saving prefs to Firebase", err);
       }
@@ -563,7 +568,7 @@ function AppContent() {
 
     if (user) {
       try {
-        await setDoc(doc(db, "users", user.username, "settings", "preferences"), newPrefs);
+        await setDoc(getUserSubdocRef(db, user, "settings", "preferences"), newPrefs);
       } catch (err) {
         console.error("Error saving theme prefs", err);
       }
@@ -587,10 +592,10 @@ function AppContent() {
 
   // Sync User Data (Profile, Results, Custom Tournaments, Prefs)
   useEffect(() => {
-    if (!user?.username) return;
+    if (!user?.username || !activeUserDocId) return;
 
     // 1. Preferences
-    const unsubPrefs = onSnapshot(doc(db, "users", user.username, "settings", "preferences"), (docSnapshot) => {
+    const unsubPrefs = onSnapshot(getUserSubdocRef(db, user, "settings", "preferences"), (docSnapshot) => {
       if (docSnapshot.exists()) {
         const data = docSnapshot.data();
         // Merge with defaults to ensure 'themes' exists
@@ -607,7 +612,7 @@ function AppContent() {
 
     // 2. Results
     // We stored results in subcollection "results" where docId = tournamentId
-    const unsubResults = onSnapshot(collection(db, "users", user.username, "results"), (snapshot) => {
+    const unsubResults = onSnapshot(getUserSubcollectionRef(db, user, "results"), (snapshot) => {
       const newResults = {};
       snapshot.forEach(doc => {
         newResults[doc.id] = doc.data();
@@ -617,7 +622,7 @@ function AppContent() {
     });
 
     // 3. Custom Tournaments
-    const unsubCustom = onSnapshot(collection(db, "users", user.username, "custom_tournaments"), (snapshot) => {
+    const unsubCustom = onSnapshot(getUserSubcollectionRef(db, user, "custom_tournaments"), (snapshot) => {
       const customs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setCustomTournaments(customs);
     });
@@ -627,7 +632,7 @@ function AppContent() {
       unsubResults();
       unsubCustom();
     };
-  }, [user?.username]);
+  }, [activeUserDocId, user?.username]);
 
 
   // Merge static/server and custom tournaments
@@ -653,9 +658,9 @@ function AppContent() {
 
   // Real-time synchronization for Profile and Linked Accounts via Firestore
   useEffect(() => {
-    if (!user?.username) return;
+    if (!user?.username || !activeUserDocId) return;
 
-    const unsubProfile = onSnapshot(doc(db, "users", user.username), (snapshot) => {
+    const unsubProfile = onSnapshot(getUserProfileRef(db, user), (snapshot) => {
       if (snapshot.exists()) {
         const freshData = snapshot.data();
         const managedUsernames = Array.isArray(freshData.managed_users) ? freshData.managed_users : [];
@@ -677,7 +682,7 @@ function AppContent() {
           // Self-healing: If we have a local photo but Firestore is missing it, push it to Firestore
           if (!incomingPhoto && prev.photo_url && String(prev.photo_url).trim() !== '') {
             console.log("Self-healing: Synchronizing legacy photo to Firestore for", user.username);
-            setDoc(doc(db, "users", user.username), { photo_url: prev.photo_url }, { merge: true });
+            setDoc(getUserProfileRef(db, prev), { photo_url: prev.photo_url }, { merge: true });
           }
 
           if (prev.photo_url !== photoToUse || prev.full_name !== incomingName || currentManaged !== incomingManaged) {
@@ -700,7 +705,7 @@ function AppContent() {
             try {
               const profiles = [];
               // Add manager first
-              profiles.push({ ...freshData, username: user.username });
+              profiles.push({ ...freshData, username: user.username, docId: activeUserDocId });
 
               for (const childId of managedUsernames) {
                 const childProfile = await fetchUserProfileByUsername(db, childId);
@@ -726,7 +731,7 @@ function AppContent() {
     });
 
     return () => unsubProfile();
-  }, [user?.username]);
+  }, [activeUserDocId, user?.username]);
 
 
 
@@ -880,7 +885,7 @@ function AppContent() {
       // const oldResults = results; // captured from closure
       // This might work most of the time.
 
-      await setDoc(doc(db, "users", user.username, "results", String(tId)), result);
+      await setDoc(getUserSubdocRef(db, user, "results", tId), result);
     }
 
     /**
@@ -905,7 +910,7 @@ function AppContent() {
   const handleSaveSpecificResult = async (id, data) => {
     if (!user) return;
     setResults(prev => ({ ...prev, [id]: data }));
-    await setDoc(doc(db, "users", user.username, "results", String(id)), data);
+    await setDoc(getUserSubdocRef(db, user, "results", id), data);
   };
 
   const handleDeleteResult = async (id) => {
@@ -916,8 +921,8 @@ function AppContent() {
         delete next[id];
         return next;
       });
-      const { deleteDoc, doc } = await import('firebase/firestore');
-      await deleteDoc(doc(db, "users", user.username, "results", String(id)));
+      const { deleteDoc } = await import('firebase/firestore');
+      await deleteDoc(getUserSubdocRef(db, user, "results", id));
     } catch (err) {
       console.error("Error deleting result", err);
     }
@@ -932,7 +937,7 @@ function AppContent() {
       if (user) {
         // Import deleteDoc needed
         const { deleteDoc } = await import('firebase/firestore');
-        await deleteDoc(doc(db, "users", user.username, "custom_tournaments", String(id)));
+        await deleteDoc(getUserSubdocRef(db, user, "custom_tournaments", id));
       }
       // State updates automatically via header snapshot
     } else {
@@ -945,7 +950,7 @@ function AppContent() {
     if (results[id]) {
       if (user) {
         const { deleteDoc } = await import('firebase/firestore');
-        await deleteDoc(doc(db, "users", user.username, "results", String(id)));
+        await deleteDoc(getUserSubdocRef(db, user, "results", id));
       }
     }
   };
@@ -957,12 +962,12 @@ function AppContent() {
   const handleAddTournament = async (newT) => {
     if (!user) return;
     // Add to Firestore
-    await setDoc(doc(db, "users", user.username, "custom_tournaments", String(newT.id)), newT);
+    await setDoc(getUserSubdocRef(db, user, "custom_tournaments", newT.id), newT);
   };
 
   const handleUpdateTournament = async (updatedT) => {
     if (!user) return;
-    await setDoc(doc(db, "users", user.username, "custom_tournaments", String(updatedT.id)), updatedT);
+    await setDoc(getUserSubdocRef(db, user, "custom_tournaments", updatedT.id), updatedT);
   };
 
   const handleSwitchUser = (targetUser) => {

@@ -3,7 +3,12 @@ import { useParams, Link, useLocation } from 'react-router-dom';
 import { doc, getDoc, getDocs, collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { ChevronLeft, Flag, Info, MapPin, Wind, Thermometer, CloudRain, Cloud, Sun } from 'lucide-react';
-import { fetchUserProfileByUsername } from '../utils/userProfiles';
+import {
+    fetchUserProfileByUsername,
+    getUserDocId,
+    getUserSubcollectionRef,
+    getUserSubdocRef
+} from '../utils/userProfiles';
 
 const R2_PUBLIC_URL = "https://golf-cdn.misterpotatolightyear.workers.dev";
 
@@ -80,6 +85,7 @@ export default function PublicScorecardView() {
         }
     };
     const t = i18n[lang];
+    const profileDocId = getUserDocId(userProfile) || username;
 
     // Current Time Clock
     useEffect(() => {
@@ -91,7 +97,7 @@ export default function PublicScorecardView() {
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const resultsRef = collection(db, 'users', username, 'results');
+                const resultsRef = getUserSubcollectionRef(db, userProfile || username, 'results');
                 const snapshot = await getDocs(resultsRef);
                 const totals = {
                     3: { sum: 0, count: 0 },
@@ -128,7 +134,7 @@ export default function PublicScorecardView() {
             }
         };
         fetchStats();
-    }, [username]);
+    }, [profileDocId, username]);
 
     // Fetch user info from Firestore
     useEffect(() => {
@@ -191,7 +197,7 @@ export default function PublicScorecardView() {
         const fetchTournament = async () => {
             try {
                 // 1. User's custom overrides (highest priority)
-                const customRef = doc(db, 'users', username, 'custom_tournaments', eventId);
+                const customRef = getUserSubdocRef(db, userProfile || username, 'custom_tournaments', eventId);
                 const customSnap = await getDoc(customRef);
                 if (customSnap.exists()) {
                     setTournament({ id: customSnap.id, ...customSnap.data() });
@@ -219,11 +225,11 @@ export default function PublicScorecardView() {
             }
         };
         fetchTournament();
-    }, [eventId, username]);
+    }, [eventId, profileDocId, username]);
 
     // Listen to live results — independent of tournament lookup
     useEffect(() => {
-        const resultRef = doc(db, 'users', username, 'results', eventId);
+        const resultRef = getUserSubdocRef(db, userProfile || username, 'results', eventId);
         const unsubscribe = onSnapshot(resultRef, (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
@@ -262,7 +268,7 @@ export default function PublicScorecardView() {
         });
 
         return () => unsubscribe();
-    }, [username, eventId]);
+    }, [profileDocId, username, eventId]);
 
     const getScoreColor = (strokes, par) => {
         if (!strokes || !par || strokes === '-' || strokes === 0) return 'transparent';
