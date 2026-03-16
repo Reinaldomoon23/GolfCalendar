@@ -94,6 +94,57 @@ const DEFAULT_PREFERENCES = {
   themes: {}
 };
 
+const HANDICAP_CACHE_KEY_PREFIX = 'golf_tracker_handicap_cache';
+
+function getHandicapCacheKey(userLike) {
+  const suffix = getUserDocId(userLike) || userLike?.username || '';
+  return suffix ? `${HANDICAP_CACHE_KEY_PREFIX}_${suffix}` : '';
+}
+
+function normalizeTimestamp(value) {
+  if (!value) return 0;
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') {
+    const parsed = Date.parse(value);
+    return Number.isNaN(parsed) ? 0 : parsed;
+  }
+  if (typeof value?.toMillis === 'function') return value.toMillis();
+  return 0;
+}
+
+function isHandicapCacheFresh(fetchedAtValue) {
+  const fetchedAt = normalizeTimestamp(fetchedAtValue);
+  if (!fetchedAt) return false;
+
+  const now = new Date();
+  const todayAtEight = new Date(now);
+  todayAtEight.setHours(8, 0, 0, 0);
+
+  if (now < todayAtEight) {
+    return fetchedAt >= new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  }
+
+  return fetchedAt >= todayAtEight.getTime();
+}
+
+function readHandicapCache(userLike) {
+  const cacheKey = getHandicapCacheKey(userLike);
+  if (!cacheKey) return null;
+
+  try {
+    const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+    return cached && typeof cached === 'object' ? cached : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeHandicapCache(userLike, payload) {
+  const cacheKey = getHandicapCacheKey(userLike);
+  if (!cacheKey) return;
+  localStorage.setItem(cacheKey, JSON.stringify(payload));
+}
+
 function AppContent() {
   const location = useLocation();
 
@@ -778,35 +829,89 @@ function AppContent() {
     return y === currentSeason;
   });
 
-  const refreshHandicap = async () => {
+  const applyCachedHandicap = (targetUser) => {
+    if (!targetUser) return false;
+
+    const fetchedAt = normalizeTimestamp(targetUser.handicap_fetched_at);
+    if (targetUser.current_handicap || targetUser.handicap_pdf_url || fetchedAt) {
+      setHandicap(targetUser.current_handicap || null);
+      setPdfUrl(targetUser.handicap_pdf_url || null);
+
+      if (targetUser.current_handicap || targetUser.handicap_pdf_url) {
+        writeHandicapCache(targetUser, {
+          handicap: targetUser.current_handicap || null,
+          pdfUrl: targetUser.handicap_pdf_url || null,
+          fetchedAt,
+        });
+      }
+      return true;
+    }
+
+    const cached = readHandicapCache(targetUser);
+    if (!cached) return false;
+
+    setHandicap(cached.handicap || null);
+    setPdfUrl(cached.pdfUrl || null);
+    return true;
+  };
+
+  const refreshHandicap = async ({ force = false, background = false } = {}) => {
     if (!user) return;
-    setIsUpdatingHandicap(true);
+
+    const existingCache = readHandicapCache(user);
+    const cachedFetchedAt = existingCache?.fetchedAt || user.handicap_fetched_at;
+
+    if (!force && isHandicapCacheFresh(cachedFetchedAt)) {
+      applyCachedHandicap(user);
+      return;
+    }
+
+    if (!background) {
+      setIsUpdatingHandicap(true);
+    }
+
     const baselink = import.meta.env.BASE_URL.replace(/\/$/, '');
     try {
-      // Keep using PHP for scraping handicap as it runs server-side with puppeteer equivalent/curl
-      // Firebase functions would be better but requires blaze plan. Stick to PHP for scraping.
-      // Pass the CURRENT license from state to avoid using the stale users.json on server
       const licenseParam = user.federation_id ? `&license=${user.federation_id}` : '';
-      const res = await fetch(`${baselink}/api/get_handicap.php?username=${user.username}${licenseParam}&t=${new Date().getTime()}`);
+      const res = await fetch(`${baselink}/api/get_handicap.php?username=${user.username}${licenseParam}&t=${Date.now()}`);
       const data = await res.json();
-      if (data.handicap) {
-        setHandicap(data.handicap);
-        // Sync to Firebase? Maybe later.
-      } else {
-        // If data.handicap is missing (e.g. no license set), clear it
-        setHandicap(null);
+
+      const nextCache = {
+        handicap: data.handicap || null,
+        pdfUrl: data.pdf_url || null,
+        fetchedAt: Date.now(),
+      };
+
+      setHandicap(nextCache.handicap);
+      setPdfUrl(nextCache.pdfUrl);
+      writeHandicapCache(user, nextCache);
+
+      const nextUser = {
+        ...user,
+        current_handicap: nextCache.handicap,
+        handicap_pdf_url: nextCache.pdfUrl,
+        handicap_fetched_at: nextCache.fetchedAt,
+      };
+
+      setUser(nextUser);
+      if (IS_MULTI) {
+        localStorage.setItem('golf_tracker_user', JSON.stringify(nextUser));
       }
-      if (data.pdf_url) {
-        setPdfUrl(data.pdf_url);
-      } else {
-        setPdfUrl(null);
+
+      if (IS_MULTI && getUserDocId(user)) {
+        void setDoc(getUserProfileRef(db, user), {
+          current_handicap: nextCache.handicap,
+          handicap_pdf_url: nextCache.pdfUrl,
+          handicap_fetched_at: new Date(nextCache.fetchedAt).toISOString(),
+        }, { merge: true });
       }
     } catch (err) {
       console.error('Failed to fetch handicap:', err);
-      // Don't clear handicap on network error to avoid flickering, but maybe clear is safer?
-      // setHandicap(null);
+      applyCachedHandicap(user);
     } finally {
-      setIsUpdatingHandicap(false);
+      if (!background) {
+        setIsUpdatingHandicap(false);
+      }
     }
   };
 
@@ -826,13 +931,19 @@ function AppContent() {
 
   // Initial Handicap Fetch on User Load
   useEffect(() => {
-    if (user?.username) {
-      refreshHandicap();
-    }
+    if (!user?.username) return;
+
+    applyCachedHandicap(user);
+
+    const timeoutId = window.setTimeout(() => {
+      refreshHandicap({ background: true });
+    }, 400);
+
+    return () => window.clearTimeout(timeoutId);
   }, [user?.username, user?.federation_id]);
 
   const handleHandicapButtonClick = () => {
-    refreshHandicap();
+    refreshHandicap({ force: true });
   };
 
   const handleOpenHandicapPdf = (e) => {
