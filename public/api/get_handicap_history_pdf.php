@@ -64,56 +64,63 @@ function buildPdfUrl($license) {
 
 function looksLikePdfContent($content) {
     if (!$content || !is_string($content)) return false;
-    return strpos(ltrim($content), '%PDF') === 0;
+    return strlen($content) > 1000 && strpos(ltrim($content), '%PDF') === 0;
 }
 
 function fetchPdf($url) {
-    $urlT = $url . (strpos($url, '?') === false ? '?' : '&') . 't=' . microtime(true);
-    $ch = curl_init();
-    curl_setopt_array($ch, [
-        CURLOPT_URL            => $urlT,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_SSL_VERIFYPEER => false,
-        CURLOPT_TIMEOUT        => 20,
-        CURLOPT_ENCODING       => '',
-        CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
-        CURLOPT_USERAGENT      => "Mozilla/5.0 (compatible; GolfCalendar/1.0)",
-        CURLOPT_HTTPHEADER     => ["Cache-Control: no-cache", "Pragma: no-cache", "Accept: application/pdf,*/*"],
-    ]);
-    $content = curl_exec($ch);
-    $code    = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $err     = curl_error($ch);
-    curl_close($ch);
+    $lastCode = 0;
+    $lastError = '';
 
-    if ($code === 200 && looksLikePdfContent($content)) {
-        return $content;
+    for ($attempt = 1; $attempt <= 3; $attempt++) {
+        $urlT = $url . (strpos($url, '?') === false ? '?' : '&') . 't=' . microtime(true) . '&attempt=' . $attempt;
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL            => $urlT,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_TIMEOUT        => 20,
+            CURLOPT_ENCODING       => '',
+            CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
+            CURLOPT_USERAGENT      => "Mozilla/5.0 (compatible; GolfCalendar/1.0)",
+            CURLOPT_HTTPHEADER     => ["Cache-Control: no-cache", "Pragma: no-cache", "Accept: application/pdf,*/*"],
+        ]);
+        $content = curl_exec($ch);
+        $lastCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $lastError = curl_error($ch);
+        curl_close($ch);
+
+        if ($lastCode === 200 && looksLikePdfContent($content)) {
+            return $content;
+        }
+
+        $context = stream_context_create([
+            'http' => [
+                'method' => 'GET',
+                'header' => implode("\r\n", [
+                    'Cache-Control: no-cache',
+                    'Pragma: no-cache',
+                    'User-Agent: Mozilla/5.0 (compatible; GolfCalendar/1.0)',
+                    'Accept: application/pdf,*/*'
+                ]),
+                'timeout' => 20,
+                'ignore_errors' => true,
+            ],
+            'ssl' => [
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+            ],
+        ]);
+
+        $fallbackContent = @file_get_contents($urlT, false, $context);
+        if (looksLikePdfContent($fallbackContent)) {
+            return $fallbackContent;
+        }
+
+        usleep(250000);
     }
 
-    $context = stream_context_create([
-        'http' => [
-            'method' => 'GET',
-            'header' => implode("\r\n", [
-                'Cache-Control: no-cache',
-                'Pragma: no-cache',
-                'User-Agent: Mozilla/5.0 (compatible; GolfCalendar/1.0)',
-                'Accept: application/pdf,*/*'
-            ]),
-            'timeout' => 20,
-            'ignore_errors' => true,
-        ],
-        'ssl' => [
-            'verify_peer' => false,
-            'verify_peer_name' => false,
-        ],
-    ]);
-
-    $fallbackContent = @file_get_contents($urlT, false, $context);
-    if (looksLikePdfContent($fallbackContent)) {
-        return $fallbackContent;
-    }
-
-    throw new Exception("PDF fetch failed. HTTP {$code}. {$err}");
+    throw new Exception("PDF fetch failed. HTTP {$lastCode}. {$lastError}");
 }
 
 function calcBajada($history) {

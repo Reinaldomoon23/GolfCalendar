@@ -477,8 +477,12 @@ function AppContent() {
     }
   };
 
-  const handleLogin = async () => {
-    setAuthReady(false);
+  const handleLogin = async (userData) => {
+    if (userData) {
+      setUser(userData);
+      localStorage.setItem('golf_tracker_user', JSON.stringify(userData));
+    }
+    setAuthReady(true);
   };
 
   const handleHardReset = () => {
@@ -995,7 +999,7 @@ function AppContent() {
     );
   }
 
-  if (IS_MULTI && !authReady) {
+  if (IS_MULTI && !authReady && !user) {
     return (
       <div className="app-container fade-in" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div className="card" style={{ padding: '1.5rem 2rem', textAlign: 'center' }}>
