@@ -194,7 +194,6 @@ const MobileScorecardEditor = ({
                                         backgroundColor: isCurrent ? '#3b82f6' : (hasScore ? '#1e293b' : '#334155'),
                                         color: isCurrent ? 'white' : (hasScore ? '#e2e8f0' : '#94a3b8'),
                                         fontWeight: '800', fontSize: '1.1rem', cursor: 'pointer',
-                                        border: hasScore && !isCurrent ? '1px solid #3b82f640' : 'none',
                                         position: 'relative',
                                         display: 'flex', alignItems: 'center', justifyContent: 'center'
                                     }}
