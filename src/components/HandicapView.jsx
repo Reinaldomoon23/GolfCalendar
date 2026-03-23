@@ -101,7 +101,8 @@ const HandicapView = ({ user, currentHandicap }) => {
                 // Hit the PDF parsing endpoint
                 const license = user.license || user.federation_id || '';
                 const licenseParam = license ? `&license=${encodeURIComponent(license)}` : '';
-                const url = `./api/get_handicap_history_pdf.php?username=${user.username}${licenseParam}&t=${Date.now()}`;
+                const baselink = "https://reinaldomoon.top/GolfTeam";
+                const url = `${baselink}/api/get_handicap_history_pdf.php?username=${user.username}${licenseParam}&t=${Date.now()}`;
                 const res = await fetch(url);
                 const data = await res.json();
 
@@ -115,7 +116,7 @@ const HandicapView = ({ user, currentHandicap }) => {
                 }
             } else {
                 // Just read stored history (cheap)
-                const res = await fetch(`./api/save_handicap_history.php?username=${user.username}&t=${Date.now()}`);
+                const res = await fetch(`https://reinaldomoon.top/GolfTeam/api/save_handicap_history.php?username=${user.username}&t=${Date.now()}`);
                 const data = await res.json();
                 if (Array.isArray(data)) {
                     const sorted = [...data].sort((a, b) => a.date.localeCompare(b.date));

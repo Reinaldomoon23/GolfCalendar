@@ -9,6 +9,7 @@ import {
   BarChart3,
   TrendingUp,
   User,
+  Shield,
   X,
   LogOut,
   Camera
@@ -18,11 +19,14 @@ import tournamentsData from './data/tournaments.json';
 import LoginViewFirebase from './components/LoginViewFirebase';
 import PublicScorecardView from './components/PublicScorecardView';
 import TeamLiveScorecard from './components/TeamLiveScorecard';
+import ProfileImage from './components/ProfileImage';
+import AdminDashboardView from './components/admin/AdminDashboardView';
+import AdminRoute from './components/admin/AdminRoute';
 
 // Firebase Imports
 import { auth, db } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { collection, getDocs, onSnapshot, setDoc } from 'firebase/firestore';
+import { collection, onSnapshot, setDoc } from 'firebase/firestore';
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import {
   ensureUserProfileDocument,
@@ -40,7 +44,7 @@ const R2_CONFIG = {
   secretAccessKey: "c4bc610a94cd5c1c18db535a1610f83df61a93836feea811999a6c4fa171ac7b",
   endpoint: "https://1e8f9eaa8024f1354556923930ad0acb.r2.cloudflarestorage.com",
   bucketName: "golf-profiles-bucket",
-  publicUrl: "https://golf-cdn.misterpotatolightyear.workers.dev"
+  publicUrl: "https://pub-23c281cf1ae04def9102341cf7d87837.r2.dev"
 };
 
 const s3Client = new S3Client({
@@ -51,31 +55,6 @@ const s3Client = new S3Client({
     secretAccessKey: R2_CONFIG.secretAccessKey,
   },
 });
-
-// Photo URL Helper with robust fallbacks and encoding
-const getPhotoUrl = (photoPath, username, version) => {
-  const safeName = encodeURIComponent(username || 'Golf');
-  const avatarUrl = `https://ui-avatars.com/api/?name=${safeName}&background=0D8ABC&color=fff&size=256`;
-
-  if (!photoPath || String(photoPath).trim() === '') return avatarUrl;
-
-  let url = photoPath;
-
-  // Upgrade legacy R2 urls or local paths to the new Worker CDN
-  if (url.includes('pub-23c281cf1ae04def9102341cf7d87837.r2.dev')) {
-    const fileName = url.split('/').pop() || 'profile.jpg';
-    url = `${R2_CONFIG.publicUrl}/${fileName}`;
-  } else if (!url.startsWith('http')) {
-    const fileName = url.includes('/') ? url.split('/').pop() : url;
-    url = `${R2_CONFIG.publicUrl}/${fileName || 'profile.jpg'}`;
-  } else if (url.includes('reinaldomoon.top/GolfTeam/profiles/')) {
-    // Also upgrade legacy server urls to the new CDN since we migrated photos already
-    const fileName = url.split('/').pop() || 'profile.jpg';
-    url = `${R2_CONFIG.publicUrl}/${fileName}`;
-  }
-
-  return version ? `${url}${url.includes('?') ? '&' : '?'}v=${version}` : url;
-};
 
 // Environment Mode: 'single' (Nicole) or 'multi' (Team)
 const APP_MODE = import.meta.env.VITE_APP_MODE || 'single';
@@ -125,6 +104,11 @@ function isHandicapCacheFresh(fetchedAtValue) {
   }
 
   return fetchedAt >= todayAtEight.getTime();
+}
+
+function isCloudflarePhotoPath(photoPath) {
+  const value = String(photoPath || '').trim();
+  return value.includes('.r2.dev/') || value.includes('.workers.dev/');
 }
 
 function readHandicapCache(userLike) {
@@ -195,6 +179,7 @@ function AppContent() {
 
   const [authReady, setAuthReady] = useState(!IS_MULTI);
   const [user, setUser] = useState(() => (IS_MULTI ? null : DEFAULT_USER));
+  const [sessionOwner, setSessionOwner] = useState(null);
   const activeUserDocId = getUserDocId(user);
 
   const [handicap, setHandicap] = useState(null);
@@ -231,7 +216,7 @@ function AppContent() {
         // Let's assume they are imported or I'll add them to the import list in a separate call.
         // Actually, let's use the existing 'db' and 'collection'. 
         // If I can't batch, I'll delete one by one.
-        const { collection, getDocs, writeBatch, deleteDoc } = await import('firebase/firestore');
+        const { getDocs, writeBatch } = await import('firebase/firestore');
 
         // 1. Delete Results
         const resultsRef = getUserSubcollectionRef(db, user, "results");
@@ -365,6 +350,7 @@ function AppContent() {
 
   const resetSessionState = () => {
     setUser(null);
+    setSessionOwner(null);
     setLinkedUsers([]);
     localStorage.removeItem('golf_tracker_user');
     localStorage.removeItem('golf_tracker_results');
@@ -464,6 +450,7 @@ function AppContent() {
           }
 
           if (!cancelled) {
+            setSessionOwner(ownerProfile);
             setUser(activeUser);
             localStorage.setItem('golf_tracker_user', JSON.stringify(activeUser));
           }
@@ -496,11 +483,17 @@ function AppContent() {
       const legacy = users[user.username];
 
       if (legacy) {
+        const currentPhoto = String(user.photo_url || '').trim();
+        const legacyPhoto = String(legacy.photo_url || '').trim();
+        const nextPhoto = (isCloudflarePhotoPath(currentPhoto) && legacyPhoto)
+          ? currentPhoto
+          : (legacyPhoto || currentPhoto);
+
         // Prepare update
         const updates = {
           full_name: legacy.full_name || user.full_name,
           federation_id: legacy.federation_id || user.federation_id,
-          photo_url: legacy.photo_url || user.photo_url
+          photo_url: nextPhoto
         };
 
         // Push to Firestore
@@ -689,6 +682,50 @@ function AppContent() {
     };
   }, [activeUserDocId, user?.username]);
 
+  useEffect(() => {
+    if (!IS_MULTI || sessionOwner?.role !== 'admin' || !sessionOwner?.username) return undefined;
+
+    const params = new URLSearchParams(location.search);
+    const requestedUsername = params.get('view_as');
+    if (!requestedUsername) return undefined;
+
+    const normalizedUsername = requestedUsername.trim().toLowerCase();
+    if (!normalizedUsername) return undefined;
+
+    let cancelled = false;
+
+    const switchActiveProfile = async () => {
+      if (normalizedUsername === sessionOwner.username) {
+        if (!cancelled && user?.username !== sessionOwner.username) {
+          setUser(sessionOwner);
+          localStorage.setItem('golf_tracker_user', JSON.stringify(sessionOwner));
+        }
+        return;
+      }
+
+      const existingProfile = linkedUsers.find((profile) => profile.username === normalizedUsername);
+      const targetProfile = existingProfile || await fetchUserProfileByUsername(db, normalizedUsername);
+
+      if (!targetProfile || cancelled) return;
+
+      const nextActiveUser = {
+        ...targetProfile,
+        manager_id: sessionOwner.username
+      };
+
+      if (user?.username !== nextActiveUser.username || user?.photo_url !== nextActiveUser.photo_url) {
+        setUser(nextActiveUser);
+        localStorage.setItem('golf_tracker_user', JSON.stringify(nextActiveUser));
+      }
+    };
+
+    void switchActiveProfile();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [linkedUsers, location.search, sessionOwner, user?.photo_url, user?.username]);
+
 
   // Merge static/server and custom tournaments
   const tournaments = useMemo(() => [
@@ -720,9 +757,7 @@ function AppContent() {
         const freshData = snapshot.data();
         const managedUsernames = Array.isArray(freshData.managed_users) ? freshData.managed_users : [];
 
-        const currentPhoto = user.photo_url;
         const incomingPhoto = freshData.photo_url;
-        const currentName = user.full_name;
         const incomingName = freshData.full_name;
         const currentManaged = JSON.stringify(user.managed_users || []);
         const incomingManaged = JSON.stringify(managedUsernames);
@@ -870,7 +905,7 @@ function AppContent() {
       setIsUpdatingHandicap(true);
     }
 
-    const baselink = import.meta.env.BASE_URL.replace(/\/$/, '');
+    const baselink = "https://reinaldomoon.top/GolfTeam";
     try {
       const licenseParam = user.federation_id ? `&license=${user.federation_id}` : '';
       const res = await fetch(`${baselink}/api/get_handicap.php?username=${user.username}${licenseParam}&t=${Date.now()}`);
@@ -1070,10 +1105,6 @@ function AppContent() {
     }
   };
 
-  const syncCustomTournaments = async (updated) => {
-    // Deprecated in Firebase version: we update individual documents
-  };
-
   const handleAddTournament = async (newT) => {
     if (!user) return;
     // Add to Firestore
@@ -1087,10 +1118,18 @@ function AppContent() {
 
   const handleSwitchUser = (targetUser) => {
     if (!user) return;
-    // Preserve manager ID from current user context
-    const newActiveUser = { ...targetUser, manager_id: user.manager_id || user.username };
+    const ownerUsername = sessionOwner?.username || user.manager_id || user.username;
+    const newActiveUser = targetUser.username === ownerUsername
+      ? { ...targetUser }
+      : { ...targetUser, manager_id: ownerUsername };
     setUser(newActiveUser);
     localStorage.setItem('golf_tracker_user', JSON.stringify(newActiveUser));
+  };
+
+  const handleReturnToOwner = () => {
+    if (!sessionOwner) return;
+    setUser(sessionOwner);
+    localStorage.setItem('golf_tracker_user', JSON.stringify(sessionOwner));
   };
 
 
@@ -1165,35 +1204,25 @@ function AppContent() {
             <div style={{ display: 'flex', gap: '10px', background: 'rgba(255,255,255,0.7)', padding: '6px', borderRadius: '30px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
               {/* Current Active User big */}
               <div style={{ position: 'relative' }}>
-                <img
+                <ProfileImage
                   key={`photo-${photoVersion}`}
-                  src={getPhotoUrl(user.photo_url, user.full_name || user.username, photoVersion)}
+                  photoPath={user.photo_url}
+                  displayName={user.full_name || user.username}
+                  version={photoVersion}
+                  alt={user.full_name}
                   style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--color-primary)' }}
-                  onError={(e) => {
-                    const safeName = encodeURIComponent(user.full_name || user.username);
-                    const fallback = `https://ui-avatars.com/api/?name=${safeName}&background=0D8ABC&color=fff&size=256`;
-                    if (e.target.src !== fallback) {
-                      e.target.onerror = null;
-                      e.target.src = fallback;
-                    }
-                  }}
                 />
               </div>
               {/* Other Linked Users small */}
               {linkedUsers.filter(u => u.username !== user.username).map(u => (
                 <div key={u.username} onClick={() => handleSwitchUser(u)} style={{ cursor: 'pointer', opacity: 0.6, transition: 'opacity 0.2s', display: 'flex', alignItems: 'center' }} title={`Cambiar a ${u.full_name}`}>
-                  <img
+                  <ProfileImage
                     key={`nav-photo-${u.username}-${photoVersion}`}
-                    src={getPhotoUrl(u.photo_url, u.full_name || u.username, photoVersion)}
+                    photoPath={u.photo_url}
+                    displayName={u.full_name || u.username}
+                    version={photoVersion}
+                    alt={u.full_name}
                     style={{ width: '50px', height: '50px', borderRadius: '50%', objectFit: 'cover', border: '2px solid transparent' }}
-                    onError={(e) => {
-                      const safeName = encodeURIComponent(u.full_name || u.username);
-                      const fallback = `https://ui-avatars.com/api/?name=${safeName}&background=0D8ABC&color=fff&size=256`;
-                      if (e.target.src !== fallback) {
-                        e.target.onerror = null;
-                        e.target.src = fallback;
-                      }
-                    }}
                   />
                 </div>
               ))}
@@ -1237,17 +1266,11 @@ function AppContent() {
               style={{ cursor: 'pointer', position: 'relative', display: 'inline-block' }}
               title="Cambiar foto de perfil"
             >
-              <img
+              <ProfileImage
                 key={`edit-photo-${photoVersion}`}
-                src={getPhotoUrl(user.photo_url, user.full_name || user.username, photoVersion)}
-                onError={(e) => {
-                  const safeName = encodeURIComponent(user.full_name || user.username);
-                  const fallback = `https://ui-avatars.com/api/?name=${safeName}&background=0D8ABC&color=fff&size=256`;
-                  if (e.target.src !== fallback) {
-                    e.target.onerror = null;
-                    e.target.src = fallback;
-                  }
-                }}
+                photoPath={user.photo_url}
+                displayName={user.full_name || user.username}
+                version={photoVersion}
                 alt={user.full_name}
                 style={{ width: '120px', height: '120px', borderRadius: '50%', objectFit: 'cover', border: '4px solid white', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
               />
@@ -1288,7 +1311,7 @@ function AppContent() {
         )}
 
         {linkedUsers.length === 0 && <h1 className="app-title">
-          {user.full_name || 'Calendario Golf'}
+          {user.full_name || 'RoundTracker'}
           {IS_MULTI && (
             <button
               onClick={async () => {
@@ -1342,7 +1365,72 @@ function AppContent() {
           <span style={{ fontSize: '0.8em', opacity: 0.7, color: 'var(--color-text-muted)' }}>(v2.4.8)</span>
         </div>
 
+        {IS_MULTI && sessionOwner?.role === 'admin' && user?.username !== sessionOwner?.username && (
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            marginBottom: '12px'
+          }}>
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+              padding: '0.7rem 1rem',
+              borderRadius: '999px',
+              background: 'rgba(15, 23, 42, 0.06)',
+              border: '1px solid rgba(15, 23, 42, 0.08)'
+            }}>
+              <span style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>
+                Viendo como <strong style={{ color: 'var(--color-primary-dark)' }}>{user.full_name || user.username}</strong>
+              </span>
+              <button
+                onClick={handleReturnToOwner}
+                style={{
+                  border: 'none',
+                  background: '#0f172a',
+                  color: 'white',
+                  borderRadius: '999px',
+                  padding: '0.45rem 0.9rem',
+                  cursor: 'pointer',
+                  fontSize: '0.8rem',
+                  fontWeight: '600'
+                }}
+              >
+                Volver a mi usuario
+              </button>
+            </div>
+          </div>
+        )}
+
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginTop: '12px' }}>
+          {IS_MULTI && sessionOwner?.role === 'admin' && (
+            <Link to="/admin" style={{ textDecoration: 'none' }}>
+              <button
+                className="handicap-btn fade-in"
+                title="Ir al panel de administración"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  background: '#0f172a',
+                  color: 'white',
+                  padding: '8px 18px',
+                  borderRadius: '24px',
+                  fontSize: '0.95rem',
+                  fontWeight: '600',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                <Shield size={16} />
+                Admin
+              </button>
+            </Link>
+          )}
+
           <button
             className="handicap-btn fade-in"
             onClick={handleHandicapButtonClick}
@@ -1464,6 +1552,11 @@ function AppContent() {
           } />
           <Route path="/stats" element={<StatsView user={user} linkedUsers={linkedUsers} results={results} tournaments={tournaments} />} />
           <Route path="/handicap" element={<HandicapView user={user} currentHandicap={handicap} results={results} tournaments={tournaments} />} />
+          <Route path="/admin" element={
+            <AdminRoute user={sessionOwner || user}>
+              <AdminDashboardView user={sessionOwner || user} />
+            </AdminRoute>
+          } />
         </Routes>
       </main>
 
@@ -1604,7 +1697,6 @@ function AppContent() {
 }
 
 function App() {
-  const isMulti = IS_MULTI;
   const basename = import.meta.env.BASE_URL.replace(/\/$/, '');
 
   return (
