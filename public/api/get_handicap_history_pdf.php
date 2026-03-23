@@ -72,18 +72,18 @@ function fetchPdf($url) {
     $lastError = '';
 
     for ($attempt = 1; $attempt <= 3; $attempt++) {
-        $urlT = $url . (strpos($url, '?') === false ? '?' : '&') . 't=' . microtime(true) . '&attempt=' . $attempt;
         $ch = curl_init();
         curl_setopt_array($ch, [
-            CURLOPT_URL            => $urlT,
+            CURLOPT_URL            => $url,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_TIMEOUT        => 20,
             CURLOPT_ENCODING       => '',
             CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
-            CURLOPT_USERAGENT      => "Mozilla/5.0 (compatible; GolfCalendar/1.0)",
-            CURLOPT_HTTPHEADER     => ["Cache-Control: no-cache", "Pragma: no-cache", "Accept: application/pdf,*/*"],
+            CURLOPT_USERAGENT      => "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+            CURLOPT_REFERER        => "https://www.rfegolf.es/",
+            CURLOPT_HTTPHEADER     => ["Cache-Control: no-cache", "Pragma: no-cache", "Accept: application/pdf,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8"],
         ]);
         $content = curl_exec($ch);
         $lastCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -100,7 +100,8 @@ function fetchPdf($url) {
                 'header' => implode("\r\n", [
                     'Cache-Control: no-cache',
                     'Pragma: no-cache',
-                    'User-Agent: Mozilla/5.0 (compatible; GolfCalendar/1.0)',
+                    'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+                    'Referer: https://www.rfegolf.es/',
                     'Accept: application/pdf,*/*'
                 ]),
                 'timeout' => 20,
@@ -112,7 +113,7 @@ function fetchPdf($url) {
             ],
         ]);
 
-        $fallbackContent = @file_get_contents($urlT, false, $context);
+        $fallbackContent = @file_get_contents($url, false, $context);
         if (looksLikePdfContent($fallbackContent)) {
             return $fallbackContent;
         }
