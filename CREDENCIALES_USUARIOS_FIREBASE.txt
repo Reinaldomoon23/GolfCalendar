@@ -1,0 +1,115 @@
+═══════════════════════════════════════════════════════════════════
+  CREDENCIALES DE ACCESO - GOLF TEAM 2026
+  Sistema migrado a Firebase Authentication
+═══════════════════════════════════════════════════════════════════
+
+IMPORTANTE:
+- Los usuarios ahora usan Firebase Authentication
+- El email es automático: {username}@golfteam.app
+- Las contraseñas son las mismas que usaban antes
+- Usuarios: 8 activos (Valentina eliminada)
+
+═══════════════════════════════════════════════════════════════════
+
+USUARIO 1: NICOLE LIKHOMANOVA
+───────────────────────────────
+Username:       nicole
+Email:          nicole@golfteam.app
+Contraseña:     Nicochi
+Federación:     CB65996143
+Estado:         ✅ Activo
+
+
+USUARIO 2: TXELL ALÓS
+───────────────────────────────
+Username:       txell
+Email:          txell@golfteam.app
+Contraseña:     alosalos
+Federación:     CB22984122
+Estado:         ✅ Activo
+
+
+USUARIO 3: ONA MARTINEZ CUCCO
+───────────────────────────────
+Username:       ona
+Email:          ona@golfteam.app
+Contraseña:     Martinez
+Federación:     CB01912504
+Estado:         ✅ Activo
+
+
+USUARIO 4: MARIA BOIXADER
+───────────────────────────────
+Username:       maria
+Email:          maria@golfteam.app
+Contraseña:     Boixader
+Federación:     CB65415931
+Estado:         ✅ Activo
+
+
+USUARIO 5: SOFIA BOIXADER
+───────────────────────────────
+Username:       sofia
+Email:          sofia@golfteam.app
+Contraseña:     Boixader
+Federación:     CB65036032
+Estado:         ✅ Activo
+
+
+USUARIO 6: DAVID BOIXADER (MANAGER)
+───────────────────────────────
+Username:       david
+Email:          david@golfteam.app
+Contraseña:     Boixader
+Federación:     CB65968149
+Rol:            Manager (gestiona: maria, sofia)
+Estado:         ✅ Activo
+
+
+USUARIO 7: ADRIANA MONTOLIO
+───────────────────────────────
+Username:       adriana
+Email:          adriana@golfteam.app
+Contraseña:     Montolio
+Federación:     CB05956982
+Estado:         ✅ Activo
+
+
+USUARIO 8: JORDI
+───────────────────────────────
+Username:       jordi
+Email:          jordi@golfteam.app
+Contraseña:     Garcia
+Federación:     CB65995986
+Estado:         ✅ Activo
+
+
+═══════════════════════════════════════════════════════════════════
+  INSTRUCCIONES PARA USUARIOS
+═══════════════════════════════════════════════════════════════════
+
+1. Accede a: https://reinaldomoon.top/GolfTeam/
+
+2. En la pantalla de login:
+   - Usuario: tu username (ejemplo: "nicole")
+   - Contraseña: la misma de siempre (ver arriba)
+
+3. Las contraseñas NO han cambiado, son las mismas que usabas antes
+
+4. Si olvidaste tu contraseña, contacta con Reinaldo
+
+
+═══════════════════════════════════════════════════════════════════
+  NOTAS TÉCNICAS
+═══════════════════════════════════════════════════════════════════
+
+- Sistema anterior: PHP + users.json (DEPRECADO)
+- Sistema nuevo: Firebase Authentication + Firestore
+- Fotos de perfil: Cloudflare R2
+- Datos en tiempo real: Firebase Firestore
+- Hosting: Vercel (próximamente)
+
+Fecha de migración: 15 de Marzo de 2026
+Usuario eliminado: Valentina Corretja (no migrado)
+
+═══════════════════════════════════════════════════════════════════

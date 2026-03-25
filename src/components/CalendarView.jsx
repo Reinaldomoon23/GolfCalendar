@@ -722,7 +722,9 @@ export default function CalendarView({
             updatedAt: new Date().toISOString(),
             tournamentName: editingDetails.name || selectedTournament.name,
             tournamentCourse: editingDetails.course || selectedTournament.course,
-            tournamentDates: editingDetails.dates || selectedTournament.dates
+            tournamentDates: editingDetails.dates || selectedTournament.dates,
+            track_putts: editingDetails.track_putts || selectedTournament.track_putts || false,
+            track_girs: editingDetails.track_girs || selectedTournament.track_girs || false
         };
 
         if (onSaveSpecificResult) {
@@ -2180,8 +2182,8 @@ export default function CalendarView({
                                                     if (navigator.share) {
                                                         try {
                                                             await navigator.share({
-                                                                title: `Resultados en Vivo - ${selectedTournament?.name || t.name}`,
-                                                                text: `Sigue mis resultados en directo en ${selectedTournament?.name || t.name}`,
+                                                                title: `${user?.full_name || user?.username} - ${selectedTournament?.name || t.name}`,
+                                                                text: `⛳ Sigue la vuelta de ${user?.full_name || user?.username}\n\n🏆 ${selectedTournament?.name || t.name}\n📍 ${selectedTournament?.location || selectedTournament?.course || t.location || t.course || ''}\n\n🔴 EN DIRECTO`,
                                                                 url: link
                                                             });
                                                         } catch (err) {
@@ -2223,8 +2225,8 @@ export default function CalendarView({
                                                         if (navigator.share) {
                                                             try {
                                                                 await navigator.share({
-                                                                    title: `Resultados MULTI-Live - ${selectedTournament?.name || t.name}`,
-                                                                    text: `Sigue nuestros resultados en directo: ${selectedTournament?.name || t.name}`,
+                                                                    title: `Equipo ${user?.full_name || user?.username} - ${selectedTournament?.name || t.name}`,
+                                                                    text: `⛳ Sigue las vueltas del equipo en vivo\n\n🏆 ${selectedTournament?.name || t.name}\n📍 ${selectedTournament?.location || selectedTournament?.course || t.location || t.course || ''}\n👥 Múltiples jugadores\n\n🔴 EN DIRECTO`,
                                                                     url: link
                                                                 });
                                                             } catch (err) {

@@ -3,37 +3,13 @@ import { useParams, Link, useLocation } from 'react-router-dom';
 import { doc, getDoc, getDocs, collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { ChevronLeft, Flag, Info, MapPin, Wind, Thermometer, CloudRain, Cloud, Sun } from 'lucide-react';
+import ProfileImage from './ProfileImage';
 import {
     fetchUserProfileByUsername,
     getUserDocId,
     getUserSubcollectionRef,
     getUserSubdocRef
 } from '../utils/userProfiles';
-
-const R2_PUBLIC_URL = "https://golf-cdn.misterpotatolightyear.workers.dev";
-
-// Photo URL Helper with robust fallbacks and encoding
-const getPhotoUrl = (photoPath, username, version) => {
-    const safeName = encodeURIComponent(username || 'Golf');
-    const avatarUrl = `https://ui-avatars.com/api/?name=${safeName}&background=0D8ABC&color=fff&size=256`;
-
-    if (!photoPath || String(photoPath).trim() === '') return avatarUrl;
-
-    let url = photoPath;
-
-    if (url.includes('pub-23c281cf1ae04def9102341cf7d87837.r2.dev')) {
-        const fileName = url.split('/').pop() || 'profile.jpg';
-        url = `${R2_PUBLIC_URL}/${fileName}`;
-    } else if (!url.startsWith('http')) {
-        const fileName = url.includes('/') ? url.split('/').pop() : url;
-        url = `${R2_PUBLIC_URL}/${fileName || 'profile.jpg'}`;
-    } else if (url.includes('reinaldomoon.top/GolfTeam/profiles/')) {
-        const fileName = url.split('/').pop() || 'profile.jpg';
-        url = `${R2_PUBLIC_URL}/${fileName}`;
-    }
-
-    return version ? `${url}${url.includes('?') ? '&' : '?'}v=${version}` : url;
-};
 import tournamentsData from '../data/tournaments.json';
 
 export default function PublicScorecardView() {
@@ -396,11 +372,11 @@ export default function PublicScorecardView() {
 
                     <div style={{ textAlign: 'center', flex: 1 }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '12px' }}>
-                            <img
-                                src={getPhotoUrl(userProfile?.photo_url || result?.photo_url, userProfile?.full_name || username)}
+                            <ProfileImage
+                                photoPath={userProfile?.photo_url || result?.photo_url}
+                                displayName={userProfile?.full_name || username}
                                 alt={username}
                                 style={{ width: '64px', height: '64px', borderRadius: '50%', border: '2px solid #3b82f6', objectFit: 'cover' }}
-                                onError={(e) => { e.target.onerror = null; e.target.src = "https://ui-avatars.com/api/?name=" + username }}
                             />
                             <div style={{ textAlign: 'left' }}>
                                 <div style={{ fontSize: '0.75rem', color: '#ef4444', fontWeight: 'bold', letterSpacing: '0.05em', display: 'flex', alignItems: 'center' }}>
@@ -466,6 +442,31 @@ export default function PublicScorecardView() {
                             const roundsKeys = Object.keys(result.scorecards || {});
                             if (roundsKeys.length === 0) return null;
 
+                            // NUEVO: Calcular total acumulado de todas las vueltas
+                            let cumulativeScore = 0;
+                            let cumulativePar = 0;
+                            let totalHolesPlayed = 0;
+
+                            roundsKeys.forEach(rIdx => {
+                                const card = result.scorecards[rIdx];
+                                for (let i = 0; i < 18; i++) {
+                                    const strokeStr = String(card.strokes?.[i] || '');
+                                    if (strokeStr !== '' && strokeStr !== '-') {
+                                        const s = parseInt(strokeStr);
+                                        if (!isNaN(s) && s > 0) {
+                                            cumulativeScore += s;
+                                            const p = parseInt(card.pars?.[i]);
+                                            cumulativePar += (!isNaN(p) && p > 0 ? p : 4);
+                                            totalHolesPlayed++;
+                                        }
+                                    }
+                                }
+                            });
+
+                            const cumulativeDiff = cumulativeScore - cumulativePar;
+                            const cumulativeDiffStr = cumulativeDiff > 0 ? `+${cumulativeDiff}` : cumulativeDiff < 0 ? `${cumulativeDiff}` : 'E';
+                            const cumulativeDiffColor = cumulativeDiff > 0 ? '#ef4444' : cumulativeDiff < 0 ? '#10b981' : '#94a3b8';
+
                             // We want to display the specific round passed via URL query if available
                             let displayRounds = [];
 
@@ -506,7 +507,46 @@ export default function PublicScorecardView() {
                             }
 
                             // Map over the correct round(s)
-                            return displayRounds.map((rIdx) => {
+                            return (
+                                <>
+                                    {/* Mostrar total acumulado solo si hay más de 1 vuelta */}
+                                    {roundsKeys.length > 1 && totalHolesPlayed > 0 && (
+                                        <div style={{
+                                            background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
+                                            borderRadius: '16px',
+                                            padding: '1.5rem',
+                                            marginBottom: '1.5rem',
+                                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.2)',
+                                            border: '2px solid #3b82f6'
+                                        }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '1.2rem', fontWeight: '800' }}>
+                                                    📊 TOTAL ACUMULADO ({totalHolesPlayed} hoyos)
+                                                </h3>
+                                                <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                                                    <span style={{ fontSize: '2.5rem', fontWeight: '900', color: 'white' }}>
+                                                        {cumulativeScore}
+                                                    </span>
+                                                    <span style={{ fontSize: '1.4rem', fontWeight: 'bold', color: cumulativeDiffColor }}>
+                                                        ({cumulativeDiffStr})
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div style={{
+                                                marginTop: '10px',
+                                                fontSize: '0.9rem',
+                                                color: '#94a3b8',
+                                                display: 'flex',
+                                                gap: '20px'
+                                            }}>
+                                                <span>🎯 Par acumulado: {cumulativePar}</span>
+                                                <span>⛳ Hoyos: {totalHolesPlayed}/{roundsKeys.length * 18}</span>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Vueltas individuales */}
+                                    {displayRounds.map((rIdx) => {
                                 const roundStr = parseInt(rIdx);
                                 const card = result.scorecards[rIdx];
 
@@ -559,7 +599,9 @@ export default function PublicScorecardView() {
                                         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.2)'
                                     }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                                            <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '1.1rem' }}>{t.round} {roundStr + 1}</h3>
+                                            <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '1.1rem' }}>
+                                                {t.round} {roundStr + 1} {roundsKeys.length > 1 ? `(Vuelta ${roundStr + 1} de ${roundsKeys.length})` : ''}
+                                            </h3>
                                             <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
                                                 <span style={{ fontSize: '2rem', fontWeight: '900', color: 'white' }}>{displayTotal || '-'}</span>
                                                 <span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: diffColor }}>
@@ -631,6 +673,60 @@ export default function PublicScorecardView() {
                                                             )
                                                         })}
                                                     </div>
+
+                                                    {/* Row: Putts (if tracked) */}
+                                                    {(result.track_putts || tournament?.track_putts) && (
+                                                        <div style={{ display: 'flex', background: '#1e293b', fontSize: '0.9rem' }}>
+                                                            <div style={{ width: '60px', padding: '8px', borderRight: '1px solid #334155', borderTop: '1px solid #334155', flexShrink: 0, textAlign: 'center', color: '#94a3b8', fontWeight: 'bold', boxSizing: 'border-box' }}>Putts</div>
+                                                            {[...Array(9)].map((_, i) => {
+                                                                const putts = card.putts?.[i] || '';
+                                                                return (
+                                                                    <div key={i} style={{
+                                                                        flex: '1 1 0%',
+                                                                        padding: '8px 0',
+                                                                        borderRight: i < 8 ? '1px solid #334155' : 'none',
+                                                                        borderTop: '1px solid #334155',
+                                                                        textAlign: 'center',
+                                                                        color: '#cbd5e1',
+                                                                        boxSizing: 'border-box',
+                                                                        minWidth: 0
+                                                                    }}>
+                                                                        {putts !== '' && putts !== '-' ? putts : '-'}
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Row: GIR (if tracked) */}
+                                                    {(result.track_girs || tournament?.track_girs) && (
+                                                        <div style={{ display: 'flex', background: '#1e293b', fontSize: '0.9rem' }}>
+                                                            <div style={{ width: '60px', padding: '8px', borderRight: '1px solid #334155', borderTop: '1px solid #334155', flexShrink: 0, textAlign: 'center', color: '#94a3b8', fontWeight: 'bold', boxSizing: 'border-box' }}>GIR</div>
+                                                            {[...Array(9)].map((_, i) => {
+                                                                const gir = card.girs?.[i] || '';
+                                                                let girDisplay = '-';
+                                                                let girColor = '#64748b';
+                                                                if (gir === 'Y') { girDisplay = '✓'; girColor = '#10b981'; }
+                                                                else if (gir === 'N') { girDisplay = '✗'; girColor = '#ef4444'; }
+
+                                                                return (
+                                                                    <div key={i} style={{
+                                                                        flex: '1 1 0%',
+                                                                        padding: '8px 0',
+                                                                        borderRight: i < 8 ? '1px solid #334155' : 'none',
+                                                                        borderTop: '1px solid #334155',
+                                                                        textAlign: 'center',
+                                                                        color: girColor,
+                                                                        fontWeight: 'bold',
+                                                                        boxSizing: 'border-box',
+                                                                        minWidth: 0
+                                                                    }}>
+                                                                        {girDisplay}
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
                                                 </div>
 
                                                 {/* Second 9 Holes */}
@@ -693,12 +789,68 @@ export default function PublicScorecardView() {
                                                             )
                                                         })}
                                                     </div>
+
+                                                    {/* Row: Putts (if tracked) */}
+                                                    {(result.track_putts || tournament?.track_putts) && (
+                                                        <div style={{ display: 'flex', background: '#1e293b', fontSize: '0.9rem' }}>
+                                                            <div style={{ width: '60px', padding: '8px', borderRight: '1px solid #334155', borderTop: '1px solid #334155', flexShrink: 0, textAlign: 'center', color: '#94a3b8', fontWeight: 'bold', boxSizing: 'border-box' }}>Putts</div>
+                                                            {[...Array(9)].map((_, i) => {
+                                                                const putts = card.putts?.[i + 9] || '';
+                                                                return (
+                                                                    <div key={i + 9} style={{
+                                                                        flex: '1 1 0%',
+                                                                        padding: '8px 0',
+                                                                        borderRight: i < 8 ? '1px solid #334155' : 'none',
+                                                                        borderTop: '1px solid #334155',
+                                                                        textAlign: 'center',
+                                                                        color: '#cbd5e1',
+                                                                        boxSizing: 'border-box',
+                                                                        minWidth: 0
+                                                                    }}>
+                                                                        {putts !== '' && putts !== '-' ? putts : '-'}
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Row: GIR (if tracked) */}
+                                                    {(result.track_girs || tournament?.track_girs) && (
+                                                        <div style={{ display: 'flex', background: '#1e293b', fontSize: '0.9rem' }}>
+                                                            <div style={{ width: '60px', padding: '8px', borderRight: '1px solid #334155', borderTop: '1px solid #334155', flexShrink: 0, textAlign: 'center', color: '#94a3b8', fontWeight: 'bold', boxSizing: 'border-box' }}>GIR</div>
+                                                            {[...Array(9)].map((_, i) => {
+                                                                const gir = card.girs?.[i + 9] || '';
+                                                                let girDisplay = '-';
+                                                                let girColor = '#64748b';
+                                                                if (gir === 'Y') { girDisplay = '✓'; girColor = '#10b981'; }
+                                                                else if (gir === 'N') { girDisplay = '✗'; girColor = '#ef4444'; }
+
+                                                                return (
+                                                                    <div key={i + 9} style={{
+                                                                        flex: '1 1 0%',
+                                                                        padding: '8px 0',
+                                                                        borderRight: i < 8 ? '1px solid #334155' : 'none',
+                                                                        borderTop: '1px solid #334155',
+                                                                        textAlign: 'center',
+                                                                        color: girColor,
+                                                                        fontWeight: 'bold',
+                                                                        boxSizing: 'border-box',
+                                                                        minWidth: 0
+                                                                    }}>
+                                                                        {girDisplay}
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 );
-                            });
+                            })}
+                                </>
+                            );
                         })()}
                     </div>
                 </div >

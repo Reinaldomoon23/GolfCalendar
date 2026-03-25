@@ -1,16 +1,179 @@
-# React + Vite
+# Golf Tracker - PWA de Gestión de Golf
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**Versión**: 2.4.8
+**Estado**: En producción
+**URL**: https://reinaldomoon.top/GolfTeam/
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🚀 Inicio Rápido
 
-## React Compiler
+```bash
+# Instalar dependencias
+npm install
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+# Ejecutar en desarrollo
+npm run dev
 
-## Expanding the ESLint configuration
+# Build para producción
+npm run build
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+---
+
+## 📖 Documentación Técnica Completa
+
+**⚠️ IMPORTANTE: Para desarrolladores y modelos de IA**
+
+Toda la documentación técnica detallada del proyecto se encuentra en:
+
+**[DOCUMENTACION_TECNICA.md](./DOCUMENTACION_TECNICA.md)**
+
+Este archivo contiene:
+- ✅ Arquitectura completa del sistema
+- ✅ Stack tecnológico y versiones
+- ✅ Estructura de datos (Firestore schema)
+- ✅ Flujos de autenticación, hándicap, resultados
+- ✅ Guías de desarrollo y debugging
+- ✅ TODOs y roadmap detallado
+- ✅ Ejemplos de código completos
+- ✅ Configuración de Firebase, R2, APIs PHP
+
+**Si eres un modelo de IA trabajando en este proyecto**, lee primero `DOCUMENTACION_TECNICA.md` para entender completamente el contexto, arquitectura y estado actual.
+
+---
+
+## 🎯 ¿Qué es Golf Tracker?
+
+Progressive Web App para gestionar:
+- 📅 Calendarios de torneos de golf (RFEG, FCG, clubs)
+- 📊 Resultados y scorecards hoyo por hoyo
+- 📈 Hándicap oficial automático
+- 📉 Estadísticas y análisis
+- 👥 Múltiples perfiles (modo manager)
+
+---
+
+## 🏗️ Stack Tecnológico
+
+- **Frontend**: React 19 + Vite 7
+- **Backend**: Firebase (Auth + Firestore)
+- **Storage**: Cloudflare R2
+- **PWA**: vite-plugin-pwa + Workbox
+- **Gráficos**: Chart.js
+- **APIs Legacy**: PHP (en proceso de eliminación)
+
+---
+
+## 📁 Estructura del Proyecto
+
+```
+├── DOCUMENTACION_TECNICA.md    ← 📖 LEE ESTO PRIMERO
+├── PASOS_MIGRACION_FIREBASE.md ← Roadmap de migración
+├── src/
+│   ├── App.jsx                 ← Componente raíz
+│   ├── firebase.js             ← Config Firebase
+│   ├── components/             ← Componentes React
+│   └── utils/                  ← Helpers
+├── public/api/                 ← APIs PHP legacy
+├── scripts/                    ← Scripts de migración
+└── package.json
+```
+
+---
+
+## 🔥 Comandos Útiles
+
+```bash
+# Desarrollo
+npm run dev                    # Dev server (puerto 5173)
+npm run build                  # Build producción
+npm run preview                # Preview build
+
+# Scripts Firebase
+node scripts/migrate_users_to_firebase.js
+node scripts/list_users.js
+
+# Debugging
+npm run lint                   # ESLint
+```
+
+---
+
+## 🌐 Variables de Entorno
+
+Crear `.env.local`:
+
+```bash
+VITE_APP_MODE=multi           # 'single' o 'multi'
+VITE_BASE_URL=/               # Base path
+VITE_USE_EMULATORS=false      # Usar emuladores Firebase
+```
+
+---
+
+## 📋 Estado Actual
+
+### ✅ Completado
+- Migración completa a Firebase Authentication
+- Sistema de hándicap con cache inteligente
+- Manager mode (multi-usuario)
+- PWA funcional con offline-first
+- Fotos en Cloudflare R2
+- Sincronización en tiempo real (Firestore)
+- **Mejoras modo Live**: Suma de vueltas + nombre en compartir
+
+### 🚧 En Progreso
+- **Plan de Escalabilidad**: Preparación para miles de usuarios
+  - Testing funcional exhaustivo
+  - Reglas de seguridad Firestore
+  - Optimizaciones de rendimiento
+  - Ver [PLAN_ESCALABILIDAD.md](./PLAN_ESCALABILIDAD.md)
+
+### 🔜 Próximamente
+- **Sistema Stage/Production**: Entornos separados + Feature Flags
+  - Ver [SISTEMA_STAGE_PRODUCTION.md](./SISTEMA_STAGE_PRODUCTION.md)
+- **Nuevas Funcionalidades**: Sistema de amigos, compartir torneos, comparar stats
+  - Ver [ROADMAP_FEATURES.md](./ROADMAP_FEATURES.md)
+
+---
+
+## 👥 Usuarios Principales
+
+- Nicole (modo single)
+- David (manager de María y Sofía)
+- Txell, Jordi, Ona
+
+---
+
+## 🤖 Para Modelos de IA
+
+**Antes de hacer cambios en el código:**
+
+1. Lee **[DOCUMENTACION_TECNICA.md](./DOCUMENTACION_TECNICA.md)** completo
+2. Revisa **[PASOS_MIGRACION_FIREBASE.md](./PASOS_MIGRACION_FIREBASE.md)** para el roadmap
+3. Consulta la sección de TODOs para prioridades
+4. Sigue las convenciones de código documentadas
+
+**Archivos clave:**
+- `src/App.jsx` - Estado global y autenticación
+- `src/firebase.js` - Configuración Firebase
+- `src/utils/userProfiles.js` - Helpers Firestore
+- `src/components/CalendarView.jsx` - Vista principal
+
+---
+
+## 📞 Contacto
+
+**Desarrollador**: Reinaldo Moon
+**Email**: misterpotatolightyear@gmail.com
+
+---
+
+## 📜 Licencia
+
+Privado - Uso personal
+
+---
+
+**Última actualización**: 17 de marzo de 2026

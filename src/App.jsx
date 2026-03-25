@@ -27,7 +27,7 @@ import AdminRoute from './components/admin/AdminRoute';
 import { auth, db } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { collection, onSnapshot, setDoc } from 'firebase/firestore';
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 import {
   ensureUserProfileDocument,
   fetchUserProfileByUid,
@@ -38,42 +38,12 @@ import {
   getUserSubdocRef
 } from './utils/userProfiles';
 
-// Cloudflare R2 Config
-const R2_CONFIG = {
-  accessKeyId: "453a6e48294058bb766317b31c742af8",
-  secretAccessKey: "c4bc610a94cd5c1c18db535a1610f83df61a93836feea811999a6c4fa171ac7b",
-  endpoint: "https://1e8f9eaa8024f1354556923930ad0acb.r2.cloudflarestorage.com",
-  bucketName: "golf-profiles-bucket",
-  publicUrl: "https://pub-23c281cf1ae04def9102341cf7d87837.r2.dev"
-};
+// Sentry Error Tracking
+import { setUser as setSentryUser } from './utils/sentry';
 
-const s3Client = new S3Client({
-  region: "auto",
-  endpoint: R2_CONFIG.endpoint,
-  credentials: {
-    accessKeyId: R2_CONFIG.accessKeyId,
-    secretAccessKey: R2_CONFIG.secretAccessKey,
-  },
-});
-
-// Environment Mode: 'single' (Nicole) or 'multi' (Team)
-const APP_MODE = import.meta.env.VITE_APP_MODE || 'single';
-const IS_MULTI = APP_MODE === 'multi';
-
-// Default user for Single Mode
-const DEFAULT_USER = {
-  username: 'nicole',
-  full_name: 'Calendario Nicole Likhomanova',
-  photo_url: 'nicole.jpg',
-};
-
-const DEFAULT_PREFERENCES = {
-  groups: ['juvenil', 'rfeg', 'fcg', 'club', 'adultos'],
-  hiddenIds: [],
-  themes: {}
-};
-
-const HANDICAP_CACHE_KEY_PREFIX = 'golf_tracker_handicap_cache';
+// Configuration
+import { R2_CONFIG, s3Client } from './config/cloudflare';
+import { APP_MODE, IS_MULTI, DEFAULT_USER, DEFAULT_PREFERENCES, HANDICAP_CACHE_KEY_PREFIX } from './config/app';
 
 function getHandicapCacheKey(userLike) {
   const suffix = getUserDocId(userLike) || userLike?.username || '';
@@ -359,6 +329,9 @@ function AppContent() {
     setCustomTournaments([]);
     setPreferences({ ...DEFAULT_PREFERENCES });
     setHandicap(null);
+
+    // Clear user from Sentry
+    setSentryUser(null);
     setPdfUrl(null);
   };
 
@@ -453,6 +426,13 @@ function AppContent() {
             setSessionOwner(ownerProfile);
             setUser(activeUser);
             localStorage.setItem('golf_tracker_user', JSON.stringify(activeUser));
+
+            // Set user context in Sentry for error tracking
+            setSentryUser({
+              uid: activeUser.uid || ownerProfile.uid,
+              username: activeUser.username,
+              displayName: activeUser.full_name
+            });
           }
         } catch (error) {
           console.error('Error resolving Firebase session', error);

@@ -52,7 +52,7 @@ export default function LoginViewFirebase({ onLogin }) {
                     federation_id: federationId || '',
                     photo_url: '',
                     handicap_url: '',
-                    role: 'user',
+                    role: 'player',
                     managed_users: [],
                     created_at: new Date()
                 }, normalizedUsername);

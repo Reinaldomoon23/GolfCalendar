@@ -3,24 +3,12 @@ import { useParams, useLocation } from 'react-router-dom';
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { ChevronLeft, Info } from 'lucide-react';
+import ProfileImage from './ProfileImage';
 import {
     fetchUserProfileByUsername,
     getUserDocId,
     getUserSubdocRef
 } from '../utils/userProfiles';
-
-const R2_PUBLIC_URL = "https://pub-23c281cf1ae04def9102341cf7d87837.r2.dev";
-
-const getPhotoUrl = (photoPath, username, version) => {
-    if (!photoPath) return `https://ui-avatars.com/api/?name=${encodeURIComponent(username || 'Golf')}`;
-
-    let url = photoPath;
-    if (!photoPath.startsWith('http')) {
-        const fileName = photoPath.includes('/') ? photoPath.split('/').pop() : photoPath;
-        url = `${R2_PUBLIC_URL}/${fileName || 'profile.jpg'}`;
-    }
-    return version ? `${url}?v=${version}` : url;
-};
 
 export default function TeamLiveScorecard() {
     const { id: eventId } = useParams();
@@ -305,7 +293,7 @@ export default function TeamLiveScorecard() {
                     return (
                         <div key={player} style={{ marginBottom: '3rem' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1rem', paddingBottom: '0.5rem', borderBottom: '2px solid #334155' }}>
-                                <img src={getPhotoUrl(profile.photo_url, profile.full_name || player)} alt={player} style={{ width: '40px', height: '40px', borderRadius: '50%', border: '2px solid #fff', objectFit: 'cover' }} />
+                                <ProfileImage photoPath={profile.photo_url} displayName={profile.full_name || player} alt={player} style={{ width: '40px', height: '40px', borderRadius: '50%', border: '2px solid #fff', objectFit: 'cover' }} />
                                 <h2 style={{ fontSize: '1.4rem', margin: 0, color: 'white' }}>{profile.full_name || profile.username || player}</h2>
                             </div>
 
