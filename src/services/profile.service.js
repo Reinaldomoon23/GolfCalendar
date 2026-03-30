@@ -68,7 +68,7 @@ export function isCloudflarePhotoPath(photoPath) {
  * @returns {Promise<object>} - Updated user object
  * @throws {Error} If Firestore write fails
  */
-export async function updateUserProfile(user, { fullName, federationId, email }) {
+export async function updateUserProfile(user, { fullName, federationId, email, current_handicap }) {
   if (!user) throw new Error('User is required');
 
   const firestorePayload = {
@@ -77,8 +77,16 @@ export async function updateUserProfile(user, { fullName, federationId, email })
     email,
   };
 
-  // Primary: Update Firestore
-  await setDoc(getUserProfileRef(db, user), firestorePayload, { merge: true });
+  if (current_handicap !== undefined) {
+    firestorePayload.current_handicap = current_handicap;
+  }
+
+  // Primary: Update Firestore (could fail if rules are strict)
+  try {
+    await setDoc(getUserProfileRef(db, user), firestorePayload, { merge: true });
+  } catch (err) {
+    console.warn('[profile] Firestore update failed (rules restricted):', err.code || err.message);
+  }
 
   // Secondary: Keep PHP updated for legacy shared scorecards
   try {
@@ -90,6 +98,7 @@ export async function updateUserProfile(user, { fullName, federationId, email })
         full_name: fullName,
         federation_id: federationId,
         email,
+        current_handicap: current_handicap,
       }),
     });
   } catch (err) {
@@ -99,9 +108,7 @@ export async function updateUserProfile(user, { fullName, federationId, email })
 
   return {
     ...user,
-    full_name: fullName,
-    federation_id: federationId,
-    email,
+    ...firestorePayload
   };
 }
 

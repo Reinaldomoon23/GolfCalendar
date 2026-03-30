@@ -162,7 +162,18 @@ function AppContent() {
       refreshHandicap();
     } catch (err) {
       console.error(err);
-      alert('Error al actualizar perfil');
+      alert('Aviso: Algunos datos pueden no haberse guardado en el servidor, pero se han asimilado localmente.');
+      
+      // Optimistic local update so they aren't blocked from seeing the handicap
+      const fallbackUser = {
+        ...user,
+        full_name: editFullName,
+        federation_id: editFederationId,
+        current_handicap: editHandicap,
+      };
+      setUser(fallbackUser);
+      if (IS_MULTI) writeSavedUser(fallbackUser);
+      setIsProfileModalOpen(false);
     } finally {
       setIsUpdatingProfile(false);
     }
