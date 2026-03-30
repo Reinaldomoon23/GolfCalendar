@@ -34,6 +34,8 @@ export default function ProfileModal({
   setEmail,
   federationId,
   setFederationId,
+  handicap,
+  setHandicap,
   isUpdating,
   onSubmit,
   onRecoverProfile,
@@ -96,7 +98,23 @@ export default function ProfileModal({
               style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #E5E1DE', boxSizing: 'border-box' }}
             />
             <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '8px', lineHeight: '1.4' }}>
-              El nº de licencia se utiliza para cargar tu hándicap oficial automáticamente.
+              El nº de licencia genera el PDF automáticamente.
+            </p>
+          </div>
+
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.8rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Hándicap Actual (Manual)
+            </label>
+            <input
+              type="text"
+              placeholder="Ej: 12.5"
+              value={handicap}
+              onChange={e => setHandicap(e.target.value)}
+              style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #E5E1DE', boxSizing: 'border-box' }}
+            />
+            <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '8px', lineHeight: '1.4' }}>
+              Dado que la Federación Española bloquea las apps de terceros, introduce aquí tu hándicap actual para que se muestre en pantalla.
             </p>
           </div>
 

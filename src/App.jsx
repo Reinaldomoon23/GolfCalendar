@@ -134,12 +134,14 @@ function AppContent() {
   const [editFullName, setEditFullName] = useState('');
   const [editFederationId, setEditFederationId] = useState('');
   const [editEmail, setEditEmail] = useState('');
+  const [editHandicap, setEditHandicap] = useState('');
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
 
   const openProfileModal = () => {
     setEditFullName(user.full_name || '');
     setEditFederationId(user.federation_id || '');
     setEditEmail(user.email || '');
+    setEditHandicap(user.current_handicap || '');
     setIsProfileModalOpen(true);
   };
 
@@ -151,6 +153,7 @@ function AppContent() {
         fullName: editFullName,
         federationId: editFederationId,
         email: editEmail,
+        current_handicap: editHandicap,
       });
       setUser(updatedUser);
       if (IS_MULTI) writeSavedUser(updatedUser);
@@ -496,6 +499,8 @@ function AppContent() {
         setEmail={setEditEmail}
         federationId={editFederationId}
         setFederationId={setEditFederationId}
+        handicap={editHandicap}
+        setHandicap={setEditHandicap}
         isUpdating={isUpdatingProfile}
         onSubmit={handleUpdateProfile}
         onRecoverProfile={handleRecoverProfile}
