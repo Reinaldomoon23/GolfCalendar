@@ -47,3 +47,4 @@ public/data/prefs_*.json
 public/data/handicap_history_*.json
 public/api/users.json
 server_backups/
+.vercel

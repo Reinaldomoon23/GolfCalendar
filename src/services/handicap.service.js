@@ -16,7 +16,7 @@ import { setDoc } from 'firebase/firestore';
 import { IS_MULTI } from '../config/app';
 import { getUserDocId } from '../utils/userProfiles';
 
-const HANDICAP_API_BASE = 'https://reinaldomoon.top/GolfTeam';
+const HANDICAP_API_BASE = ''; // Internal Vercel relative path
 
 // ─── Cache ────────────────────────────────────────────────────────────────────
 
@@ -71,7 +71,7 @@ export async function fetchHandicapFromServer(user) {
   if (!user?.username) throw new Error('User or username is required');
 
   const licenseParam = user.federation_id ? `&license=${user.federation_id}` : '';
-  const url = `${HANDICAP_API_BASE}/api/get_handicap.php?username=${user.username}${licenseParam}&t=${Date.now()}`;
+  const url = `${HANDICAP_API_BASE}/api/get_handicap?username=${user.username}${licenseParam}&t=${Date.now()}`;
 
   const res = await fetch(url);
   if (!res.ok) throw new Error(`API error: ${res.status}`);
@@ -145,13 +145,12 @@ export async function refreshHandicap(user, { force = false } = {}) {
 
 // ─── PDF ──────────────────────────────────────────────────────────────────────
 
-/**
- * Builds the URL for a user's handicap history PDF
- * @param {string} username
- * @param {string} [federationId]
- * @returns {string}
- */
 export function buildPdfUrl(username, federationId) {
-  const licenseParam = federationId ? `&license=${federationId}` : '';
-  return `${HANDICAP_API_BASE}/api/get_handicap_history_pdf.php?username=${username}${licenseParam}`;
+  if (!federationId) return '';
+  const matches = federationId.match(/(\d+)$/);
+  if (matches && matches[1]) {
+    const shortId = matches[1].slice(-6);
+    return `https://api.rfeg.es/files/summaryhandicap/${parseInt(shortId, 10)}.pdf`;
+  }
+  return '';
 }

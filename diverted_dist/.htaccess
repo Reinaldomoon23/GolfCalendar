@@ -1,0 +1,13 @@
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteBase /GolfTeam/
+
+# Evita redirigir la API (para que get_handicap.php siga funcionando para Vercel)
+# Si la ruta contiene /api/, no hagas nada [L]
+RewriteCond %{REQUEST_URI} ^/GolfTeam/api [NC]
+RewriteRule ^.*$ - [L]
+
+# Redirige todo el resto del tráfico web hacia la app de la producción en Vercel
+RewriteCond %{REQUEST_URI} !^/GolfTeam/api [NC]
+RewriteRule ^(.*)$ https://golf-calendar-v3.vercel.app/$1 [R=301,L]
+</IfModule>
