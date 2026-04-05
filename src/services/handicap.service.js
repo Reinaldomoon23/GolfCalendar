@@ -15,8 +15,9 @@ import {
 import { setDoc } from 'firebase/firestore';
 import { IS_MULTI } from '../config/app';
 import { getUserDocId } from '../utils/userProfiles';
+import { API_ENDPOINTS } from '../config/api';
 
-const HANDICAP_API_BASE = ''; // Internal Vercel relative path
+const HANDICAP_API_BASE = API_ENDPOINTS.handicap;
 
 // ─── Cache ────────────────────────────────────────────────────────────────────
 
@@ -70,8 +71,7 @@ export function hasHandicapFreshCache(user) {
 export async function fetchHandicapFromServer(user) {
   if (!user?.username) throw new Error('User or username is required');
 
-  const licenseParam = user.federation_id ? `&license=${user.federation_id}` : '';
-  const url = `${HANDICAP_API_BASE}/api/get_handicap?username=${user.username}${licenseParam}&t=${Date.now()}`;
+  const url = `${HANDICAP_API_BASE}?license=${user.federation_id || ''}&t=${Date.now()}`;
 
   const res = await fetch(url);
   if (!res.ok) throw new Error(`API error: ${res.status}`);

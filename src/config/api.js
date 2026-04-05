@@ -3,8 +3,8 @@
  */
 
 export const API_ENDPOINTS = {
-  // Handicap service (PHP legacy)
-  handicap: "https://reinaldomoon.top/GolfTeam/api/get_handicap.php",
+  // Handicap service (Vercel Serverless)
+  handicap: "/api/get_handicap",
 
   // Legacy PHP endpoints (fallback)
   updateUser: "/api/update_user.php",

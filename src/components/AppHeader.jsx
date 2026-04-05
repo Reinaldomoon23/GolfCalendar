@@ -242,7 +242,7 @@ export default function AppHeader({
           style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'var(--color-primary-light)', color: 'var(--color-primary-dark)', padding: '8px 24px', borderRadius: '24px', fontSize: '1.1rem', fontWeight: '600', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.05)', cursor: isUpdatingHandicap || !user?.username ? 'default' : 'pointer', transition: 'all 0.2s ease', width: '220px', maxWidth: '75vw', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
         >
           <TrendingUp size={18} className={isUpdatingHandicap ? 'spin-animation' : ''} />
-          <span>{isUpdatingHandicap ? 'Actualizando...' : (handicap && String(handicap).trim() !== '' ? `Hándicap: ${String(handicap).substring(0, 15)}` : 'Actualizar hándicap')}</span>
+          <span>{isUpdatingHandicap ? 'Actualizando...' : (handicap && String(handicap).trim() !== '' ? String(handicap).substring(0, 15) : 'Actualizar hándicap')}</span>
         </button>
 
         {(pdfUrl || user?.federation_id) && (
