@@ -20,11 +20,12 @@ if (import.meta.env.MODE === 'production' && !R2_CONFIG.accessKeyId) {
   console.error('❌ R2 credentials not found in environment variables');
 }
 
-export const s3Client = new S3Client({
+// Only create S3Client if credentials are available
+export const s3Client = R2_CONFIG.accessKeyId ? new S3Client({
   region: "auto",
   endpoint: R2_CONFIG.endpoint,
   credentials: {
     accessKeyId: R2_CONFIG.accessKeyId,
     secretAccessKey: R2_CONFIG.secretAccessKey,
   },
-});
+}) : null;
