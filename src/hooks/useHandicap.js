@@ -10,6 +10,8 @@ import {
   refreshHandicap as svcRefreshHandicap,
   getHandicapFromCache,
   hasHandicapFreshCache,
+  subscribeToHandicapHistory,
+  appendHandicapHistoryEntry,
 } from '../services/handicap.service';
 import { writeSavedUser } from '../utils/cache';
 import { IS_MULTI } from '../config/app';
@@ -21,6 +23,7 @@ import { IS_MULTI } from '../config/app';
  *   handicap: string|null,
  *   pdfUrl: string|null,
  *   isUpdatingHandicap: boolean,
+ *   history: array,
  *   refreshHandicap: Function,
  *   handleHandicapButtonClick: Function,
  *   handleOpenHandicapPdf: Function,
@@ -30,6 +33,7 @@ export function useHandicap(user, setUser) {
   const [handicap, setHandicap] = useState(null);
   const [pdfUrl, setPdfUrl] = useState(null);
   const [isUpdatingHandicap, setIsUpdatingHandicap] = useState(false);
+  const [history, setHistory] = useState([]);
 
   // ─── Apply cache to UI ────────────────────────────────────────────────────
 
@@ -55,6 +59,20 @@ export function useHandicap(user, setUser) {
 
     try {
       const { handicap: h, pdfUrl: p, updatedUser } = await svcRefreshHandicap(user, { force });
+
+      // Check if handicap changed and save to history
+      const oldHandicap = handicap;
+      if (h && h !== oldHandicap) {
+        const today = new Date().toISOString().slice(0, 10);
+        await appendHandicapHistoryEntry(user, {
+          date: today,
+          handicap: h,
+          source: 'rfeg_pdf',
+          tournament: null,
+          tournament_id: null,
+        });
+      }
+
       setHandicap(h);
       setPdfUrl(p);
       setUser(updatedUser);
@@ -66,6 +84,21 @@ export function useHandicap(user, setUser) {
       if (!background) setIsUpdatingHandicap(false);
     }
   };
+
+  // ─── Subscribe to handicap history ────────────────────────────────────────
+
+  useEffect(() => {
+    if (!user?.username) {
+      setHistory([]);
+      return;
+    }
+
+    const unsubscribe = subscribeToHandicapHistory(user, (entries) => {
+      setHistory(entries);
+    });
+
+    return () => unsubscribe();
+  }, [user?.username]);
 
   // ─── Load from cache when user changes, then background refresh ──────────
 
@@ -109,6 +142,7 @@ export function useHandicap(user, setUser) {
     pdfUrl,
     setPdfUrl,
     isUpdatingHandicap,
+    history,
     refreshHandicap,
     handleHandicapButtonClick,
     handleOpenHandicapPdf,

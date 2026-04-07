@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -39,121 +39,16 @@ const fmtDateLong = (isoString) => {
 };
 
 // ─── component ──────────────────────────────────────────────────
-const HandicapView = ({ user, currentHandicap }) => {
-    const [history, setHistory] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
-    const [source, setSource] = useState('');
-    const [pdfEntries, setPdfEntries] = useState(0);
-    const [error, setError] = useState('');
+const HandicapView = ({ currentHandicap, history = [] }) => {
 
-    // ── initial load ──────────────────────────────────────────
-    useEffect(() => {
-        if (!user) return;
 
-        const lastSyncKey = `hcp_last_sync_v2_${user.username}`;
-        const lastSync = localStorage.getItem(lastSyncKey);
-        const today = new Date().toISOString().slice(0, 10);
-
-        if (lastSync !== today) {
-            // Haven't synced today → fetch from PDF
-            loadHistory(true).then(() => {
-                localStorage.setItem(lastSyncKey, today);
-            });
-        } else {
-            // Already synced today → read stored JSON, but only keep rfeg_pdf entries
-            fetch(`./api/save_handicap_history.php?username=${user.username}&t=${Date.now()}`)
-                .then(r => r.json())
-                .then(data => {
-                    // Filter to tournament-only data (discard old daily snapshots)
-                    const pdfOnly = Array.isArray(data)
-                        ? data.filter(e => e.source === 'rfeg_pdf')
-                        : [];
-
-                    if (pdfOnly.length === 0) {
-                        // No valid tournament data → force re-sync from PDF
-                        return loadHistory(true).then(() => {
-                            localStorage.setItem(lastSyncKey, today);
-                        });
-                    }
-                    // Good data → use filtered set
-                    const sorted = [...pdfOnly].sort((a, b) => a.date.localeCompare(b.date));
-                    setHistory(sorted);
-                    setSource('stored');
-                    setLoading(false);
-                })
-                .catch(() => loadHistory(true));
-        }
-    }, [user]);
-
-    /**
-     * loadHistory(forceRefresh):
-     *  - forceRefresh=false → just GET the stored JSON (fast)
-     *  - forceRefresh=true  → call the PDF endpoint to re-parse RFEG and merge/update
-     */
-    const loadHistory = async (forceRefresh = false) => {
-        if (!user) return;
-        forceRefresh ? setRefreshing(true) : setLoading(true);
-        setError('');
-
-        try {
-            if (forceRefresh) {
-                // Hit the PDF parsing endpoint
-                const license = user.license || user.federation_id || '';
-                const licenseParam = license ? `&license=${encodeURIComponent(license)}` : '';
-                const baselink = "https://reinaldomoon.top/GolfTeam";
-                const url = `${baselink}/api/get_handicap_history_pdf.php?username=${user.username}${licenseParam}&t=${Date.now()}`;
-                const res = await fetch(url);
-                const data = await res.json();
-
-                if (data.history && Array.isArray(data.history)) {
-                    setHistory(data.history);
-                    setSource(data.source || '');
-                    setPdfEntries(data.pdf_entries || 0);
-                }
-                if (data.error && !data.history?.length) {
-                    setError(data.error);
-                }
-            } else {
-                // Just read stored history (cheap)
-                const res = await fetch(`https://reinaldomoon.top/GolfTeam/api/save_handicap_history.php?username=${user.username}&t=${Date.now()}`);
-                const data = await res.json();
-                if (Array.isArray(data)) {
-                    const sorted = [...data].sort((a, b) => a.date.localeCompare(b.date));
-                    setHistory(sorted);
-                    setSource('stored');
-                }
-            }
-        } catch (err) {
-            setError('Error al cargar el historial.');
-            console.error(err);
-        } finally {
-            setLoading(false);
-            setRefreshing(false);
-        }
-    };
-
-    // ── displayHistory: history + current handicap as final point ──────
-    // The PDF Bloque 1 shows HCP after each tournament, but the REAL current
-    // handicap may differ. We append it as today's point so the chart always
-    // ends at the true current value.
+    // ── displayHistory: reverse history for chronological chart (oldest → newest)
+    // History comes from Firestore sorted by date desc (newest first)
+    // Need to reverse for left-to-right chart visualization
     const displayHistory = useMemo(() => {
-        const parsed = currentHandicap
-            ? parseFloat(String(currentHandicap).replace(',', '.'))
-            : null;
-        const today = new Date().toISOString().slice(0, 10);
-
-        if (!history.length && parsed) {
-            return [{ date: today, handicap: parsed, source: 'current' }];
-        }
         if (!history.length) return [];
-
-        const lastEntry = history[history.length - 1];
-        if (parsed && (lastEntry.handicap !== parsed || lastEntry.date !== today)) {
-            return [...history, { date: today, handicap: parsed, source: 'current' }];
-        }
-        return history;
-    }, [history, currentHandicap]);
+        return [...history].reverse();
+    }, [history]);
 
     // ── derived stats ─────────────────────────────────────────
     const stats = useMemo(() => {
@@ -242,17 +137,6 @@ const HandicapView = ({ user, currentHandicap }) => {
     }), [displayHistory]);
 
     // ── render ────────────────────────────────────────────────
-    if (loading) {
-        return (
-            <div className="fade-in" style={{ maxWidth: 820, margin: '0 auto', paddingBottom: '4rem' }}>
-                <div className="card" style={{ textAlign: 'center', padding: '3rem', color: 'var(--color-text-muted)' }}>
-                    <TrendingUp size={28} color="var(--color-primary)" className="spin-animation" style={{ display: 'inline-block', marginBottom: 12 }} />
-                    <p>Cargando historial…</p>
-                </div>
-            </div>
-        );
-    }
-
     return (
         <div className="fade-in" style={{ maxWidth: 820, margin: '0 auto', paddingBottom: '4rem' }}>
 
@@ -261,23 +145,11 @@ const HandicapView = ({ user, currentHandicap }) => {
                 <TrendingUp
                     size={26}
                     color="var(--color-primary)"
-                    className={refreshing ? 'spin-animation' : ''}
                 />
                 <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-text-main)', margin: 0 }}>
                     Evolución Hándicap
                 </h2>
-                {refreshing && (
-                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginLeft: 4 }}>
-                        actualizando…
-                    </span>
-                )}
             </div>
-
-            {error && (
-                <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, padding: '0.75rem 1rem', marginBottom: '1rem', color: '#ef4444', fontSize: '0.875rem' }}>
-                    ⚠️ {error}
-                </div>
-            )}
 
             {/* ── Stat Cards ── */}
             {stats && (
@@ -338,9 +210,9 @@ const HandicapView = ({ user, currentHandicap }) => {
                     <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600, color: 'var(--color-text-main)' }}>
                         Gráfico de evolución
                     </h3>
-                    {source === 'rfeg_pdf' && pdfEntries > 0 && (
+                    {displayHistory.length > 0 && (
                         <span style={{ fontSize: '0.72rem', color: 'var(--color-primary)', background: 'rgba(22,163,74,0.12)', padding: '2px 8px', borderRadius: 99, fontWeight: 600 }}>
-                            RFEG • {pdfEntries} torneos
+                            {displayHistory.length} puntos
                         </span>
                     )}
                 </div>

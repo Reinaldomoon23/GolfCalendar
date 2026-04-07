@@ -12,7 +12,7 @@ import {
   writeHandicapCache,
   isHandicapCacheFresh,
 } from '../utils/cache';
-import { setDoc } from 'firebase/firestore';
+import { setDoc, collection, addDoc, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { IS_MULTI } from '../config/app';
 import { getUserDocId } from '../utils/userProfiles';
 import { API_ENDPOINTS } from '../config/api';
@@ -141,6 +141,81 @@ export async function refreshHandicap(user, { force = false } = {}) {
     pdfUrl: result.pdfUrl,
     updatedUser,
   };
+}
+
+// ─── Handicap History (Firestore) ──────────────────────────────────────────────
+
+/**
+ * Appends a new handicap history entry to Firestore.
+ * Uses today's date as document ID to avoid duplicates on same day.
+ *
+ * @param {object} user - User profile
+ * @param {object} entry - { date, handicap, source, tournament, tournament_id }
+ * @returns {Promise<void>}
+ */
+export async function appendHandicapHistoryEntry(user, entry) {
+  if (!user || !getUserDocId(user)) return;
+
+  const docId = getUserDocId(user);
+  const historyRef = collection(db, `users/${docId}/handicap_history`);
+
+  try {
+    await addDoc(historyRef, {
+      date: entry.date,
+      handicap: parseFloat(entry.handicap) || null,
+      source: entry.source || 'rfeg_pdf',
+      tournament: entry.tournament || null,
+      tournament_id: entry.tournament_id || null,
+      createdAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.error('[handicap-history] Failed to append entry:', err);
+  }
+}
+
+/**
+ * Subscribes to handicap history changes in Firestore.
+ * Returns unsubscribe function.
+ *
+ * @param {object} user - User profile
+ * @param {Function} callback - Called with array of history entries sorted by date (newest first)
+ * @returns {Function} unsubscribe function
+ */
+export function subscribeToHandicapHistory(user, callback) {
+  if (!user || !getUserDocId(user)) {
+    callback([]);
+    return () => {};
+  }
+
+  const docId = getUserDocId(user);
+  const historyRef = collection(db, `users/${docId}/handicap_history`);
+  const q = query(historyRef, orderBy('date', 'desc'));
+
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    const entries = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    callback(entries);
+  }, (err) => {
+    console.error('[handicap-history] Subscription error:', err);
+    callback([]);
+  });
+
+  return unsubscribe;
+}
+
+/**
+ * Gets the most recent handicap history entry.
+ * Used to check if handicap value changed.
+ *
+ * @param {array} history - Array of history entries
+ * @returns {object|null}
+ */
+export function getMostRecentHistoryEntry(history) {
+  if (!Array.isArray(history) || history.length === 0) return null;
+  // History comes sorted by date desc, so first is most recent
+  return history[0];
 }
 
 // ─── PDF ──────────────────────────────────────────────────────────────────────

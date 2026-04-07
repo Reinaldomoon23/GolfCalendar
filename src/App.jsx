@@ -99,6 +99,7 @@ function AppContent() {
     handicap, setHandicap,
     pdfUrl, setPdfUrl,
     isUpdatingHandicap,
+    history,
     refreshHandicap,
     handleHandicapButtonClick,
     handleOpenHandicapPdf,
@@ -469,7 +470,7 @@ function AppContent() {
             />
           } />
           <Route path="/stats" element={<StatsView user={user} linkedUsers={linkedUsers} results={results} tournaments={tournaments} />} />
-          <Route path="/handicap" element={<HandicapView user={user} currentHandicap={handicap} results={results} tournaments={tournaments} />} />
+          <Route path="/handicap" element={<HandicapView user={user} currentHandicap={handicap} history={history} results={results} tournaments={tournaments} />} />
           <Route path="/admin" element={
             <AdminRoute user={sessionOwner || user}>
               <AdminDashboardView user={sessionOwner || user} />
