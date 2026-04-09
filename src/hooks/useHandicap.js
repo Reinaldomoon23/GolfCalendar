@@ -100,18 +100,22 @@ export function useHandicap(user, setUser) {
     return () => unsubscribe();
   }, [user?.username]);
 
-  // ─── Load from cache when user changes, then background refresh ──────────
+  // ─── Load from cache when user changes, then refresh if needed ──────────
 
   useEffect(() => {
     if (!user?.username) return;
 
-    applyCachedHandicap(user);
+    const hasCached = applyCachedHandicap(user);
 
-    const timeoutId = window.setTimeout(() => {
-      refreshHandicap({ background: true });
-    }, 400);
-
-    return () => window.clearTimeout(timeoutId);
+    // If no cached data, fetch immediately; otherwise fetch in background
+    if (!hasCached) {
+      refreshHandicap({ force: true });
+    } else {
+      const timeoutId = window.setTimeout(() => {
+        refreshHandicap({ background: true });
+      }, 400);
+      return () => window.clearTimeout(timeoutId);
+    }
   }, [user?.username, user?.federation_id]);
 
   // ─── Auto-update at 08:00 AM ──────────────────────────────────────────────
