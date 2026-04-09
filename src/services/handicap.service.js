@@ -169,7 +169,12 @@ export async function appendHandicapHistoryEntry(user, entry) {
       createdAt: new Date().toISOString(),
     });
   } catch (err) {
-    console.error('[handicap-history] Failed to append entry:', err);
+    // Silently handle permission errors - Firestore rules may not allow access yet
+    if (err?.code === 'permission-denied') {
+      console.warn('[handicap-history] Insufficient permissions to save history - update Firestore rules');
+    } else {
+      console.error('[handicap-history] Failed to append entry:', err);
+    }
   }
 }
 
@@ -198,7 +203,12 @@ export function subscribeToHandicapHistory(user, callback) {
     }));
     callback(entries);
   }, (err) => {
-    console.error('[handicap-history] Subscription error:', err);
+    // Silently handle permission errors - Firestore rules may not allow access yet
+    if (err?.code === 'permission-denied') {
+      console.warn('[handicap-history] Insufficient permissions - waiting for rule update');
+    } else {
+      console.error('[handicap-history] Subscription error:', err);
+    }
     callback([]);
   });
 
