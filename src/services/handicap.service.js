@@ -12,7 +12,7 @@ import {
   writeHandicapCache,
   isHandicapCacheFresh,
 } from '../utils/cache';
-import { setDoc, collection, addDoc, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { setDoc, collection, addDoc, query, orderBy, onSnapshot, getDocs, writeBatch, doc } from 'firebase/firestore';
 import { IS_MULTI } from '../config/app';
 import { getUserDocId } from '../utils/userProfiles';
 import { API_ENDPOINTS } from '../config/api';
@@ -81,6 +81,7 @@ export async function fetchHandicapFromServer(user) {
   return {
     handicap: data.handicap || null,
     pdfUrl: data.pdf_url || null,
+    history: data.history || [],
     fetchedAt: Date.now(),
   };
 }
@@ -116,6 +117,12 @@ export async function refreshHandicap(user, { force = false } = {}) {
   // Fetch from server
   const result = await fetchHandicapFromServer(user);
 
+  // Sync historical data to Firestore if it returned any
+  if (result.history && result.history.length > 0 && IS_MULTI && getUserDocId(user)) {
+    // We execute this in the background without blocking the return
+    syncHistoricalDataToFirestore(user, result.history);
+  }
+
   // Update localStorage cache
   writeHandicapCache(user, result);
 
@@ -144,6 +151,55 @@ export async function refreshHandicap(user, { force = false } = {}) {
 }
 
 // ─── Handicap History (Firestore) ──────────────────────────────────────────────
+
+/**
+ * Syncs historical data to Firestore avoiding duplicates.
+ */
+export async function syncHistoricalDataToFirestore(user, fetchedHistory) {
+  if (!user || !getUserDocId(user) || !Array.isArray(fetchedHistory) || fetchedHistory.length === 0) return;
+  const docId = getUserDocId(user);
+  
+  try {
+    const historyRef = collection(db, `users/${docId}/handicap_history`);
+    
+    // Get existing dates
+    const snapshot = await getDocs(query(historyRef));
+    const existingDates = new Set();
+    snapshot.forEach(d => {
+      if (d.data().date) existingDates.add(d.data().date);
+    });
+
+    const batch = writeBatch(db);
+    let addedCount = 0;
+
+    fetchedHistory.forEach(entry => {
+      if (entry.date && !existingDates.has(entry.date)) {
+        const newDocRef = doc(historyRef); // auto ID
+        batch.set(newDocRef, {
+          date: entry.date,
+          handicap: parseFloat(entry.handicap) || null,
+          source: entry.source || 'rfeg_pdf',
+          tournament: entry.tournament || null,
+          tournament_id: null,
+          createdAt: new Date().toISOString(),
+        });
+        addedCount++;
+        existingDates.add(entry.date);
+      }
+    });
+
+    if (addedCount > 0) {
+      await batch.commit();
+      console.log(`[handicap-history] Synced ${addedCount} new historical entries to Firestore.`);
+    }
+  } catch (err) {
+    if (err?.code !== 'permission-denied') {
+      console.error('[handicap-history] Failed to sync historical data:', err);
+    } else {
+      console.warn('[handicap-history] Permission denied to sync historical data.');
+    }
+  }
+}
 
 /**
  * Appends a new handicap history entry to Firestore.

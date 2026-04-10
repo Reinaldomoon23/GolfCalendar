@@ -41,11 +41,65 @@ export default async function handler(req, res) {
     // Search for "NUEVO HÁNDICAP : X.X"
     const regex = /NUEVO\s+H[AÁ]NDICAP\s*:\s*([\d\.]+)/i;
     const match = text.match(regex);
-
+    let newHandicap = null;
     if (match && match[1]) {
+      newHandicap = match[1];
+    }
+
+    // Extract history
+    const history = [];
+    try {
+      const startIdx = text.indexOf('Vc/Vs/PAR');
+      let endIdx = text.indexOf('2.  Para cada');
+      if (endIdx === -1) endIdx = text.indexOf('2. Para cada');
+      
+      let searchBlock = text;
+      if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+        searchBlock = text.slice(startIdx, endIdx);
+      } else if (endIdx !== -1) {
+        searchBlock = text.slice(0, endIdx);
+      }
+
+      // Regex to match row: date (dd/mm/yyyy), tournament string, Vc/Vs/Par, and new Handicap
+      // pdf-parse often glues Vc/Vs/Par and the Handicap together without spaces. Handicap is always 1 decimal (`\.\d`).
+      const historyRegex = /(\d{2}\/\d{2}\/\d{4})([\s\S]*?)(\d+\.\d+)\/(\d+)\/(\d+)\s*([+-]?\d+\.\d)/g;
+      let matchHistory;
+
+      while ((matchHistory = historyRegex.exec(searchBlock)) !== null) {
+        const rawDate = matchHistory[1];
+        const between = matchHistory[2].trim();
+        const smhHcp = parseFloat(matchHistory[6]);
+
+        const parts = rawDate.split('/');
+        const isoDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+
+        let tournName = between.replace(/\s+/g, ' ').trim();
+        const nmMatch = tournName.match(/^(.*?)\s+\d+\s+/);
+        if (nmMatch && nmMatch[1]) {
+          tournName = nmMatch[1].trim();
+        } else {
+          tournName = tournName.substring(0, 60);
+        }
+
+        history.push({
+          date: isoDate,
+          handicap: smhHcp,
+          source: 'rfeg_pdf',
+          tournament: tournName
+        });
+      }
+      
+      // Sort oldest to newest
+      history.sort((a, b) => a.date.localeCompare(b.date));
+    } catch (parseError) {
+      console.error('Error parsing history:', parseError);
+    }
+
+    if (newHandicap) {
       return res.status(200).json({
-        handicap: match[1],
-        pdf_url: pdfUrl
+        handicap: newHandicap,
+        pdf_url: pdfUrl,
+        history: history
       });
     } else {
       return res.status(404).json({ error: 'Handicap not found in PDF' });

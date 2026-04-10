@@ -60,19 +60,6 @@ export function useHandicap(user, setUser) {
     try {
       const { handicap: h, pdfUrl: p, updatedUser } = await svcRefreshHandicap(user, { force });
 
-      // Check if handicap changed and save to history
-      const oldHandicap = handicap;
-      if (h && h !== oldHandicap) {
-        const today = new Date().toISOString().slice(0, 10);
-        await appendHandicapHistoryEntry(user, {
-          date: today,
-          handicap: h,
-          source: 'rfeg_pdf',
-          tournament: null,
-          tournament_id: null,
-        });
-      }
-
       setHandicap(h);
       setPdfUrl(p);
       setUser(updatedUser);
