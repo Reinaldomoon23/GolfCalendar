@@ -126,7 +126,7 @@ async function fetchPdf(url) {
   }
   
   if (res.status !== 200) {
-    throw new Error(`HTTP Code: ${res.status}`);
+    throw new Error(`HTTP Code: ${res.status} | Text: ${await res.text()}`);
   }
 
   const arrayBuffer = await res.arrayBuffer();
