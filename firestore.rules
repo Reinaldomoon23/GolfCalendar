@@ -112,12 +112,12 @@ service cloud.firestore {
         allow write: if isAdmin() || canAccessUser(userId);
       }
 
-      match /handicap_history/{historyId} {
-        // Read: Owner, manager, or admin
-        allow read: if isAdmin() || canAccessUser(userId);
+            match /handicap_history/{historyId} {
+        // Read: Public so the unauthenticated Nicole single-app can fetch the chart
+        allow read: if true;
 
-        // Write: Owner, manager, or admin
-        allow write: if isAdmin() || canAccessUser(userId);
+        // Write: Admin, Owner, or public ONLY for the 'nicole' profile (since her app operates without login)
+        allow write: if isAdmin() || canAccessUser(userId) || userId == 'nicole';
       }
 
       match /settings/{settingId} {
