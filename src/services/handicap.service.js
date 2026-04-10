@@ -118,7 +118,7 @@ export async function refreshHandicap(user, { force = false } = {}) {
   const result = await fetchHandicapFromServer(user);
 
   // Sync historical data to Firestore if it returned any
-  if (result.history && result.history.length > 0 && IS_MULTI && getUserDocId(user)) {
+  if (result.history && result.history.length > 0 && getUserDocId(user)) {
     // We execute this in the background without blocking the return
     syncHistoricalDataToFirestore(user, result.history);
   }
@@ -135,7 +135,7 @@ export async function refreshHandicap(user, { force = false } = {}) {
   };
 
   // Persist to Firestore in background (fire-and-forget)
-  if (IS_MULTI && getUserDocId(user)) {
+  if (getUserDocId(user)) {
     void setDoc(getUserProfileRef(db, user), {
       current_handicap: result.handicap,
       handicap_pdf_url: result.pdfUrl,
