@@ -104,7 +104,15 @@ service cloud.firestore {
         allow write: if isAdmin() || canAccessUser(userId);
       }
 
-      match /custom_tournaments/{tournamentId} {
+            match /custom_tournaments/{tournamentId} {
+        // Read: Owner, manager, or admin
+        allow read: if isAdmin() || canAccessUser(userId);
+
+        // Write: Owner, manager, or admin
+        allow write: if isAdmin() || canAccessUser(userId);
+      }
+
+      match /handicap_history/{historyId} {
         // Read: Owner, manager, or admin
         allow read: if isAdmin() || canAccessUser(userId);
 
