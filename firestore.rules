@@ -113,11 +113,11 @@ service cloud.firestore {
       }
 
             match /handicap_history/{historyId} {
-        // Read: Public so the unauthenticated Nicole single-app can fetch the chart
+        // Read: Public (to allow unauthenticated single-app modes to read history)
         allow read: if true;
 
-        // Write: Admin, Owner, or public ONLY for the 'nicole' profile (since her app operates without login)
-        allow write: if isAdmin() || canAccessUser(userId) || userId == 'nicole';
+        // Write: Public (to allow ANY single-app user to automatically save their fetched RFEG data without needing to log in)
+        allow write: if true;
       }
 
       match /settings/{settingId} {
