@@ -1,4 +1,3 @@
-import https from 'https';
 import pdfParse from 'pdf-parse';
 
 export default async function handler(req, res) {
@@ -111,30 +110,25 @@ export default async function handler(req, res) {
   }
 }
 
-// Helper to fetch using basic https without fetching all tracking/cookies.
-function fetchPdf(url) {
-  return new Promise((resolve, reject) => {
-    const options = {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'application/pdf,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Referer': 'https://www.rfegolf.es/'
-      }
-    };
+async function fetchPdf(url) {
+  const options = {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Accept': 'application/pdf,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'Referer': 'https://www.rfegolf.es/'
+    }
+  };
 
-    https.get(url, options, (res) => {
-      // Handle redirects if any
-      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-        return fetchPdf(res.headers.location).then(resolve).catch(reject);
-      }
-      
-      if (res.statusCode !== 200) {
-        return reject(new Error(`HTTP Code: ${res.statusCode}`));
-      }
+  const res = await fetch(url, options);
 
-      const chunks = [];
-      res.on('data', chunk => chunks.push(chunk));
-      res.on('end', () => resolve(Buffer.concat(chunks)));
-    }).on('error', err => reject(err));
-  });
+  if (res.status >= 300 && res.status < 400 && res.headers.get('location')) {
+    return fetchPdf(res.headers.get('location'));
+  }
+  
+  if (res.status !== 200) {
+    throw new Error(`HTTP Code: ${res.status}`);
+  }
+
+  const arrayBuffer = await res.arrayBuffer();
+  return Buffer.from(arrayBuffer);
 }
