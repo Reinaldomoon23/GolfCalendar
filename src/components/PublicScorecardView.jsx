@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import { doc, getDoc, getDocs, collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -27,6 +27,8 @@ export default function PublicScorecardView() {
     const [parStats, setParStats] = useState({ 3: '-', 4: '-', 5: '-' });
     const [lang, setLang] = useState('es');
     const [weather, setWeather] = useState(null);
+    const [toast, setToast] = useState(null); // { message, emoji, color }
+    const prevScoresRef = useRef({});
 
     const i18n = {
         es: {
@@ -246,6 +248,45 @@ export default function PublicScorecardView() {
                 }
 
                 setResult(data);
+
+                // ── Score change notifications ────────────────────────────
+                const playerName = data.full_name || userProfile?.full_name || username;
+                if (data.scorecards) {
+                    Object.keys(data.scorecards).forEach(rIdx => {
+                        const card = data.scorecards[rIdx];
+                        if (!card?.strokes) return;
+                        for (let i = 0; i < 18; i++) {
+                            const key = `${rIdx}_${i}`;
+                            const newStroke = parseInt(card.strokes[i]);
+                            const prevStroke = prevScoresRef.current[key];
+                            if (!isNaN(newStroke) && newStroke > 0 && newStroke !== prevStroke) {
+                                // New score detected!
+                                const par = parseInt(card.pars?.[i]) || 4;
+                                const diff = newStroke - par;
+                                const holeNum = i + 1;
+                                let emoji, label, color;
+                                if (diff <= -2) { emoji = '🦅'; label = 'Eagle'; color = '#eab308'; }
+                                else if (diff === -1) { emoji = '🐦'; label = 'Birdie'; color = '#10b981'; }
+                                else if (diff === 0) { emoji = '⛳'; label = 'Par'; color = '#3b82f6'; }
+                                else if (diff === 1) { emoji = '😤'; label = 'Bogey'; color = '#f97316'; }
+                                else if (diff === 2) { emoji = '😬'; label = 'Doble Bogey'; color = '#ef4444'; }
+                                else { emoji = '💀'; label = `+${diff}`; color = '#7f1d1d'; }
+
+                                const msg = `${playerName} — Hoyo ${holeNum}: ${label} (${newStroke} golpes)`;
+                                setToast({ message: msg, emoji, color });
+                                setTimeout(() => setToast(null), 5000);
+
+                                // Browser notification if permitted
+                                if ('Notification' in window && Notification.permission === 'granted') {
+                                    new Notification(`${emoji} ${label} — Hoyo ${holeNum}`, {
+                                        body: msg, icon: '/pwa-192x192.png'
+                                    });
+                                }
+                            }
+                            prevScoresRef.current[key] = newStroke;
+                        }
+                    });
+                }
                 // If result has embedded tournament metadata, use it to ensure correct pars/course
                 if (data.tournamentName) {
                     setError(null);
@@ -375,7 +416,52 @@ export default function PublicScorecardView() {
                     animation: pulseLive 1.5s infinite ease-in-out;
                     margin-left: 4px;
                 }
+                @keyframes slideInDown {
+                    from { transform: translateY(-80px); opacity: 0; }
+                    to { transform: translateY(0); opacity: 1; }
+                }
+                @keyframes spin {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
+                }
             `}</style>
+
+            {/* Toast notification */}
+            {toast && (
+                <div style={{
+                    position: 'fixed', top: '16px', left: '50%', transform: 'translateX(-50%)',
+                    zIndex: 9999, animation: 'slideInDown 0.4s ease',
+                    background: '#1e293b', border: `2px solid ${toast.color}`,
+                    borderRadius: '16px', padding: '12px 20px', minWidth: '280px', maxWidth: '90vw',
+                    boxShadow: `0 8px 30px rgba(0,0,0,0.4), 0 0 15px ${toast.color}33`,
+                    display: 'flex', alignItems: 'center', gap: '12px'
+                }}>
+                    <span style={{ fontSize: '2rem' }}>{toast.emoji}</span>
+                    <div>
+                        <div style={{ color: toast.color, fontWeight: '800', fontSize: '0.85rem' }}>RESULTADO EN VIVO</div>
+                        <div style={{ color: 'white', fontSize: '0.9rem', marginTop: '2px' }}>{toast.message}</div>
+                    </div>
+                </div>
+            )}
+
+            {/* Notification permission prompt */}
+            {'Notification' in window && Notification.permission === 'default' && (
+                <div style={{
+                    background: '#1e3a5f', borderBottom: '1px solid #1d4ed8',
+                    padding: '8px 16px', display: 'flex', alignItems: 'center',
+                    justifyContent: 'space-between', gap: '8px', fontSize: '0.8rem', color: '#93c5fd'
+                }}>
+                    <span>🔔 ¿Recibir notificaciones de golpes en tiempo real?</span>
+                    <button
+                        onClick={() => Notification.requestPermission()}
+                        style={{
+                            background: '#1d4ed8', border: 'none', color: 'white',
+                            padding: '4px 12px', borderRadius: '8px', cursor: 'pointer',
+                            fontWeight: 'bold', fontSize: '0.75rem', whiteSpace: 'nowrap'
+                        }}
+                    >Activar</button>
+                </div>
+            )}
 
             {/* Header */}
             <header style={{
