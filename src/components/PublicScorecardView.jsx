@@ -29,6 +29,7 @@ export default function PublicScorecardView() {
     const [weather, setWeather] = useState(null);
     const [toast, setToast] = useState(null); // { message, emoji, color }
     const prevScoresRef = useRef({});
+    const [profileReady, setProfileReady] = useState(false);
 
     const i18n = {
         es: {
@@ -124,6 +125,8 @@ export default function PublicScorecardView() {
                 }
             } catch (err) {
                 console.error("Error fetching user profile from Firestore", err);
+            } finally {
+                setProfileReady(true); // unblock tournament fetch regardless of success/failure
             }
         };
         fetchUser();
@@ -177,12 +180,10 @@ export default function PublicScorecardView() {
             let foundTournament = null;
 
             // For custom tournaments, we NEED the real user UID to find the doc.
-            // If userProfile hasn't loaded yet (profileDocId is just the username fallback),
-            // skip silently - the effect will re-run once userProfile is resolved.
+            // Wait for profile fetch to complete (success OR failure) before trying.
             const isCustomId = String(eventId).startsWith('custom_');
-            const profileIsResolved = userProfile !== null;
-            if (isCustomId && !profileIsResolved) {
-                return; // wait for userProfile to load
+            if (isCustomId && !profileReady) {
+                return; // will re-run once profileReady is true
             }
             
             try {
@@ -224,7 +225,7 @@ export default function PublicScorecardView() {
             }
         };
         fetchTournament();
-    }, [eventId, profileDocId, username, userProfile]);
+    }, [eventId, profileDocId, username, userProfile, profileReady]);
 
     // Listen to live results — independent of tournament lookup
     useEffect(() => {
