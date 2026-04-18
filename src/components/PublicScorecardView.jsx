@@ -374,9 +374,10 @@ export default function PublicScorecardView() {
     if (result && result.scorecards) {
         const roundsKeys = Object.keys(result.scorecards).sort((a, b) => parseInt(a) - parseInt(b));
         
-        // 1. Try to find the round from the URL (allow 0-based index)
-        if (queryRIdx !== null) {
-            const match = roundsKeys.find(rk => String(rk) === String(queryRIdx));
+        // 1. Try to find the round from the URL (check for ?r=X or ?round=X)
+        const requestedR = queryRIdx !== null ? queryRIdx : searchParams.get('round');
+        if (requestedR !== null) {
+            const match = roundsKeys.find(rk => String(rk) === String(requestedR));
             if (match) {
                 foundActiveRIdx = match;
             }

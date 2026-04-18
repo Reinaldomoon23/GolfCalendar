@@ -2206,6 +2206,7 @@ export default function CalendarView({
                                                 onClick={async (e) => {
                                                     e.preventDefault();
                                                     const baselink = window.location.origin + import.meta.env.BASE_URL.replace(/\/$/, '');
+                                                    // Ensure we are passing the explicit round index
                                                     const link = `${baselink}/live/${user?.username}/${t.id}?r=${idx}`;
                                                     if (navigator.share) {
                                                         try {
