@@ -675,13 +675,10 @@ export default function PublicScorecardView() {
                                             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.2)',
                                             border: '2px solid #3b82f6'
                                         }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '1.2rem', fontWeight: '800' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px', flexWrap: 'wrap' }}>
+                                                <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '1.2rem', fontWeight: '800', flex: '1 1 150px' }}>
                                                     📊 TOTAL ACUMULADO ({totalHolesPlayed} hoyos)
                                                 </h3>
-                                                <div style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '2px' }}>
-                                                    Par usado: {cumulativePar} (declarado: {tournamentInfo?.par ?? 'n/a'})
-                                                </div>
                                                 <div style={{ display: 'flex', alignItems: 'center' }}>
                                                     <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
                                                         <span style={{ fontSize: '2.5rem', fontWeight: '900', color: 'white' }}>
@@ -771,13 +768,13 @@ export default function PublicScorecardView() {
                                         marginBottom: '1.5rem',
                                         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.2)'
                                     }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                                            <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '1.1rem' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', gap: '10px', flexWrap: 'wrap' }}>
+                                            <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '1rem', flex: '1 1 150px', lineHeight: '1.2' }}>
                                                 {t.round} {roundStr + 1} {roundsKeys.length > 1 ? `(Vuelta ${roundStr + 1} de ${roundsKeys.length})` : ''}
                                             </h3>
-                                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                                                <span style={{ fontSize: '2rem', fontWeight: '900', color: 'white' }}>{displayTotal || '-'}</span>
-                                                <span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: diffColor }}>
+                                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexShrink: 0 }}>
+                                                <span style={{ fontSize: '1.8rem', fontWeight: '900', color: 'white' }}>{displayTotal || '-'}</span>
+                                                <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: diffColor }}>
                                                     ({diffStr})
                                                 </span>
                                             </div>
