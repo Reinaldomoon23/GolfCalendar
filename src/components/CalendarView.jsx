@@ -1345,7 +1345,7 @@ export default function CalendarView({
                                         const r = results[t.id];
                                         const validRoundsCount = (r.rounds || []).filter(v => (parseInt(v) || 0) > 0).length;
 
-                                        let basePar = t.par || 72;
+                                        let basePar = editingDetails?.par || t.par || 72;
                                         if (t.course?.toLowerCase().includes('salamanca forum') && (basePar === 71 || !t.par)) basePar = 70;
                                         let totalPar = basePar;
 
