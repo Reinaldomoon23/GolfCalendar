@@ -369,31 +369,45 @@ export default function PublicScorecardView() {
     let activeHole = null;
     let activePar = null;
     let paceData = null;
+    let foundActiveRIdx = null;
 
     if (result && result.scorecards) {
         const roundsKeys = Object.keys(result.scorecards).sort();
-        let foundActiveRIdx = roundsKeys.length > 0 ? roundsKeys[0] : null;
-
+        
+        // First pass: look for a round in progress (< 18 holes)
         for (let i = roundsKeys.length - 1; i >= 0; i--) {
             const rIdx = roundsKeys[i];
             const card = result.scorecards[rIdx];
-
             let playedHoles = 0;
-            let strokesMatchParsPrecisely = true;
-
             for (let h = 0; h < 18; h++) {
                 const s = String(card.strokes?.[h] || '');
-                const p = String(card.pars?.[h] || '');
-                if (s !== '' && s !== '-') playedHoles++;
-                if (s !== p) strokesMatchParsPrecisely = false;
+                if (s !== '' && s !== '-' && s !== '0') playedHoles++;
             }
-
-            const isAutoPopulatedDummy = (playedHoles === 18 && strokesMatchParsPrecisely);
-            const manualStrokesTotal = result.rounds?.[parseInt(rIdx)];
-
-            if ((playedHoles > 0 && !isAutoPopulatedDummy) || (manualStrokesTotal && manualStrokesTotal > 0)) {
+            if (playedHoles > 0 && playedHoles < 18) {
                 foundActiveRIdx = rIdx;
                 break;
+            }
+        }
+
+        // Second pass: if no round in progress found, look for any round with data
+        if (foundActiveRIdx === null) {
+            for (let i = roundsKeys.length - 1; i >= 0; i--) {
+                const rIdx = roundsKeys[i];
+                const card = result.scorecards[rIdx];
+                let playedHoles = 0;
+                let strokesMatchParsPrecisely = true;
+                for (let h = 0; h < 18; h++) {
+                    const s = String(card.strokes?.[h] || '');
+                    const p = String(card.pars?.[h] || '');
+                    if (s !== '' && s !== '-') playedHoles++;
+                    if (s !== p) strokesMatchParsPrecisely = false;
+                }
+                const isAutoPopulatedDummy = (playedHoles === 18 && strokesMatchParsPrecisely);
+                const manualStrokesTotal = result.rounds?.[parseInt(rIdx)];
+                if ((playedHoles > 0 && !isAutoPopulatedDummy) || (manualStrokesTotal && manualStrokesTotal > 0)) {
+                    foundActiveRIdx = rIdx;
+                    break;
+                }
             }
         }
 
@@ -567,46 +581,10 @@ export default function PublicScorecardView() {
                                 </div>
                             </div>
                         )}
-
-                        {activeHole && (
-                            <div style={{ background: '#334155', borderRadius: '10px', padding: '10px', marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px', border: '1px solid #475569' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <div style={{ textAlign: 'left' }}>
-                                        <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t.playingHole}</div>
-                                        <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'white' }}>{activeHole} <span style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 'normal' }}>({t.par} {activePar})</span></div>
-                                    </div>
-                                    <div style={{ textAlign: 'right' }}>
-                                        <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t.average} {activePar}</div>
-                                        <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#3b82f6' }}>{parStats[activePar]}</div>
-                                    </div>
-                                </div>
-
-                                {paceData && (
-                                    <div style={{ 
-                                        paddingTop: '8px', 
-                                        borderTop: '1px solid rgba(255,255,255,0.1)',
-                                        display: 'flex', 
-                                        justifyContent: 'space-between', 
-                                        fontSize: '0.75rem' 
-                                    }}>
-                                        <div style={{ color: '#94a3b8' }}>
-                                            🕒 Transcurrido: <span style={{ color: 'white', fontWeight: 'bold' }}>{paceData.elapsed}</span>
-                                        </div>
-                                        <div style={{ color: '#94a3b8' }}>
-                                            🏁 Est. Fin: <span style={{ color: '#10b981', fontWeight: 'bold' }}>{paceData.finish}</span>
-                                        </div>
-                                        <div style={{ color: '#94a3b8' }}>
-                                            ⏱️ {paceData.minsPerHole} min/hoyo
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
                     </div>
                 </div>
             </header>
 
-            {/* Total / Summary Stats */}
             {!result ? (
                 <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>
                     <Flag size={32} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
@@ -614,6 +592,42 @@ export default function PublicScorecardView() {
                 </div>
             ) : (
                 <div style={{ padding: '0.5rem 0.6rem' }}>
+                    {/* Active Hole & Pace Card - MOVED HERE for visibility */}
+                    {activeHole && (
+                        <div style={{ background: '#334155', borderRadius: '10px', padding: '10px', marginBottom: '10px', display: 'flex', flexDirection: 'column', gap: '10px', border: '1px solid #475569', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ textAlign: 'left' }}>
+                                    <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t.playingHole}</div>
+                                    <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'white' }}>{activeHole} <span style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 'normal' }}>({t.par} {activePar})</span></div>
+                                </div>
+                                <div style={{ textAlign: 'right' }}>
+                                    <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t.average} {activePar}</div>
+                                    <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#3b82f6' }}>{parStats[activePar]}</div>
+                                </div>
+                            </div>
+
+                            {paceData && (
+                                <div style={{ 
+                                    paddingTop: '8px', 
+                                    borderTop: '1px solid rgba(255,255,255,0.1)',
+                                    display: 'flex', 
+                                    justifyContent: 'space-between', 
+                                    fontSize: '0.75rem' 
+                                }}>
+                                    <div style={{ color: '#94a3b8' }}>
+                                        🕒 Transcurrido: <span style={{ color: 'white', fontWeight: 'bold' }}>{paceData.elapsed}</span>
+                                    </div>
+                                    <div style={{ color: '#94a3b8' }}>
+                                        🏁 Est. Fin: <span style={{ color: '#10b981', fontWeight: 'bold' }}>{paceData.finish}</span>
+                                    </div>
+                                    <div style={{ color: '#94a3b8' }}>
+                                        ⏱️ {paceData.minsPerHole} m/h
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     <div>
                         {/* Summary Loop over Rounds */}
                         {(() => {
