@@ -33,9 +33,14 @@ export async function fetchUserProfileByUsername(db, username) {
     if (usernameSnap.exists()) {
       const mappedUid = usernameSnap.data()?.uid;
       if (mappedUid) {
-        const mappedProfileSnap = await getDoc(doc(db, 'users', mappedUid));
-        if (mappedProfileSnap.exists()) {
-          return normalizeProfile(mappedProfileSnap.data(), normalizedUsername, mappedProfileSnap.id);
+        try {
+          const mappedProfileSnap = await getDoc(doc(db, 'users', mappedUid));
+          if (mappedProfileSnap.exists()) {
+            return normalizeProfile(mappedProfileSnap.data(), normalizedUsername, mappedProfileSnap.id);
+          }
+        } catch (err) {
+           // If we can't read the full profile but we have the UID, return minimal profile so listeners work
+           return { username: normalizedUsername, uid: mappedUid, docId: mappedUid };
         }
       }
     }

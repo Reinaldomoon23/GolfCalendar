@@ -83,8 +83,8 @@ service cloud.firestore {
     // =============================================================
 
     match /users/{userId} {
-      // Read: Owner, manager, or admin
-      allow read: if isAdmin() || canAccessUser(userId);
+      // Read: Anyone (public for resolving profiles in live mode)
+      allow read: if true;
 
       // Create: admin or the authenticated user creating their own player profile
       allow create: if isAdmin() || isOwnerCreatingProfile(userId);
