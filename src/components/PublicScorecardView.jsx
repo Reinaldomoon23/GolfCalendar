@@ -374,9 +374,9 @@ export default function PublicScorecardView() {
     if (result && result.scorecards) {
         const roundsKeys = Object.keys(result.scorecards).sort();
         
-        // Prioritize round from URL if valid
-        if (queryRIdx !== null && roundsKeys.includes(queryRIdx)) {
-            foundActiveRIdx = queryRIdx;
+        // Prioritize round from URL if valid (check both string and number)
+        if (queryRIdx !== null && (roundsKeys.includes(queryRIdx) || roundsKeys.includes(String(queryRIdx)))) {
+            foundActiveRIdx = String(queryRIdx);
         }
 
         // Only if not found in URL, look for a round in progress (< 18 holes)
@@ -416,6 +416,11 @@ export default function PublicScorecardView() {
                     break;
                 }
             }
+        }
+
+        // Third pass: Ultimate fallback - just pick the last round available
+        if (foundActiveRIdx === null && roundsKeys.length > 0) {
+            foundActiveRIdx = roundsKeys[roundsKeys.length - 1];
         }
 
         if (foundActiveRIdx !== null) {
@@ -686,44 +691,8 @@ export default function PublicScorecardView() {
                             const cumulativeDiffStr = cumulativeDiff > 0 ? `+${cumulativeDiff}` : cumulativeDiff < 0 ? `${cumulativeDiff}` : 'E';
                             const cumulativeDiffColor = cumulativeDiff > 0 ? '#ef4444' : cumulativeDiff < 0 ? '#10b981' : '#94a3b8';
 
-                            // We want to display the specific round passed via URL query if available
-                            let displayRounds = [];
-
-                            if (queryRIdx !== null && roundsKeys.includes(queryRIdx)) {
-                                displayRounds = [queryRIdx];
-                            } else {
-                                // Find the highest round index that actually has strokes or manual scores
-                                // Ignore rounds that perfectly match pars for all 18 holes (old auto-populate bug)
-                                let activeRIdx = roundsKeys[0];
-                                for (let i = roundsKeys.length - 1; i >= 0; i--) {
-                                    const rIdx = roundsKeys[i];
-                                    const card = result.scorecards[rIdx];
-                                    const roundStr = parseInt(rIdx);
-
-                                    let playedHoles = 0;
-                                    let strokesMatchParsPrecisely = true;
-
-                                    for (let h = 0; h < 18; h++) {
-                                        const s = String(card.strokes?.[h] || '');
-                                        const p = String(card.pars?.[h] || '');
-                                        if (s !== '' && s !== '-') {
-                                            playedHoles++;
-                                        }
-                                        if (s !== p) {
-                                            strokesMatchParsPrecisely = false;
-                                        }
-                                    }
-
-                                    const isAutoPopulatedDummy = (playedHoles === 18 && strokesMatchParsPrecisely);
-                                    const manualStrokesTotal = result.rounds?.[roundStr];
-
-                                    if ((playedHoles > 0 && !isAutoPopulatedDummy) || (manualStrokesTotal && manualStrokesTotal > 0)) {
-                                        activeRIdx = rIdx;
-                                        break;
-                                    }
-                                }
-                                displayRounds = [activeRIdx];
-                            }
+                            // Use the active round detected at the top
+                            let displayRounds = [foundActiveRIdx];
 
                             // Target Diff Logic
                             let targetDiffRender = null;
