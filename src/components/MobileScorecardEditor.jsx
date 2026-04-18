@@ -14,6 +14,7 @@ const MobileScorecardEditor = ({
     courseName = 'Campo de Golf',
     onJumpToHole,
     allScorecards = {}, // all rounds scorecards for cumulative score
+    currentRoundIdx = 0, // index of the active round
     targetScore = null  // new prop for Objective relative to par
 }) => {
     const [activeField, setActiveField] = useState('strokes');
@@ -44,6 +45,31 @@ const MobileScorecardEditor = ({
     const cumulativeDiff = cumulativeScore - cumulativePar;
     const cumulativeDiffStr = cumulativeDiff > 0 ? `+${cumulativeDiff}` : cumulativeDiff < 0 ? `${cumulativeDiff}` : 'E';
     const cumulativeDiffColor = cumulativeDiff > 0 ? '#ef4444' : cumulativeDiff < 0 ? '#10b981' : '#f8fafc';
+
+    // Calculate current round score only
+    const numRounds = Object.keys(allScorecards).length;
+    let roundScore = 0;
+    let roundPar = 0;
+    let roundHolesPlayed = 0;
+    const currentRoundCard = allScorecards[currentRoundIdx];
+    if (currentRoundCard?.strokes) {
+        for (let i = 0; i < 18; i++) {
+            const strokeStr = String(currentRoundCard.strokes[i] || '');
+            if (strokeStr !== '' && strokeStr !== '-') {
+                const s = parseInt(strokeStr);
+                if (!isNaN(s) && s > 0) {
+                    roundScore += s;
+                    const p = parseInt(currentRoundCard.pars?.[i]);
+                    roundPar += (!isNaN(p) && p > 0 ? p : 4);
+                    roundHolesPlayed++;
+                }
+            }
+        }
+    }
+    const roundDiff = roundScore - roundPar;
+    const roundDiffStr = roundHolesPlayed > 0 ? (roundDiff > 0 ? `+${roundDiff}` : roundDiff < 0 ? `${roundDiff}` : 'E') : null;
+    const roundDiffColor = roundDiff > 0 ? '#ef4444' : roundDiff < 0 ? '#10b981' : '#f8fafc';
+    const showRoundAndTotal = numRounds > 1;
 
     // Target diff logic
     let targetDiffRender = null;
@@ -295,9 +321,25 @@ const MobileScorecardEditor = ({
                     </div>
 
                     {isCumulativeValid && (
-                        <div style={{ marginTop: '4px', fontSize: '1rem', fontWeight: 'bold' }}>
-                            <span style={{ color: '#94a3b8' }}>Torneo: </span>
-                            <span style={{ color: cumulativeDiffColor }}>{cumulativeDiffStr}</span>
+                        <div style={{ marginTop: '4px', fontSize: '0.9rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                            {showRoundAndTotal ? (
+                                <>
+                                    <span>
+                                        <span style={{ color: '#94a3b8', fontSize: '0.7rem' }}>D{parseInt(currentRoundIdx) + 1}: </span>
+                                        <span style={{ color: roundDiffStr ? roundDiffColor : '#94a3b8' }}>{roundDiffStr ?? '-'}</span>
+                                    </span>
+                                    <span style={{ color: '#334155' }}>|</span>
+                                    <span>
+                                        <span style={{ color: '#94a3b8', fontSize: '0.7rem' }}>Total: </span>
+                                        <span style={{ color: cumulativeDiffColor }}>{cumulativeDiffStr}</span>
+                                    </span>
+                                </>
+                            ) : (
+                                <span>
+                                    <span style={{ color: '#94a3b8' }}>Torneo: </span>
+                                    <span style={{ color: cumulativeDiffColor }}>{cumulativeDiffStr}</span>
+                                </span>
+                            )}
                             {targetDiffRender}
                         </div>
                     )}

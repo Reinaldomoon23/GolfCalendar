@@ -2696,6 +2696,7 @@ export default function CalendarView({
                         holeIdx={mobileMode.holeIdx}
                         par={(formData.scorecards?.[mobileMode.cardIdx]?.pars || [])[mobileMode.holeIdx] || 72 / 18}
                         allScorecards={formData.scorecards || {}}
+                        currentRoundIdx={mobileMode.cardIdx}
                         targetScore={editingDetails.target_score !== undefined ? editingDetails.target_score : (t?.target_score ?? null)}
                         courseName={t?.course || 'Campo de Golf'}
                         config={{
