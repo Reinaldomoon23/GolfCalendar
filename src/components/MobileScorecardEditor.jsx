@@ -12,9 +12,37 @@ const MobileScorecardEditor = ({
     config, // { track_putts, track_girs }
     par,
     courseName = 'Campo de Golf',
-    onJumpToHole
+    onJumpToHole,
+    allScorecards = {} // all rounds scorecards for cumulative score
 }) => {
     const [activeField, setActiveField] = useState('strokes');
+
+    // Calculate cumulative tournament score
+    let cumulativeScore = 0;
+    let cumulativePar = 0;
+    let totalHolesPlayed = 0;
+
+    Object.keys(allScorecards).forEach(rIdx => {
+        const sc = allScorecards[rIdx];
+        if (!sc || !sc.strokes || !sc.pars) return;
+        for (let i = 0; i < 18; i++) {
+            const strokeStr = String(sc.strokes[i] || '');
+            if (strokeStr !== '' && strokeStr !== '-') {
+                const s = parseInt(strokeStr);
+                if (!isNaN(s) && s > 0) {
+                    cumulativeScore += s;
+                    const p = parseInt(sc.pars[i]);
+                    cumulativePar += (!isNaN(p) && p > 0 ? p : 4);
+                    totalHolesPlayed++;
+                }
+            }
+        }
+    });
+
+    const isCumulativeValid = totalHolesPlayed > 0;
+    const cumulativeDiff = cumulativeScore - cumulativePar;
+    const cumulativeDiffStr = cumulativeDiff > 0 ? `+${cumulativeDiff}` : cumulativeDiff < 0 ? `${cumulativeDiff}` : 'E';
+    const cumulativeDiffColor = cumulativeDiff > 0 ? '#ef4444' : cumulativeDiff < 0 ? '#10b981' : '#94a3b8';
     const [isFirstKey, setIsFirstKey] = useState(true);
     const [showHoleSelector, setShowHoleSelector] = useState(false);
 
@@ -250,7 +278,16 @@ const MobileScorecardEditor = ({
                         <h2 style={{ fontSize: '1.4rem', fontWeight: '900', margin: 0, letterSpacing: '0.02em', color: 'white' }}>HOYO {holeIdx + 1}</h2>
                         <span style={{ margin: 0, color: '#10b981', fontSize: '1.4rem', fontWeight: '900' }}>PAR {par}</span>
                     </div>
-                    <div style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: '600', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+
+                    {isCumulativeValid && (
+                        <div style={{ marginTop: '2px', fontSize: '0.8rem', fontWeight: 'bold' }}>
+                            <span style={{ color: '#94a3b8' }}>Total Global: </span>
+                            <span style={{ color: 'white' }}>{cumulativeScore}</span>{' '}
+                            <span style={{ color: cumulativeDiffColor }}>({cumulativeDiffStr})</span>
+                        </div>
+                    )}
+
+                    <div style={{ marginTop: '4px', fontSize: '0.65rem', color: '#64748b', fontWeight: '600', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {courseName}
                     </div>
                 </div>

@@ -2682,6 +2682,7 @@ export default function CalendarView({
                         card={formData.scorecards?.[mobileMode.cardIdx] || { strokes: [], putts: [], girs: [], pars: [] }}
                         holeIdx={mobileMode.holeIdx}
                         par={(formData.scorecards?.[mobileMode.cardIdx]?.pars || [])[mobileMode.holeIdx] || 72 / 18}
+                        allScorecards={formData.scorecards || {}}
                         courseName={t?.course || 'Campo de Golf'}
                         config={{
                             track_putts: editingDetails.track_putts || t?.track_putts || false,
@@ -3246,6 +3247,7 @@ export default function CalendarView({
                     card={formData.scorecards?.[mobileMode.cardIdx] || { strokes: [], putts: [], girs: [], pars: [] }}
                     holeIdx={mobileMode.holeIdx}
                     par={(formData.scorecards?.[mobileMode.cardIdx]?.pars || [])[mobileMode.holeIdx] || 72 / 18} // Fallback to Par 4 average if missing
+                    allScorecards={formData.scorecards || {}}
                     courseName={selectedTournament?.course || 'Campo de Golf'}
                     config={{
                         track_putts: editingDetails.track_putts || selectedTournament?.track_putts || false,

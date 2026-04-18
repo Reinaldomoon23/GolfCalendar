@@ -327,10 +327,65 @@ export default function TeamLiveScorecard() {
                                             }
                                         }
 
+                                        // Calculate cumulative total for tournament
+                                        let cumulativeScore = 0;
+                                        let cumulativePar = 0;
+                                        let totalHolesPlayed = 0;
+
+                                        roundsKeys.forEach(key => {
+                                            const sc = result.scorecards[key];
+                                            for (let i = 0; i < 18; i++) {
+                                                const strokeStr = String(sc.strokes?.[i] || '');
+                                                if (strokeStr !== '' && strokeStr !== '-') {
+                                                    const s = parseInt(strokeStr);
+                                                    if (!isNaN(s) && s > 0) {
+                                                        cumulativeScore += s;
+                                                        const p = parseInt(sc.pars?.[i]);
+                                                        cumulativePar += (!isNaN(p) && p > 0 ? p : 4);
+                                                        totalHolesPlayed++;
+                                                    }
+                                                }
+                                            }
+                                        });
+
+                                        const cumulativeDiff = cumulativeScore - cumulativePar;
+                                        const cumulativeDiffStr = cumulativeDiff > 0 ? `+${cumulativeDiff}` : cumulativeDiff < 0 ? `${cumulativeDiff}` : 'E';
+                                        const cumulativeDiffColor = cumulativeDiff > 0 ? '#ef4444' : cumulativeDiff < 0 ? '#10b981' : '#94a3b8';
+
                                         // We just render the active round for now to keep it compact
                                         const displayRounds = [activeRIdx];
 
-                                        return displayRounds.map((rIdx) => {
+                                        return (
+                                            <>
+                                                {roundsKeys.length > 1 && totalHolesPlayed > 0 && (
+                                                    <div style={{
+                                                        background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
+                                                        borderRadius: '16px',
+                                                        padding: '1.2rem',
+                                                        marginBottom: '1.5rem',
+                                                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.2)',
+                                                        border: '1px solid #3b82f6'
+                                                    }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                            <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '1rem', fontWeight: '800' }}>
+                                                                📊 TOTAL ACUMULADO
+                                                            </h3>
+                                                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                                                                <span style={{ fontSize: '1.8rem', fontWeight: '900', color: 'white' }}>
+                                                                    {cumulativeScore}
+                                                                </span>
+                                                                <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: cumulativeDiffColor }}>
+                                                                    ({cumulativeDiffStr})
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div style={{ marginTop: '8px', fontSize: '0.8rem', color: '#94a3b8', display: 'flex', gap: '15px' }}>
+                                                            <span>Par: {cumulativePar}</span>
+                                                            <span>Hoyos: {totalHolesPlayed}/{roundsKeys.length * 18}</span>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {displayRounds.map((rIdx) => {
                                             const roundStr = parseInt(rIdx);
                                             const card = result.scorecards[rIdx];
 
@@ -495,7 +550,9 @@ export default function TeamLiveScorecard() {
                                                     </div>
                                                 </div>
                                             );
-                                        });
+                                        })}
+                                        </>
+                                        );
                                     })()}
                                 </div>
                             )}
