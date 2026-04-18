@@ -273,6 +273,13 @@ export default function TeamLiveScorecard() {
                         animation: 'spin 0.8s linear infinite'
                     }} />
                     <span style={{ fontSize: '0.85rem' }}>Cargando datos en vivo...</span>
+                    <div style={{ marginTop: '20px', fontSize: '0.75rem', opacity: 0.5 }}>v2.5.0</div>
+                    <button 
+                        onClick={() => window.location.reload(true)}
+                        style={{ marginTop: '10px', background: '#334155', border: '1px solid #475569', color: 'white', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.8rem' }}
+                    >
+                        Reiniciar Cargar ↻
+                    </button>
                 </div>
             </div>
         </div>
