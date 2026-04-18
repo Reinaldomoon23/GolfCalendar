@@ -296,7 +296,19 @@ export default function PublicScorecardView() {
                         id: eventId,
                         name: data.tournamentName,
                         course: data.tournamentCourse || prev?.course || '',
-                        dates: data.tournamentDates || prev?.dates || ''
+                        dates: data.tournamentDates || prev?.dates || '',
+                        // Preserve or set par — use result's saved par, then previous, then compute from scorecards
+                        par: data.tournamentPar || prev?.par || (() => {
+                            // Compute total par from the first complete round's hole pars
+                            if (data.scorecards) {
+                                const firstCard = data.scorecards[Object.keys(data.scorecards)[0]];
+                                if (firstCard?.pars) {
+                                    const sum = firstCard.pars.reduce((acc, p) => acc + (parseInt(p) > 0 ? parseInt(p) : 0), 0);
+                                    if (sum > 60 && sum < 80) return sum; // sanity check
+                                }
+                            }
+                            return null;
+                        })()
                     }));
                 }
             } else {
