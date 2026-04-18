@@ -361,12 +361,29 @@ export default function TeamLiveScorecard() {
                                         const cumulativeDiffStr = cumulativeDiff > 0 ? `+${cumulativeDiff}` : cumulativeDiff < 0 ? `${cumulativeDiff}` : 'E';
                                         const cumulativeDiffColor = cumulativeDiff > 0 ? '#ef4444' : cumulativeDiff < 0 ? '#10b981' : '#94a3b8';
 
+                                        // Target Diff Logic
+                                        let targetDiffRender = null;
+                                        if (tournament?.target_score !== undefined && tournament?.target_score !== null) {
+                                            const ts = parseInt(tournament.target_score);
+                                            const tDiff = cumulativeDiff - ts;
+                                            const tDiffStr = tDiff > 0 ? `+${tDiff}` : tDiff < 0 ? `${tDiff}` : 'E';
+                                            const tDiffColor = tDiff > 0 ? '#ef4444' : tDiff < 0 ? '#10b981' : '#f1f5f9';
+                                            targetDiffRender = (
+                                                <div style={{ paddingLeft: '15px', borderLeft: '1px solid rgba(255,255,255,0.2)', marginLeft: '10px' }}>
+                                                    <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Obj ({ts > 0 ? `+${ts}` : ts})</div>
+                                                    <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: tDiffColor }}>
+                                                        {tDiffStr}
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+
                                         // We just render the active round for now to keep it compact
                                         const displayRounds = [activeRIdx];
 
                                         return (
                                             <>
-                                                {roundsKeys.length > 1 && totalHolesPlayed > 0 && (
+                                                {((roundsKeys.length > 1 || targetDiffRender) && totalHolesPlayed > 0) && (
                                                     <div style={{
                                                         background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
                                                         borderRadius: '16px',
@@ -379,13 +396,16 @@ export default function TeamLiveScorecard() {
                                                             <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '1rem', fontWeight: '800' }}>
                                                                 📊 TOTAL ACUMULADO
                                                             </h3>
-                                                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                                                                <span style={{ fontSize: '1.8rem', fontWeight: '900', color: 'white' }}>
-                                                                    {cumulativeScore}
-                                                                </span>
-                                                                <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: cumulativeDiffColor }}>
-                                                                    ({cumulativeDiffStr})
-                                                                </span>
+                                                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                                                                <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                                                                    <span style={{ fontSize: '1.8rem', fontWeight: '900', color: 'white' }}>
+                                                                        {cumulativeScore}
+                                                                    </span>
+                                                                    <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: cumulativeDiffColor }}>
+                                                                        ({cumulativeDiffStr})
+                                                                    </span>
+                                                                </div>
+                                                                {targetDiffRender}
                                                             </div>
                                                         </div>
                                                         <div style={{ marginTop: '8px', fontSize: '0.8rem', color: '#94a3b8', display: 'flex', gap: '15px' }}>

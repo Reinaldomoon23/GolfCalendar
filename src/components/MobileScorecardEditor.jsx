@@ -13,7 +13,8 @@ const MobileScorecardEditor = ({
     par,
     courseName = 'Campo de Golf',
     onJumpToHole,
-    allScorecards = {} // all rounds scorecards for cumulative score
+    allScorecards = {}, // all rounds scorecards for cumulative score
+    targetScore = null  // new prop for Objective relative to par
 }) => {
     const [activeField, setActiveField] = useState('strokes');
 
@@ -42,7 +43,21 @@ const MobileScorecardEditor = ({
     const isCumulativeValid = totalHolesPlayed > 0;
     const cumulativeDiff = cumulativeScore - cumulativePar;
     const cumulativeDiffStr = cumulativeDiff > 0 ? `+${cumulativeDiff}` : cumulativeDiff < 0 ? `${cumulativeDiff}` : 'E';
-    const cumulativeDiffColor = cumulativeDiff > 0 ? '#ef4444' : cumulativeDiff < 0 ? '#10b981' : '#94a3b8';
+    const cumulativeDiffColor = cumulativeDiff > 0 ? '#ef4444' : cumulativeDiff < 0 ? '#10b981' : '#f8fafc';
+
+    // Target diff logic
+    let targetDiffRender = null;
+    if (targetScore !== null && targetScore !== undefined) {
+        const tDiff = cumulativeDiff - targetScore;
+        const tDiffStr = tDiff > 0 ? `+${tDiff}` : tDiff < 0 ? `${tDiff}` : 'E';
+        const tDiffColor = tDiff > 0 ? '#ef4444' : tDiff < 0 ? '#10b981' : '#94a3b8';
+        targetDiffRender = (
+            <span style={{ marginLeft: '12px', paddingLeft: '12px', borderLeft: '1px solid rgba(255,255,255,0.2)' }}>
+                <span style={{ color: '#94a3b8', fontSize: '0.7rem' }}>Obj {targetScore > 0 ? `+${targetScore}` : targetScore}: </span>
+                <span style={{ color: tDiffColor, fontSize: '0.85rem' }}>{tDiffStr}</span>
+            </span>
+        );
+    }
     const [isFirstKey, setIsFirstKey] = useState(true);
     const [showHoleSelector, setShowHoleSelector] = useState(false);
 
@@ -280,10 +295,10 @@ const MobileScorecardEditor = ({
                     </div>
 
                     {isCumulativeValid && (
-                        <div style={{ marginTop: '2px', fontSize: '0.8rem', fontWeight: 'bold' }}>
-                            <span style={{ color: '#94a3b8' }}>Total Global: </span>
-                            <span style={{ color: 'white' }}>{cumulativeScore}</span>{' '}
-                            <span style={{ color: cumulativeDiffColor }}>({cumulativeDiffStr})</span>
+                        <div style={{ marginTop: '4px', fontSize: '1rem', fontWeight: 'bold' }}>
+                            <span style={{ color: '#94a3b8' }}>Torneo: </span>
+                            <span style={{ color: cumulativeDiffColor }}>{cumulativeDiffStr}</span>
+                            {targetDiffRender}
                         </div>
                     )}
 

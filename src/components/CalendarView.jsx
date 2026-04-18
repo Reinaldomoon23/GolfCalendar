@@ -1635,9 +1635,21 @@ export default function CalendarView({
                                     <option value="FCG">FCG</option>
                                     <option value="CAMIRAL">CAMIRAL</option>
                                     <option value="LEGACY">LEGACY</option>
-                                    <option value="JUNIOR BABY CUP">JUNIOR BABY CUP</option>
+                                    <option value="JUNIOR BABY Cup">JUNIOR BABY CUP</option>
                                     <option value="Circuito Amateur">Circuito Amateur</option>
                                 </select>
+                            </div>
+
+                            {/* Objetivo (Target Score) */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                                <label style={{ fontSize: '0.8rem', color: '#888' }}>Objetivo (Golpes respecto al par, ej: 7 para +7)</label>
+                                <input
+                                    type="number"
+                                    value={editingDetails.target_score !== undefined && editingDetails.target_score !== null ? editingDetails.target_score : ''}
+                                    onChange={(e) => handleDetailChange('target_score', e.target.value === '' ? null : parseInt(e.target.value))}
+                                    placeholder="Ej: 7"
+                                    style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc', fontSize: '1rem' }}
+                                />
                             </div>
 
                             {/* Tags / Properties */}
@@ -2683,6 +2695,7 @@ export default function CalendarView({
                         holeIdx={mobileMode.holeIdx}
                         par={(formData.scorecards?.[mobileMode.cardIdx]?.pars || [])[mobileMode.holeIdx] || 72 / 18}
                         allScorecards={formData.scorecards || {}}
+                        targetScore={editingDetails.target_score !== undefined ? editingDetails.target_score : (t?.target_score ?? null)}
                         courseName={t?.course || 'Campo de Golf'}
                         config={{
                             track_putts: editingDetails.track_putts || t?.track_putts || false,
@@ -3248,6 +3261,7 @@ export default function CalendarView({
                     holeIdx={mobileMode.holeIdx}
                     par={(formData.scorecards?.[mobileMode.cardIdx]?.pars || [])[mobileMode.holeIdx] || 72 / 18} // Fallback to Par 4 average if missing
                     allScorecards={formData.scorecards || {}}
+                    targetScore={editingDetails.target_score !== undefined ? editingDetails.target_score : (selectedTournament?.target_score ?? null)}
                     courseName={selectedTournament?.course || 'Campo de Golf'}
                     config={{
                         track_putts: editingDetails.track_putts || selectedTournament?.track_putts || false,

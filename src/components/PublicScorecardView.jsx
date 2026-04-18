@@ -517,11 +517,28 @@ export default function PublicScorecardView() {
                                 displayRounds = [activeRIdx];
                             }
 
+                            // Target Diff Logic
+                            let targetDiffRender = null;
+                            if (tournament?.target_score !== undefined && tournament?.target_score !== null) {
+                                const ts = parseInt(tournament.target_score);
+                                const tDiff = cumulativeDiff - ts;
+                                const tDiffStr = tDiff > 0 ? `+${tDiff}` : tDiff < 0 ? `${tDiff}` : 'E';
+                                const tDiffColor = tDiff > 0 ? '#ef4444' : tDiff < 0 ? '#10b981' : '#f1f5f9';
+                                targetDiffRender = (
+                                    <div style={{ paddingLeft: '15px', borderLeft: '1px solid rgba(255,255,255,0.2)', marginLeft: '10px' }}>
+                                        <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Objetivo ({ts > 0 ? `+${ts}` : ts})</div>
+                                        <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: tDiffColor }}>
+                                            {tDiffStr}
+                                        </div>
+                                    </div>
+                                );
+                            }
+
                             // Map over the correct round(s)
                             return (
                                 <>
-                                    {/* Mostrar total acumulado solo si hay más de 1 vuelta */}
-                                    {roundsKeys.length > 1 && totalHolesPlayed > 0 && (
+                                    {/* Mostrar total acumulado solo si hay más de 1 vuelta OR if there is an objective */}
+                                    {((roundsKeys.length > 1 || targetDiffRender) && totalHolesPlayed > 0) && (
                                         <div style={{
                                             background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
                                             borderRadius: '16px',
@@ -534,13 +551,16 @@ export default function PublicScorecardView() {
                                                 <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '1.2rem', fontWeight: '800' }}>
                                                     📊 TOTAL ACUMULADO ({totalHolesPlayed} hoyos)
                                                 </h3>
-                                                <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                                                    <span style={{ fontSize: '2.5rem', fontWeight: '900', color: 'white' }}>
-                                                        {cumulativeScore}
-                                                    </span>
-                                                    <span style={{ fontSize: '1.4rem', fontWeight: 'bold', color: cumulativeDiffColor }}>
-                                                        ({cumulativeDiffStr})
-                                                    </span>
+                                                <div style={{ display: 'flex', alignItems: 'center' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                                                        <span style={{ fontSize: '2.5rem', fontWeight: '900', color: 'white' }}>
+                                                            {cumulativeScore}
+                                                        </span>
+                                                        <span style={{ fontSize: '1.4rem', fontWeight: 'bold', color: cumulativeDiffColor }}>
+                                                            ({cumulativeDiffStr})
+                                                        </span>
+                                                    </div>
+                                                    {targetDiffRender}
                                                 </div>
                                             </div>
                                             <div style={{

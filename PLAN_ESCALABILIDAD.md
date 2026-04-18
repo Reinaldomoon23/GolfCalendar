@@ -1,4 +1,4 @@
-# Plan de Escalabilidad - Golf Tracker
+0, # Plan de Escalabilidad - Golf Tracker
 
 **Objetivo**: Preparar la aplicación para miles de usuarios
 **Fecha**: 17 de marzo de 2026
