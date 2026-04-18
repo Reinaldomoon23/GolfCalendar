@@ -728,7 +728,8 @@ export default function CalendarView({
             tournamentDates: editingDetails.dates || selectedTournament.dates,
             tournamentPar: editingDetails.par || selectedTournament.par || 72,
             track_putts: editingDetails.track_putts || selectedTournament.track_putts || false,
-            track_girs: editingDetails.track_girs || selectedTournament.track_girs || false
+            track_girs: editingDetails.track_girs || selectedTournament.track_girs || false,
+            tee_time: editingDetails.tee_time || selectedTournament.tee_time || null
         };
 
         if (onSaveSpecificResult) {
@@ -1627,21 +1628,32 @@ export default function CalendarView({
                             </div>
 
                             {/* Organizer (Main Entity) */}
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                                <label style={{ fontSize: '0.8rem', color: '#888' }}>Organizador</label>
-                                <select
-                                    value={editingDetails.organizer || 'CLUB'}
-                                    onChange={(e) => handleDetailChange('organizer', e.target.value)}
-                                    style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc', fontSize: '1rem' }}
-                                >
-                                    <option value="CLUB">CLUB (Genérico)</option>
-                                    <option value="RFEG">RFEG</option>
-                                    <option value="FCG">FCG</option>
-                                    <option value="CAMIRAL">CAMIRAL</option>
-                                    <option value="LEGACY">LEGACY</option>
-                                    <option value="JUNIOR BABY Cup">JUNIOR BABY CUP</option>
-                                    <option value="Circuito Amateur">Circuito Amateur</option>
-                                </select>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                                    <label style={{ fontSize: '0.8rem', color: '#888' }}>Organizador</label>
+                                    <select
+                                        value={editingDetails.organizer || 'CLUB'}
+                                        onChange={(e) => handleDetailChange('organizer', e.target.value)}
+                                        style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc', fontSize: '1rem' }}
+                                    >
+                                        <option value="CLUB">CLUB (Genérico)</option>
+                                        <option value="RFEG">RFEG</option>
+                                        <option value="FCG">FCG</option>
+                                        <option value="CAMIRAL">CAMIRAL</option>
+                                        <option value="LEGACY">LEGACY</option>
+                                        <option value="JUNIOR BABY Cup">JUNIOR BABY CUP</option>
+                                        <option value="Circuito Amateur">Circuito Amateur</option>
+                                    </select>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                                    <label style={{ fontSize: '0.8rem', color: '#888' }}>Hora de Salida</label>
+                                    <input
+                                        type="time"
+                                        value={editingDetails.tee_time || ''}
+                                        onChange={(e) => handleDetailChange('tee_time', e.target.value)}
+                                        style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc', fontSize: '1rem' }}
+                                    />
+                                </div>
                             </div>
 
                             {/* Objetivo (Target Score) */}

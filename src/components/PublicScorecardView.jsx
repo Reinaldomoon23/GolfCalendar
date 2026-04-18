@@ -368,6 +368,7 @@ export default function PublicScorecardView() {
     // Determine the active hole
     let activeHole = null;
     let activePar = null;
+    let paceData = null;
 
     if (result && result.scorecards) {
         const roundsKeys = Object.keys(result.scorecards).sort();
@@ -399,12 +400,43 @@ export default function PublicScorecardView() {
         if (foundActiveRIdx !== null) {
             const card = result.scorecards[foundActiveRIdx];
             if (card) {
+                let currentRoundHoles = 0;
                 for (let i = 0; i < 18; i++) {
                     const stroke = String(card.strokes?.[i] || '');
-                    if (stroke === '' || stroke === '-' || stroke === '0') {
+                    if (stroke !== '' && stroke !== '-' && stroke !== '0') {
+                        currentRoundHoles++;
+                    }
+                    if (activeHole === null && (stroke === '' || stroke === '-' || stroke === '0')) {
                         activeHole = i + 1;
                         activePar = parseInt(card.pars?.[i]) || 4;
-                        break;
+                    }
+                }
+
+                // Pace Calculation
+                const teeTimeStr = result.tee_time || tournament?.tee_time;
+                if (teeTimeStr && currentRoundHoles > 0) {
+                    try {
+                        const [hours, mins] = teeTimeStr.split(':').map(Number);
+                        const start = new Date();
+                        start.setHours(hours, mins, 0, 0);
+                        
+                        const now = new Date();
+                        const elapsedMs = now - start;
+                        if (elapsedMs > 0) {
+                            const elapsedMins = Math.floor(elapsedMs / 60000);
+                            const minsPerHole = elapsedMins / currentRoundHoles;
+                            const remainingHoles = 18 - currentRoundHoles;
+                            const remainingMins = Math.round(remainingHoles * minsPerHole);
+                            const finishTime = new Date(now.getTime() + remainingMins * 60000);
+                            
+                            paceData = {
+                                elapsed: `${Math.floor(elapsedMins / 60) > 0 ? `${Math.floor(elapsedMins / 60)}h ` : ''}${elapsedMins % 60}m`,
+                                finish: finishTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                                minsPerHole: minsPerHole.toFixed(1)
+                            };
+                        }
+                    } catch (e) {
+                        console.error("Error calculating pace:", e);
                     }
                 }
             }
@@ -537,15 +569,37 @@ export default function PublicScorecardView() {
                         )}
 
                         {activeHole && (
-                            <div style={{ background: '#334155', borderRadius: '10px', padding: '10px', marginTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #475569' }}>
-                                <div style={{ textAlign: 'left' }}>
-                                    <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t.playingHole}</div>
-                                    <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'white' }}>{activeHole} <span style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 'normal' }}>({t.par} {activePar})</span></div>
+                            <div style={{ background: '#334155', borderRadius: '10px', padding: '10px', marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px', border: '1px solid #475569' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ textAlign: 'left' }}>
+                                        <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t.playingHole}</div>
+                                        <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'white' }}>{activeHole} <span style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 'normal' }}>({t.par} {activePar})</span></div>
+                                    </div>
+                                    <div style={{ textAlign: 'right' }}>
+                                        <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t.average} {activePar}</div>
+                                        <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#3b82f6' }}>{parStats[activePar]}</div>
+                                    </div>
                                 </div>
-                                <div style={{ textAlign: 'right' }}>
-                                    <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t.average} {activePar}</div>
-                                    <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#3b82f6' }}>{parStats[activePar]}</div>
-                                </div>
+
+                                {paceData && (
+                                    <div style={{ 
+                                        paddingTop: '8px', 
+                                        borderTop: '1px solid rgba(255,255,255,0.1)',
+                                        display: 'flex', 
+                                        justifyContent: 'space-between', 
+                                        fontSize: '0.75rem' 
+                                    }}>
+                                        <div style={{ color: '#94a3b8' }}>
+                                            🕒 Transcurrido: <span style={{ color: 'white', fontWeight: 'bold' }}>{paceData.elapsed}</span>
+                                        </div>
+                                        <div style={{ color: '#94a3b8' }}>
+                                            🏁 Est. Fin: <span style={{ color: '#10b981', fontWeight: 'bold' }}>{paceData.finish}</span>
+                                        </div>
+                                        <div style={{ color: '#94a3b8' }}>
+                                            ⏱️ {paceData.minsPerHole} min/hoyo
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
