@@ -372,14 +372,17 @@ export default function PublicScorecardView() {
     let foundActiveRIdx = null;
 
     if (result && result.scorecards) {
-        const roundsKeys = Object.keys(result.scorecards).sort();
+        const roundsKeys = Object.keys(result.scorecards).sort((a, b) => parseInt(a) - parseInt(b));
         
-        // Prioritize round from URL if valid (check both string and number)
-        if (queryRIdx !== null && (roundsKeys.includes(queryRIdx) || roundsKeys.includes(String(queryRIdx)))) {
-            foundActiveRIdx = String(queryRIdx);
+        // 1. Try to find the round from the URL (allow 0-based index)
+        if (queryRIdx !== null) {
+            const match = roundsKeys.find(rk => String(rk) === String(queryRIdx));
+            if (match) {
+                foundActiveRIdx = match;
+            }
         }
 
-        // Only if not found in URL, look for a round in progress (< 18 holes)
+        // 2. If no valid round in URL, find a round in progress (< 18 holes)
         if (foundActiveRIdx === null) {
             for (let i = roundsKeys.length - 1; i >= 0; i--) {
                 const rIdx = roundsKeys[i];
@@ -396,29 +399,24 @@ export default function PublicScorecardView() {
             }
         }
 
-        // Second pass: if no round in progress found, look for any round with data
+        // 3. Fallback to any round with data
         if (foundActiveRIdx === null) {
             for (let i = roundsKeys.length - 1; i >= 0; i--) {
                 const rIdx = roundsKeys[i];
                 const card = result.scorecards[rIdx];
                 let playedHoles = 0;
-                let strokesMatchParsPrecisely = true;
                 for (let h = 0; h < 18; h++) {
                     const s = String(card.strokes?.[h] || '');
-                    const p = String(card.pars?.[h] || '');
                     if (s !== '' && s !== '-') playedHoles++;
-                    if (s !== p) strokesMatchParsPrecisely = false;
                 }
-                const isAutoPopulatedDummy = (playedHoles === 18 && strokesMatchParsPrecisely);
-                const manualStrokesTotal = result.rounds?.[parseInt(rIdx)];
-                if ((playedHoles > 0 && !isAutoPopulatedDummy) || (manualStrokesTotal && manualStrokesTotal > 0)) {
+                if (playedHoles > 0 || result.rounds?.[parseInt(rIdx)]) {
                     foundActiveRIdx = rIdx;
                     break;
                 }
             }
         }
 
-        // Third pass: Ultimate fallback - just pick the last round available
+        // 4. Ultimate fallback: last round available
         if (foundActiveRIdx === null && roundsKeys.length > 0) {
             foundActiveRIdx = roundsKeys[roundsKeys.length - 1];
         }
