@@ -60,6 +60,12 @@ function AppContent() {
 
   useEffect(() => {
     const handleControllerChange = () => {
+      // Don't auto-reload on live scorecard pages - it disrupts watchers mid-game
+      const isLivePage = window.location.pathname.includes('/live');
+      if (isLivePage) {
+        console.log('New SW controller detected, skipping auto-reload on live page.');
+        return;
+      }
       console.log('New SW controller detected, reloading…');
       window.location.reload();
     };
