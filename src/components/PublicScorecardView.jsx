@@ -171,6 +171,7 @@ export default function PublicScorecardView() {
     // (e.g. the user may have edited an official tournament - the custom version takes priority)
     useEffect(() => {
         const fetchTournament = async () => {
+            setError(null);
             let foundTournament = null;
             
             try {
@@ -291,7 +292,7 @@ export default function PublicScorecardView() {
         return (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: 'white', background: '#0f172a' }}>
                 <p>{t.loading}</p>
-                <div style={{ marginTop: '20px', fontSize: '0.75rem', opacity: 0.5 }}>v2.5.0</div>
+                <div style={{ marginTop: '20px', fontSize: '0.75rem', opacity: 0.5 }}>v2.5.1</div>
                 <button 
                     onClick={() => window.location.reload(true)}
                     style={{ marginTop: '10px', background: '#334155', border: '1px solid #475569', color: 'white', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.8rem' }}
@@ -388,7 +389,7 @@ export default function PublicScorecardView() {
                             <button onClick={() => setLang('en')} style={{ background: lang === 'en' ? '#3b82f6' : 'transparent', border: 'none', color: 'white', fontSize: '0.6rem', padding: '2px 6px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>EN</button>
                         </div>
                         <div onClick={() => window.location.reload(true)} style={{ fontSize: '0.6rem', color: '#475569', cursor: 'pointer', marginTop: '4px' }}>
-                             v2.5.0 ↻
+                             v2.5.1 ↻
                         </div>
                     </div>
 
