@@ -171,33 +171,44 @@ export default function PublicScorecardView() {
     // (e.g. the user may have edited an official tournament - the custom version takes priority)
     useEffect(() => {
         const fetchTournament = async () => {
+            let foundTournament = null;
+            
             try {
-                // 1. User's custom overrides (highest priority)
+                // 1. User's custom overrides (highest priority) - catch permission errors
                 const customRef = getUserSubdocRef(db, userProfile || username, 'custom_tournaments', eventId);
                 const customSnap = await getDoc(customRef);
                 if (customSnap.exists()) {
-                    setTournament({ id: customSnap.id, ...customSnap.data() });
-                    return;
+                    foundTournament = { id: customSnap.id, ...customSnap.data() };
                 }
+            } catch (err) { 
+                /* ignore, likely permission error for guest */ 
+            }
 
+            if (!foundTournament) {
                 // 2. Local official JSON
                 const localOfficial = tournamentsData.find((t) => String(t.id) === String(eventId));
                 if (localOfficial) {
-                    setTournament(localOfficial);
-                    return;
+                    foundTournament = localOfficial;
                 }
+            }
 
-                // 3. Firebase official tournaments collection
-                const docRef = doc(db, 'tournaments', eventId);
-                const docSnap = await getDoc(docRef);
-                if (docSnap.exists()) {
-                    setTournament({ id: docSnap.id, ...docSnap.data() });
-                } else {
-                    setError('Torneo no encontrado');
+            if (!foundTournament) {
+                try {
+                    // 3. Firebase official tournaments collection
+                    const docRef = doc(db, 'tournaments', eventId);
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists()) {
+                        foundTournament = { id: docSnap.id, ...docSnap.data() };
+                    }
+                } catch (err) {
+                     console.error("Error fetching official tournament", err);
                 }
-            } catch (err) {
-                console.error("Error fetching tournament", err);
-                setError('Error al cargar datos del torneo');
+            }
+
+            if (foundTournament) {
+                setTournament(foundTournament);
+            } else {
+                setError('Torneo no encontrado');
             }
         };
         fetchTournament();

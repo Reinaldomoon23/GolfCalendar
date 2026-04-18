@@ -49,29 +49,38 @@ export default function TeamLiveScorecard() {
         const mainPlayerProfile = profiles[mainPlayer];
 
         const fetchTournament = async () => {
+            let foundTournament = null;
+            
             try {
                 // Try custom first for that player
                 const customRef = getUserSubdocRef(db, mainPlayerProfile || mainPlayer, 'custom_tournaments', eventId);
                 const customSnap = await getDoc(customRef);
                 if (customSnap.exists()) {
-                    setTournament({ id: customSnap.id, ...customSnap.data() });
-                    return;
+                    foundTournament = { id: customSnap.id, ...customSnap.data() };
                 }
-
-                // Try official
-                const offRef = doc(db, 'tournaments', eventId);
-                const offSnap = await getDoc(offRef);
-                if (offSnap.exists()) {
-                    setTournament({ id: offSnap.id, ...offSnap.data() });
-                    return;
-                }
-
-                // Fallback basic
-                setTournament({ id: eventId, name: 'Torneo en Seguimiento' });
-
             } catch (err) {
-                console.error("Error fetching event info", err);
+                /* ignore permission errors */
             }
+
+            if (!foundTournament) {
+                try {
+                    // Try official
+                    const offRef = doc(db, 'tournaments', eventId);
+                    const offSnap = await getDoc(offRef);
+                    if (offSnap.exists()) {
+                        foundTournament = { id: offSnap.id, ...offSnap.data() };
+                    }
+                } catch (err) {
+                    /* ignore permission errors */
+                }
+            }
+
+            if (!foundTournament) {
+                // Fallback basic
+                foundTournament = { id: eventId, name: 'Torneo en Seguimiento' };
+            }
+            
+            setTournament(foundTournament);
         };
         fetchTournament();
     }, [eventId, playersStr, profiles]);
