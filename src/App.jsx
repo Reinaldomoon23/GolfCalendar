@@ -42,18 +42,23 @@ import { IS_MULTI, DEFAULT_PREFERENCES } from './config/app';
 function AppContent() {
   const location = useLocation();
 
-  // ── PWA Service Worker ───────────────────────────────────────────────────
-  const {
-    needRefresh: [needRefresh, setNeedRefresh],
-    updateServiceWorker,
-  } = useRegisterSW({
+  // ── PWA Service Worker (silent auto-update) ────────────────────────────
+  const { updateServiceWorker } = useRegisterSW({
     onRegistered(r) {
       if (!r) return;
-      console.log('SW Registered');
+      // Check for updates every 10 minutes
       setInterval(() => { r.update().catch(() => {}); }, 10 * 60 * 1000);
+      // Also check when the user comes back to the tab
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') r.update().catch(() => {});
       });
+    },
+    onNeedRefresh() {
+      // Auto-apply silently on non-live pages
+      const isLivePage = window.location.pathname.includes('/live');
+      if (!isLivePage) {
+        updateServiceWorker(true);
+      }
     },
     onRegisterError(error) { console.log('SW registration error', error); },
   });
@@ -62,21 +67,14 @@ function AppContent() {
     const handleControllerChange = () => {
       // Don't auto-reload on live scorecard pages - it disrupts watchers mid-game
       const isLivePage = window.location.pathname.includes('/live');
-      if (isLivePage) {
-        console.log('New SW controller detected, skipping auto-reload on live page.');
-        return;
-      }
-      console.log('New SW controller detected, reloading…');
+      if (isLivePage) return;
       window.location.reload();
     };
     navigator.serviceWorker?.addEventListener('controllerchange', handleControllerChange);
     return () => navigator.serviceWorker?.removeEventListener('controllerchange', handleControllerChange);
   }, []);
 
-  const handleAppUpdate = () => {
-    updateServiceWorker(true);
-    setTimeout(() => window.location.reload(), 1000);
-  };
+  const handleAppUpdate = () => updateServiceWorker(true);
 
   // ── Core state ───────────────────────────────────────────────────────────
   const [results, setResults] = useState({});
@@ -485,26 +483,6 @@ function AppContent() {
         </Routes>
       </main>
 
-      {/* ── PWA Update Banner ────────────────────────────────────────────── */}
-      {needRefresh && (
-        <div className="fade-in" style={{ position: 'fixed', bottom: '30px', left: '20px', right: '20px', backgroundColor: '#0f172a', color: 'white', padding: '12px 16px', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.3)', zIndex: 10000, display: 'flex', gap: '12px', alignItems: 'center', border: '1px solid rgba(255,255,255,0.1)', justifyContent: 'space-between', maxWidth: '500px', margin: '0 auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{ backgroundColor: 'var(--color-primary)', padding: '8px', borderRadius: '10px' }}>🚀</div>
-            <div>
-              <p style={{ margin: 0, fontWeight: 'bold', fontSize: '0.9rem' }}>Nueva versión</p>
-              <p style={{ margin: 0, fontSize: '0.75rem', opacity: 0.8 }}>Haz clic para actualizar</p>
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button onClick={handleAppUpdate} style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: 'white', color: '#0f172a', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem' }}>
-              ACTUALIZAR
-            </button>
-            <button onClick={() => setNeedRefresh(false)} style={{ padding: '8px', borderRadius: '8px', border: 'none', background: 'rgba(255,255,255,0.1)', color: 'white', cursor: 'pointer' }}>
-              <X size={18} />
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* ── Profile Modal ────────────────────────────────────────────────── */}
       <ProfileModal
