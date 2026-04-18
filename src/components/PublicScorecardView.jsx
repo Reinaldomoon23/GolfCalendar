@@ -236,14 +236,15 @@ export default function PublicScorecardView() {
                 }
 
                 setResult(data);
-                // If result has embedded tournament metadata, use it directly
-                if (data.tournamentName && !tournament) {
-                    setTournament({
+                // If result has embedded tournament metadata, use it to ensure correct pars/course
+                if (data.tournamentName) {
+                    setTournament(prev => ({
+                        ...prev,
                         id: eventId,
                         name: data.tournamentName,
-                        course: data.tournamentCourse || '',
-                        dates: data.tournamentDates || ''
-                    });
+                        course: data.tournamentCourse || prev?.course || '',
+                        dates: data.tournamentDates || prev?.dates || ''
+                    }));
                 }
             } else {
                 setResult(null);

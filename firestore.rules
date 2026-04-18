@@ -105,8 +105,8 @@ service cloud.firestore {
       }
 
             match /custom_tournaments/{tournamentId} {
-        // Read: Owner, manager, or admin
-        allow read: if isAdmin() || canAccessUser(userId);
+        // Read: Anyone (public to see custom pars in live mode)
+        allow read: if true;
 
         // Write: Owner, manager, or admin
         allow write: if isAdmin() || canAccessUser(userId);
