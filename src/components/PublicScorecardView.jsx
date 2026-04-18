@@ -374,18 +374,25 @@ export default function PublicScorecardView() {
     if (result && result.scorecards) {
         const roundsKeys = Object.keys(result.scorecards).sort();
         
-        // First pass: look for a round in progress (< 18 holes)
-        for (let i = roundsKeys.length - 1; i >= 0; i--) {
-            const rIdx = roundsKeys[i];
-            const card = result.scorecards[rIdx];
-            let playedHoles = 0;
-            for (let h = 0; h < 18; h++) {
-                const s = String(card.strokes?.[h] || '');
-                if (s !== '' && s !== '-' && s !== '0') playedHoles++;
-            }
-            if (playedHoles > 0 && playedHoles < 18) {
-                foundActiveRIdx = rIdx;
-                break;
+        // Prioritize round from URL if valid
+        if (queryRIdx !== null && roundsKeys.includes(queryRIdx)) {
+            foundActiveRIdx = queryRIdx;
+        }
+
+        // Only if not found in URL, look for a round in progress (< 18 holes)
+        if (foundActiveRIdx === null) {
+            for (let i = roundsKeys.length - 1; i >= 0; i--) {
+                const rIdx = roundsKeys[i];
+                const card = result.scorecards[rIdx];
+                let playedHoles = 0;
+                for (let h = 0; h < 18; h++) {
+                    const s = String(card.strokes?.[h] || '');
+                    if (s !== '' && s !== '-' && s !== '0') playedHoles++;
+                }
+                if (playedHoles > 0 && playedHoles < 18) {
+                    foundActiveRIdx = rIdx;
+                    break;
+                }
             }
         }
 
