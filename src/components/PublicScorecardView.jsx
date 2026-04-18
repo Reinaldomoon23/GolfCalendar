@@ -538,7 +538,7 @@ export default function PublicScorecardView() {
                             return (
                                 <>
                                     {/* Mostrar total acumulado solo si hay más de 1 vuelta OR if there is an objective */}
-                                    {((roundsKeys.length > 1 || targetDiffRender) && totalHolesPlayed > 0) && (
+                                    {((roundsKeys.length > 1 || targetDiffRender !== null) && totalHolesPlayed > 0) && (
                                         <div style={{
                                             background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
                                             borderRadius: '16px',

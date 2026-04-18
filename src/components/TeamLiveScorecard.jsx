@@ -383,7 +383,7 @@ export default function TeamLiveScorecard() {
 
                                         return (
                                             <>
-                                                {((roundsKeys.length > 1 || targetDiffRender) && totalHolesPlayed > 0) && (
+                                                {((roundsKeys.length > 1 || targetDiffRender !== null) && totalHolesPlayed > 0) && (
                                                     <div style={{
                                                         background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
                                                         borderRadius: '16px',
