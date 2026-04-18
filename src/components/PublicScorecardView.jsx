@@ -569,25 +569,33 @@ export default function PublicScorecardView() {
                             const roundsKeys = Object.keys(result.scorecards || {});
                             if (roundsKeys.length === 0) return null;
 
-                            // NUEVO: Calcular total acumulado de todas las vueltas
                             let cumulativeScore = 0;
                             let cumulativePar = 0;
                             let totalHolesPlayed = 0;
-
-                            roundsKeys.forEach(rIdx => {
+                            const roundsSummary = [];
+                            roundsKeys.sort((a, b) => parseInt(a) - parseInt(b)).forEach(rIdx => {
+                                let rScore = 0;
+                                let rPar = 0;
+                                let rHoles = 0;
                                 const card = result.scorecards[rIdx];
-                                for (let i = 0; i < 18; i++) {
-                                    const strokeStr = String(card.strokes?.[i] || '');
-                                    if (strokeStr !== '' && strokeStr !== '-') {
-                                        const s = parseInt(strokeStr);
-                                        if (!isNaN(s) && s > 0) {
-                                            cumulativeScore += s;
-                                            const p = parseInt(card.pars?.[i]);
-                                            cumulativePar += (!isNaN(p) && p > 0 ? p : 4);
-                                            totalHolesPlayed++;
+                                if (card?.strokes) {
+                                    for (let i = 0; i < 18; i++) {
+                                        const strokeStr = String(card.strokes[i] || '');
+                                        if (strokeStr !== '' && strokeStr !== '-') {
+                                            const s = parseInt(strokeStr);
+                                            if (!isNaN(s) && s > 0) {
+                                                rScore += s;
+                                                const p = parseInt(card.pars?.[i]);
+                                                rPar += (!isNaN(p) && p > 0 ? p : 4);
+                                                rHoles++;
+                                            }
                                         }
                                     }
                                 }
+                                cumulativeScore += rScore;
+                                cumulativePar += rPar;
+                                totalHolesPlayed += rHoles;
+                                roundsSummary.push({ rIdx, score: rScore, par: rPar, holes: rHoles });
                             });
 
                             // If tournament declares a specific par, use it to correct rounding
@@ -701,6 +709,43 @@ export default function PublicScorecardView() {
                                                 <span>🎯 Par acumulado: {cumulativePar}</span>
                                                 <span>⛳ Hoyos: {totalHolesPlayed}/{roundsKeys.length * 18}</span>
                                             </div>
+
+                                            {/* Round Breakdown */}
+                                            {roundsSummary.length > 1 && (
+                                                <div style={{
+                                                    marginTop: '15px',
+                                                    paddingTop: '15px',
+                                                    borderTop: '1px solid rgba(255,255,255,0.1)',
+                                                    display: 'flex',
+                                                    gap: '12px',
+                                                    flexWrap: 'wrap'
+                                                }}>
+                                                    {roundsSummary.map((rs, idx) => {
+                                                        const diff = rs.score - rs.par;
+                                                        const diffStr = diff > 0 ? `+${diff}` : diff < 0 ? `${diff}` : 'E';
+                                                        const diffColor = diff > 0 ? '#ef4444' : diff < 0 ? '#10b981' : '#94a3b8';
+                                                        return (
+                                                            <div key={rs.rIdx} style={{
+                                                                background: 'rgba(255,255,255,0.05)',
+                                                                padding: '6px 10px',
+                                                                borderRadius: '10px',
+                                                                fontSize: '0.8rem',
+                                                                display: 'flex',
+                                                                flexDirection: 'column',
+                                                                gap: '2px',
+                                                                minWidth: '60px'
+                                                            }}>
+                                                                <span style={{ color: '#64748b', fontWeight: 'bold' }}>Día {idx + 1}</span>
+                                                                <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                                                                    <span style={{ color: 'white', fontWeight: 'bold' }}>{rs.score || '-'}</span>
+                                                                    {rs.holes > 0 && <span style={{ color: diffColor, fontSize: '0.7rem' }}>({diffStr})</span>}
+                                                                </div>
+                                                                <span style={{ fontSize: '0.65rem', color: '#475569' }}>{rs.holes} hoyos</span>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
                                         </div>
                                     )}
 
