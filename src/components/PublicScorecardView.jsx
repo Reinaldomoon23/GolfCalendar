@@ -209,7 +209,7 @@ export default function PublicScorecardView() {
             if (foundTournament) {
                 setTournament(foundTournament);
             } else {
-                setError('Torneo no encontrado');
+                setError(`Torneo no encontrado (Jugador: ${profileDocId}, ID: ${eventId})`);
             }
         };
         fetchTournament();
@@ -239,6 +239,7 @@ export default function PublicScorecardView() {
                 setResult(data);
                 // If result has embedded tournament metadata, use it to ensure correct pars/course
                 if (data.tournamentName) {
+                    setError(null);
                     setTournament(prev => ({
                         ...prev,
                         id: eventId,
