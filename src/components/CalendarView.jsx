@@ -588,7 +588,8 @@ export default function CalendarView({
                     updatedAt: new Date().toISOString(),
                     tournamentName: editingDetails.name || selectedTournament.name,
                     tournamentCourse: editingDetails.course || selectedTournament.course,
-                    tournamentDates: editingDetails.dates || selectedTournament.dates
+                    tournamentDates: editingDetails.dates || selectedTournament.dates,
+                    tournamentPar: editingDetails.par || selectedTournament.par || 72
                 };
                 onSaveSpecificResult(selectedTournament.id, entry);
             }
@@ -672,7 +673,8 @@ export default function CalendarView({
                 // Store tournament metadata so PublicScorecardView always shows correct info
                 tournamentName: editingDetails.name || selectedTournament.name,
                 tournamentCourse: editingDetails.course || selectedTournament.course,
-                tournamentDates: editingDetails.dates || selectedTournament.dates
+                tournamentDates: editingDetails.dates || selectedTournament.dates,
+                tournamentPar: editingDetails.par || selectedTournament.par || 72
             };
 
             onSaveSpecificResult(selectedTournament.id, entry);
@@ -724,6 +726,7 @@ export default function CalendarView({
             tournamentName: editingDetails.name || selectedTournament.name,
             tournamentCourse: editingDetails.course || selectedTournament.course,
             tournamentDates: editingDetails.dates || selectedTournament.dates,
+            tournamentPar: editingDetails.par || selectedTournament.par || 72,
             track_putts: editingDetails.track_putts || selectedTournament.track_putts || false,
             track_girs: editingDetails.track_girs || selectedTournament.track_girs || false
         };

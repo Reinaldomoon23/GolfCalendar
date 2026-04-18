@@ -337,7 +337,8 @@ export default function PublicScorecardView() {
         id: eventId,
         name: result.tournamentName,
         course: result.tournamentCourse || '',
-        dates: result.tournamentDates || ''
+        dates: result.tournamentDates || '',
+        par: result.tournamentPar || result.par || null
     } : null);
 
     // We still wait for tournamentInfo to render the UI, but we'll make it feel faster
