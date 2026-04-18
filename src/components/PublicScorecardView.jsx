@@ -173,6 +173,15 @@ export default function PublicScorecardView() {
         const fetchTournament = async () => {
             setError(null);
             let foundTournament = null;
+
+            // For custom tournaments, we NEED the real user UID to find the doc.
+            // If userProfile hasn't loaded yet (profileDocId is just the username fallback),
+            // skip silently - the effect will re-run once userProfile is resolved.
+            const isCustomId = String(eventId).startsWith('custom_');
+            const profileIsResolved = userProfile !== null;
+            if (isCustomId && !profileIsResolved) {
+                return; // wait for userProfile to load
+            }
             
             try {
                 // 1. User's custom overrides (highest priority) - catch permission errors
@@ -213,7 +222,7 @@ export default function PublicScorecardView() {
             }
         };
         fetchTournament();
-    }, [eventId, profileDocId, username]);
+    }, [eventId, profileDocId, username, userProfile]);
 
     // Listen to live results — independent of tournament lookup
     useEffect(() => {
