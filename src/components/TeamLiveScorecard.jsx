@@ -116,6 +116,15 @@ export default function TeamLiveScorecard() {
                     }
 
                     setResults(prev => ({ ...prev, [player]: data }));
+                    
+                    // NEW: If result has embedded tournament metadata, update the tournament context
+                    if (data.tournamentName) {
+                        setTournament(prev => ({
+                            ...prev,
+                            name: data.tournamentName,
+                            course: data.tournamentCourse || prev?.course || '',
+                        }));
+                    }
                 } else {
                     setResults(prev => ({ ...prev, [player]: null }));
                 }
