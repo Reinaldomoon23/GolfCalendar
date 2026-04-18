@@ -209,7 +209,7 @@ export default function PublicScorecardView() {
             if (foundTournament) {
                 setTournament(foundTournament);
             } else {
-                setError(`Torneo no encontrado (Jugador: ${profileDocId}, ID: ${eventId})`);
+                setError(`Torneo no encontrado`);
             }
         };
         fetchTournament();
@@ -289,17 +289,14 @@ export default function PublicScorecardView() {
         dates: result.tournamentDates || ''
     } : null);
 
-    if (loading || !tournamentInfo) {
+    // We still wait for tournamentInfo to render the UI, but we'll make it feel faster
+    if (!tournamentInfo) {
         return (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: 'white', background: '#0f172a' }}>
-                <p>{t.loading}</p>
-                <div style={{ marginTop: '20px', fontSize: '0.75rem', opacity: 0.5 }}>v2.5.1</div>
-                <button 
-                    onClick={() => window.location.reload(true)}
-                    style={{ marginTop: '10px', background: '#334155', border: '1px solid #475569', color: 'white', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.8rem' }}
-                >
-                    Reiniciar Cargar ↻
-                </button>
+                 <div style={{ textAlign: 'center' }}>
+                    <div style={{ width: '40px', height: '40px', border: '3px solid #334155', borderTop: '3px solid #3b82f6', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 15px' }} />
+                    <p style={{ fontSize: '0.9rem', opacity: 0.8 }}>{t.loading}</p>
+                 </div>
             </div>
         );
     }
@@ -388,9 +385,6 @@ export default function PublicScorecardView() {
                         <div style={{ display: 'flex', gap: '4px', background: '#0f172a', padding: '2px', borderRadius: '6px', border: '1px solid #334155' }}>
                             <button onClick={() => setLang('es')} style={{ background: lang === 'es' ? '#3b82f6' : 'transparent', border: 'none', color: 'white', fontSize: '0.6rem', padding: '2px 6px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>ES</button>
                             <button onClick={() => setLang('en')} style={{ background: lang === 'en' ? '#3b82f6' : 'transparent', border: 'none', color: 'white', fontSize: '0.6rem', padding: '2px 6px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>EN</button>
-                        </div>
-                        <div onClick={() => window.location.reload(true)} style={{ fontSize: '0.6rem', color: '#475569', cursor: 'pointer', marginTop: '4px' }}>
-                             v2.5.1 ↻
                         </div>
                     </div>
 
