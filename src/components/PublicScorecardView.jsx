@@ -480,7 +480,7 @@ export default function PublicScorecardView() {
             {/* Header */}
             <header style={{
                 background: '#1e293b',
-                padding: '1.2rem 1rem',
+                padding: '0.8rem 1rem',
                 position: 'sticky',
                 top: 0,
                 zIndex: 10,
@@ -498,43 +498,40 @@ export default function PublicScorecardView() {
                     </div>
 
                     <div style={{ textAlign: 'center', flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '8px' }}>
                             <ProfileImage
                                 photoPath={userProfile?.photo_url || result?.photo_url}
                                 displayName={userProfile?.full_name || username}
                                 alt={username}
-                                style={{ width: '64px', height: '64px', borderRadius: '50%', border: '2px solid #3b82f6', objectFit: 'cover' }}
+                                style={{ width: '48px', height: '48px', borderRadius: '50%', border: '2px solid #3b82f6', objectFit: 'cover' }}
                             />
                             <div style={{ textAlign: 'left' }}>
-                                <div style={{ fontSize: '0.75rem', color: '#ef4444', fontWeight: 'bold', letterSpacing: '0.05em', display: 'flex', alignItems: 'center' }}>
+                                <div style={{ fontSize: '0.7rem', color: '#ef4444', fontWeight: 'bold', letterSpacing: '0.05em', display: 'flex', alignItems: 'center' }}>
                                     {t.live} <span className="live-dot">🔴</span>
                                 </div>
-                                <div style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '2px' }}>
-                                    {t.follow}
-                                </div>
-                                <div style={{ fontWeight: 'bold', fontSize: '1.2rem', lineHeight: '1.2' }}>
+                                <div style={{ fontWeight: 'bold', fontSize: '1.1rem', lineHeight: '1.1' }}>
                                     {userProfile?.full_name || result?.full_name || username}
                                 </div>
                             </div>
                         </div>
-                        <h1 style={{ margin: 0, fontSize: '1rem', color: '#cbd5e1' }}>
+                        <h1 style={{ margin: 0, fontSize: '0.9rem', color: '#cbd5e1' }}>
                             {result?.tournamentName || tournament?.name}
                         </h1>
-                        <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                            <MapPin size={12} /> {result?.tournamentCourse || tournament?.course}
+                        <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                            <MapPin size={10} /> {result?.tournamentCourse || tournament?.course}
                         </div>
 
                         {weather && (
-                            <div style={{ display: 'flex', justifyContent: 'center', gap: '15px', marginTop: '10px', fontSize: '0.75rem', color: '#94a3b8' }}>
+                            <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginTop: '6px', fontSize: '0.7rem', color: '#94a3b8' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                    <Thermometer size={14} color="#3b82f6" /> {weather.temp}°C
+                                    <Thermometer size={12} color="#3b82f6" /> {weather.temp}°C
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                    <Wind size={14} color="#3b82f6" /> {weather.wind} km/h
+                                    <Wind size={12} color="#3b82f6" /> {weather.wind} km/h
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                    {weather.code >= 60 ? <CloudRain size={14} color="#3b82f6" /> : <Cloud size={14} color="#3b82f6" />}
-                                    {weather.humidity}% {t.humidity}
+                                    {weather.code >= 60 ? <CloudRain size={12} color="#3b82f6" /> : <Cloud size={12} color="#3b82f6" />}
+                                    {weather.humidity}%
                                 </div>
                             </div>
                         )}
@@ -677,23 +674,23 @@ export default function PublicScorecardView() {
                                     {((roundsKeys.length > 1 || targetDiffRender !== null) && totalHolesPlayed > 0) && (
                                         <div style={{
                                             background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
-                                            borderRadius: '16px',
-                                            padding: '1.5rem',
-                                            marginBottom: '1.5rem',
+                                            borderRadius: '12px',
+                                            padding: '1rem',
+                                            marginBottom: '1rem',
                                             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.2)',
                                             border: '2px solid #3b82f6'
                                         }}>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                                                 {/* Header and Total */}
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px' }}>
-                                                    <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '1.2rem', fontWeight: '800' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '4px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' }}>
+                                                    <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '1rem', fontWeight: '800' }}>
                                                         📊 TOTAL TORNEO
                                                     </h3>
-                                                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                                                        <span style={{ fontSize: '2.5rem', fontWeight: '900', color: 'white' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                                                        <span style={{ fontSize: '2rem', fontWeight: '900', color: 'white' }}>
                                                             {cumulativeScore}
                                                         </span>
-                                                        <span style={{ fontSize: '1.4rem', fontWeight: 'bold', color: cumulativeDiffColor }}>
+                                                        <span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: cumulativeDiffColor }}>
                                                             ({cumulativeDiffStr})
                                                         </span>
                                                     </div>
