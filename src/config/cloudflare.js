@@ -17,7 +17,7 @@ export const R2_CONFIG = {
 
 // Validate that credentials are loaded
 if (import.meta.env.MODE === 'production' && !R2_CONFIG.accessKeyId) {
-  console.error('❌ R2 credentials not found in environment variables');
+  console.warn('R2 credentials not configured - photo uploads will be disabled');
 }
 
 // Only create S3Client if credentials are available
