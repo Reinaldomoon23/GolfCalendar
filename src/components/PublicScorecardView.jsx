@@ -683,11 +683,12 @@ export default function PublicScorecardView() {
                                             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.2)',
                                             border: '2px solid #3b82f6'
                                         }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px', flexWrap: 'wrap' }}>
-                                                <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '1.2rem', fontWeight: '800', flex: '1 1 150px' }}>
-                                                    📊 TOTAL ACUMULADO ({totalHolesPlayed} hoyos)
-                                                </h3>
-                                                <div style={{ display: 'flex', alignItems: 'center' }}>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                                {/* Header and Total */}
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px' }}>
+                                                    <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '1.2rem', fontWeight: '800' }}>
+                                                        📊 TOTAL TORNEO
+                                                    </h3>
                                                     <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
                                                         <span style={{ fontSize: '2.5rem', fontWeight: '900', color: 'white' }}>
                                                             {cumulativeScore}
@@ -696,56 +697,29 @@ export default function PublicScorecardView() {
                                                             ({cumulativeDiffStr})
                                                         </span>
                                                     </div>
-                                                    {targetDiffRender}
                                                 </div>
-                                            </div>
-                                            <div style={{
-                                                marginTop: '10px',
-                                                fontSize: '0.9rem',
-                                                color: '#94a3b8',
-                                                display: 'flex',
-                                                gap: '20px'
-                                            }}>
-                                                <span>🎯 Par acumulado: {cumulativePar}</span>
-                                                <span>⛳ Hoyos: {totalHolesPlayed}/{roundsKeys.length * 18}</span>
-                                            </div>
 
-                                            {/* Round Breakdown */}
-                                            {roundsSummary.length > 1 && (
-                                                <div style={{
-                                                    marginTop: '15px',
-                                                    paddingTop: '15px',
-                                                    borderTop: '1px solid rgba(255,255,255,0.1)',
-                                                    display: 'flex',
-                                                    gap: '12px',
-                                                    flexWrap: 'wrap'
-                                                }}>
+                                                {/* Round List */}
+                                                <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
                                                     {roundsSummary.map((rs, idx) => {
                                                         const diff = rs.score - rs.par;
                                                         const diffStr = diff > 0 ? `+${diff}` : diff < 0 ? `${diff}` : 'E';
                                                         const diffColor = diff > 0 ? '#ef4444' : diff < 0 ? '#10b981' : '#94a3b8';
                                                         return (
-                                                            <div key={rs.rIdx} style={{
-                                                                background: 'rgba(255,255,255,0.05)',
-                                                                padding: '6px 10px',
-                                                                borderRadius: '10px',
-                                                                fontSize: '0.8rem',
-                                                                display: 'flex',
-                                                                flexDirection: 'column',
-                                                                gap: '2px',
-                                                                minWidth: '60px'
-                                                            }}>
-                                                                <span style={{ color: '#64748b', fontWeight: 'bold' }}>Día {idx + 1}</span>
+                                                            <div key={rs.rIdx} style={{ display: 'flex', flexDirection: 'column' }}>
+                                                                <span style={{ color: '#94a3b8', fontSize: '0.75rem', fontWeight: 'bold', textTransform: 'uppercase' }}>Día {idx + 1}</span>
                                                                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                                                                    <span style={{ color: 'white', fontWeight: 'bold' }}>{rs.score || '-'}</span>
-                                                                    {rs.holes > 0 && <span style={{ color: diffColor, fontSize: '0.7rem' }}>({diffStr})</span>}
+                                                                    <span style={{ fontSize: '1.2rem', fontWeight: '800', color: 'white' }}>{rs.score || '-'}</span>
+                                                                    {rs.holes > 0 && (
+                                                                        <span style={{ color: diffColor, fontSize: '0.9rem', fontWeight: 'bold' }}>({diffStr})</span>
+                                                                    )}
                                                                 </div>
                                                                 <span style={{ fontSize: '0.65rem', color: '#475569' }}>{rs.holes} hoyos</span>
                                                             </div>
                                                         );
                                                     })}
                                                 </div>
-                                            )}
+                                            </div>
                                         </div>
                                     )}
 
