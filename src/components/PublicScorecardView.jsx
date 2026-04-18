@@ -577,6 +577,18 @@ export default function PublicScorecardView() {
                                 }
                             });
 
+                            // If tournament declares a specific par, use it to correct rounding
+                            // e.g. Par 73 field where one hole par wasn't saved correctly
+                            const declaredCoursePar = parseInt(tournamentInfo?.par || tournamentInfo?.course_par);
+                            if (!isNaN(declaredCoursePar) && declaredCoursePar > 0 && totalHolesPlayed === 18 * roundsKeys.length) {
+                                // All holes played: use declared par per round × rounds
+                                cumulativePar = declaredCoursePar * roundsKeys.length;
+                            } else if (!isNaN(declaredCoursePar) && declaredCoursePar > 0 && totalHolesPlayed > 0) {
+                                // Partial round: scale declared par proportionally
+                                const totalPossibleHoles = 18 * roundsKeys.length;
+                                cumulativePar = Math.round((declaredCoursePar * roundsKeys.length) * (totalHolesPlayed / totalPossibleHoles));
+                            }
+
                             const cumulativeDiff = cumulativeScore - cumulativePar;
                             const cumulativeDiffStr = cumulativeDiff > 0 ? `+${cumulativeDiff}` : cumulativeDiff < 0 ? `${cumulativeDiff}` : 'E';
                             const cumulativeDiffColor = cumulativeDiff > 0 ? '#ef4444' : cumulativeDiff < 0 ? '#10b981' : '#94a3b8';
@@ -708,7 +720,18 @@ export default function PublicScorecardView() {
                                 let diffColor = '#94a3b8';
 
                                 if (holesPlayed > 0) {
-                                    const diff = playedStrokes - playedPar;
+                                    let roundPar = playedPar;
+                                    // Correct using tournament's declared par if all 18 holes are played
+                                    const declaredPar = parseInt(tournamentInfo?.par || tournamentInfo?.course_par);
+                                    if (!isNaN(declaredPar) && declaredPar > 0) {
+                                        if (holesPlayed === 18) {
+                                            roundPar = declaredPar;
+                                        } else {
+                                            // Proportional: scale declared par to holes played
+                                            roundPar = Math.round(declaredPar * holesPlayed / 18);
+                                        }
+                                    }
+                                    const diff = playedStrokes - roundPar;
                                     diffStr = diff > 0 ? `+${diff}` : diff < 0 ? `${diff}` : 'E';
                                     diffColor = diff > 0 ? '#ef4444' : diff < 0 ? '#10b981' : '#94a3b8';
                                 } else {
