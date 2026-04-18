@@ -522,7 +522,7 @@ export default function PublicScorecardView() {
                         </div>
 
                         {weather && (
-                            <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginTop: '6px', fontSize: '0.7rem', color: '#94a3b8' }}>
+                            <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginTop: '4px', fontSize: '0.65rem', color: '#94a3b8' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                     <Thermometer size={12} color="#3b82f6" /> {weather.temp}°C
                                 </div>
@@ -537,14 +537,14 @@ export default function PublicScorecardView() {
                         )}
 
                         {activeHole && (
-                            <div style={{ background: '#334155', borderRadius: '12px', padding: '12px', marginTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #475569' }}>
+                            <div style={{ background: '#334155', borderRadius: '10px', padding: '10px', marginTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #475569' }}>
                                 <div style={{ textAlign: 'left' }}>
-                                    <div style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t.playingHole}</div>
-                                    <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: 'white' }}>{activeHole} <span style={{ fontSize: '0.9rem', color: '#cbd5e1', fontWeight: 'normal' }}>({t.par} {activePar})</span></div>
+                                    <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t.playingHole}</div>
+                                    <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'white' }}>{activeHole} <span style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 'normal' }}>({t.par} {activePar})</span></div>
                                 </div>
                                 <div style={{ textAlign: 'right' }}>
-                                    <div style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t.average} {activePar}</div>
-                                    <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#3b82f6' }}>{parStats[activePar]}</div>
+                                    <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t.average} {activePar}</div>
+                                    <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#3b82f6' }}>{parStats[activePar]}</div>
                                 </div>
                             </div>
                         )}
@@ -559,8 +559,8 @@ export default function PublicScorecardView() {
                     <p>{t.noResults}</p>
                 </div>
             ) : (
-                <div style={{ padding: '1rem' }}>
-                    <div style={{ padding: '1rem' }}>
+                <div style={{ padding: '0.5rem 0.6rem' }}>
+                    <div>
                         {/* Summary Loop over Rounds */}
                         {(() => {
                             const roundsKeys = Object.keys(result.scorecards || {});
@@ -674,9 +674,9 @@ export default function PublicScorecardView() {
                                     {((roundsKeys.length > 1 || targetDiffRender !== null) && totalHolesPlayed > 0) && (
                                         <div style={{
                                             background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
-                                            borderRadius: '12px',
-                                            padding: '1rem',
-                                            marginBottom: '1rem',
+                                            borderRadius: '10px',
+                                            padding: '0.8rem 1rem',
+                                            marginBottom: '0.6rem',
                                             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.2)',
                                             border: '2px solid #3b82f6'
                                         }}>
@@ -779,9 +779,9 @@ export default function PublicScorecardView() {
                                 return (
                                     <div key={rIdx} style={{
                                         background: '#1e293b',
-                                        borderRadius: '16px',
-                                        padding: '1.5rem',
-                                        marginBottom: '1.5rem',
+                                        borderRadius: '10px',
+                                        padding: '1rem',
+                                        marginBottom: '0.8rem',
                                         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.2)'
                                     }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', gap: '10px', flexWrap: 'wrap' }}>
