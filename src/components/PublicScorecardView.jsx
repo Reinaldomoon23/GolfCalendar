@@ -679,6 +679,9 @@ export default function PublicScorecardView() {
                                                 <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '1.2rem', fontWeight: '800' }}>
                                                     📊 TOTAL ACUMULADO ({totalHolesPlayed} hoyos)
                                                 </h3>
+                                                <div style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '2px' }}>
+                                                    Par usado: {cumulativePar} (declarado: {tournamentInfo?.par ?? 'n/a'})
+                                                </div>
                                                 <div style={{ display: 'flex', alignItems: 'center' }}>
                                                     <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
                                                         <span style={{ fontSize: '2.5rem', fontWeight: '900', color: 'white' }}>
