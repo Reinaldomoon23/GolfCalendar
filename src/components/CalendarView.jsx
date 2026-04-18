@@ -171,7 +171,8 @@ export default function CalendarView({
                 wagr: selectedTournament.wagr || false,
                 conflict: selectedTournament.conflict || false,
                 groups: selectedTournament.groups || [],
-                type: selectedTournament.type || 'club'
+                type: selectedTournament.type || 'club',
+                target_score: selectedTournament.target_score !== undefined ? selectedTournament.target_score : null
             });
         }
     }, [selectedTournament, location.state]);

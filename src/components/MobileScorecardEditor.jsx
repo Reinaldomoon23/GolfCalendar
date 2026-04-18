@@ -25,14 +25,14 @@ const MobileScorecardEditor = ({
 
     Object.keys(allScorecards).forEach(rIdx => {
         const sc = allScorecards[rIdx];
-        if (!sc || !sc.strokes || !sc.pars) return;
+        if (!sc || !sc.strokes) return;
         for (let i = 0; i < 18; i++) {
             const strokeStr = String(sc.strokes[i] || '');
             if (strokeStr !== '' && strokeStr !== '-') {
                 const s = parseInt(strokeStr);
                 if (!isNaN(s) && s > 0) {
                     cumulativeScore += s;
-                    const p = parseInt(sc.pars[i]);
+                    const p = parseInt(sc.pars?.[i]);
                     cumulativePar += (!isNaN(p) && p > 0 ? p : 4);
                     totalHolesPlayed++;
                 }
