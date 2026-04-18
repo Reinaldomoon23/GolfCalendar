@@ -37,9 +37,14 @@ export default function TeamLiveScorecard() {
                 setProfiles(matchedProfiles);
             } catch (err) {
                 console.error("Error fetching user profiles from Firestore", err);
+                // Even on error, we don't block. We'll try with raw usernames.
             }
         };
-        if (playersList.length > 0) fetchUsers();
+        if (playersList.length > 0) {
+            fetchUsers();
+        } else {
+            setLoading(false);
+        }
     }, [playersList.join(',')]);
 
     // Fetch tournament (from one of the players, assume same data for now, or official)
@@ -118,6 +123,7 @@ export default function TeamLiveScorecard() {
             }, (err) => {
                 console.error(`Error listening to ${player}:`, err);
                 setError(prev => ({ ...prev, [player]: 'Error de conexión en vivo.' }));
+                setLoading(false);
             });
             unsubscribes.push(unsub);
         });

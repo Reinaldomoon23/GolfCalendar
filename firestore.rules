@@ -134,11 +134,11 @@ service cloud.firestore {
     // =============================================================
 
     match /usernames/{username} {
-      // Read: Anyone authenticated (needed for user lookup)
-      allow read: if isAuthenticated();
+      // Read: Anyone (needed for public live user lookup)
+      allow read: if true;
 
-      // Write: Only admin
-      allow write: if isAdmin();
+      // Write: Only admin, or the owner of the UID can create their own mapping
+      allow write: if isAdmin() || (isAuthenticated() && request.resource.data.uid == request.auth.uid);
     }
 
     // =============================================================
