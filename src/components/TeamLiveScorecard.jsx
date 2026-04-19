@@ -26,7 +26,7 @@ export default function TeamLiveScorecard() {
     const [error, setError] = useState(null);
     const [selectedRound, setSelectedRound] = useState(null);
 
-    const CORE_PLAYERS = ['nicole', 'txell', 'ona', 'maria', 'sofia', 'adriana', 'jordi'];
+    const CORE_PLAYERS = ['nicole', 'txell', 'ona', 'maria', 'sofia', 'adriana', 'mariaros', 'jordi'];
 
     // Fetch unified users info from Firestore
     useEffect(() => {

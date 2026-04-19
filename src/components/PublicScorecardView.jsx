@@ -36,7 +36,7 @@ export default function PublicScorecardView() {
     const [teamResults, setTeamResults] = useState({});
     const [teamProfiles, setTeamProfiles] = useState({});
 
-    const CORE_PLAYERS = ['nicole', 'txell', 'ona', 'maria', 'sofia', 'adriana', 'jordi'];
+    const CORE_PLAYERS = ['nicole', 'txell', 'ona', 'maria', 'sofia', 'adriana', 'mariaros', 'jordi'];
 
     const i18n = {
         es: {
