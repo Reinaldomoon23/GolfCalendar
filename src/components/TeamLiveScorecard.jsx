@@ -9,6 +9,7 @@ import {
     getUserDocId,
     getUserSubdocRef
 } from '../utils/userProfiles';
+import { collection, onSnapshot } from 'firebase/firestore';
 import tournamentsData from '../data/tournaments.json';
 import { generateTournamentDeterministicId } from '../services/tournaments.service';
 
@@ -100,69 +101,54 @@ export default function TeamLiveScorecard() {
         listToLoad.forEach(player => {
             const playerProfile = profiles[player];
             
-            const setupListener = (idToUse) => {
-                const ref = getUserSubdocRef(db, playerProfile || player, 'results', idToUse);
-                return onSnapshot(ref, (snap) => {
-                    if (snap.exists()) {
-                        const data = snap.data();
-                        
-                        // Salamanca par fix
-                        if (data.scorecards) {
-                            Object.keys(data.scorecards).forEach(ridx => {
-                                const sc = data.scorecards[ridx];
-                                if (sc.pars && sc.pars[14] === 5 && (data.tournamentCourse||'').toLowerCase().includes('salamanca forum')) {
-                                    sc.pars[14] = 4;
-                                }
-                            });
-                        }
-
-                        setResults(prev => ({ ...prev, [player]: data }));
-                        if (data.tournamentName) {
-                            setTournament(prev => ({
-                                ...prev,
-                                name: data.tournamentName,
-                                course: data.tournamentCourse || prev?.course || '',
-                            }));
-                        }
-                    } else if (!results[player]) {
-                        setResults(prev => ({ ...prev, [player]: null }));
-                    }
-                    setLoading(false);
-                }, (err) => {
-                    console.error(`Error listening to ${player}:`, err);
-                    setLoading(false);
-                });
-            };
-
-            // Listener 1: Direct ID
-            unsubscribes.push(setupListener(eventId));
-
-            // Listener 2: Deterministic ID Fallback
-            const isLegacyId = !isNaN(parseInt(eventId)) && String(eventId).length < 10;
-            if (isLegacyId && tournament) {
-                const detId = generateTournamentDeterministicId(tournament.name, tournament.dates);
-                if (detId !== eventId) {
-                    unsubscribes.push(setupListener(detId));
-                }
-            } else if (!isLegacyId && tournamentsData) {
-                const legacyTournament = tournamentsData.find(t => 
-                    generateTournamentDeterministicId(t.name, t.dates) === eventId
-                );
-                if (legacyTournament) {
-                    unsubscribes.push(setupListener(String(legacyTournament.id)));
-                }
-            }
+            // Listen to ALL results of the user to find by name match
+            const resultsRef = collection(db, 'users', getUserDocId(playerProfile || player), 'results');
             
-            // Listener 3: Name-based Fallback (Fuzzy search)
-            // Even if ID fails, if we find a result for this user where the tournament name 
-            // is very similar to the current one, we assume it's the same tournament.
-            // (We'll check recent results for this user)
-            // Note: This is more complex for a listener, so we'll rely on the existing ID fallbacks 
-            // which cover 99% of cases (legacy numeric vs deterministic).
+            const unsub = onSnapshot(resultsRef, (snap) => {
+                const tournamentNameLower = (tournament?.name || '').toLowerCase().trim();
+                
+                let bestMatch = null;
+                
+                snap.docs.forEach(doc => {
+                    const data = doc.data();
+                    const dName = (data.tournamentName || '').toLowerCase().trim();
+                    const dId = doc.id;
+                    
+                    // Match by ID or by Name
+                    const isIdMatch = (dId === eventId);
+                    const isNameMatch = tournamentNameLower && dName.includes(tournamentNameLower);
+                    const isReverseNameMatch = dName && tournamentNameLower.includes(dName);
+                    
+                    if (isIdMatch || isNameMatch || isReverseNameMatch) {
+                        bestMatch = { id: dId, ...data };
+                    }
+                });
+
+                if (bestMatch) {
+                    // Salamanca par fix
+                    if (bestMatch.scorecards) {
+                        Object.keys(bestMatch.scorecards).forEach(ridx => {
+                            const sc = bestMatch.scorecards[ridx];
+                            if (sc.pars && sc.pars[14] === 5 && (bestMatch.tournamentCourse||'').toLowerCase().includes('salamanca forum')) {
+                                sc.pars[14] = 4;
+                            }
+                        });
+                    }
+                    setResults(prev => ({ ...prev, [player]: bestMatch }));
+                } else {
+                    setResults(prev => ({ ...prev, [player]: null }));
+                }
+                setLoading(false);
+            }, (err) => {
+                console.error(`Error listening to ${player}:`, err);
+                setLoading(false);
+            });
+            
+            unsubscribes.push(unsub);
         });
 
         return () => unsubscribes.forEach(u => u());
-    }, [eventId, playersStr, profiles, !!tournament]);
+    }, [eventId, playersStr, profiles, tournament?.name]);
 
     const getScoreColor = (strokes, par) => {
         if (!strokes || !par) return 'transparent';
