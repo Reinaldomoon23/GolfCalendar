@@ -445,7 +445,7 @@ export default function CalendarView({
         return endDate < new Date();
     };
 
-    const handleAddTournament = () => {
+    const handleAddTournament = async () => {
         if (!newTournament.name || !newTournament.startDate) {
             alert("Nombre y fecha de inicio son obligatorios");
             return;
