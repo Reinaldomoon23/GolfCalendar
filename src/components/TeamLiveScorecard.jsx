@@ -9,6 +9,8 @@ import {
     getUserDocId,
     getUserSubdocRef
 } from '../utils/userProfiles';
+import tournamentsData from '../data/tournaments.json';
+import { generateTournamentDeterministicId } from '../services/tournaments.service';
 
 export default function TeamLiveScorecard() {
     const { id: eventId } = useParams();
@@ -24,12 +26,15 @@ export default function TeamLiveScorecard() {
     const [error, setError] = useState(null);
     const [selectedRound, setSelectedRound] = useState(null);
 
+    const CORE_PLAYERS = ['nicole', 'txell', 'ona', 'maria', 'sofia', 'adriana', 'jordi'];
+
     // Fetch unified users info from Firestore
     useEffect(() => {
         const fetchUsers = async () => {
+            const listToLoad = playersList.length > 0 ? playersList : CORE_PLAYERS;
             try {
                 const matchedProfiles = {};
-                for (const p of playersList) {
+                for (const p of listToLoad) {
                     const profile = await fetchUserProfileByUsername(db, p);
                     if (profile) {
                         matchedProfiles[p] = profile;
@@ -38,20 +43,16 @@ export default function TeamLiveScorecard() {
                 setProfiles(matchedProfiles);
             } catch (err) {
                 console.error("Error fetching user profiles from Firestore", err);
-                // Even on error, we don't block. We'll try with raw usernames.
             }
         };
-        if (playersList.length > 0) {
-            fetchUsers();
-        } else {
-            setLoading(false);
-        }
-    }, [playersList.join(',')]);
+        fetchUsers();
+    }, [playersStr]);
 
     // Fetch tournament (from one of the players, assume same data for now, or official)
     useEffect(() => {
-        if (playersList.length === 0) return;
-        const mainPlayer = playersList[0];
+        const listToLoad = playersList.length > 0 ? playersList : CORE_PLAYERS;
+        if (listToLoad.length === 0) return;
+        const mainPlayer = listToLoad[0];
         const mainPlayerProfile = profiles[mainPlayer];
 
         const fetchTournament = async () => {
@@ -94,54 +95,68 @@ export default function TeamLiveScorecard() {
     // Setup Realtime listeners for all requested players
     useEffect(() => {
         const unsubscribes = [];
+        const listToLoad = playersList.length > 0 ? playersList : CORE_PLAYERS;
 
-        playersList.forEach(player => {
+        listToLoad.forEach(player => {
             const playerProfile = profiles[player];
-            const ref = getUserSubdocRef(db, playerProfile || player, 'results', eventId);
-            const unsub = onSnapshot(ref, (snap) => {
-                if (snap.exists()) {
-                    const data = snap.data();
-
-                    // HOTFIX: Salamanca Forum Golf hole 15 par correction
-                    if (data.scorecards) {
-                        Object.keys(data.scorecards).forEach(rIdx => {
-                            const card = data.scorecards[rIdx];
-                            if (card.pars && card.pars[14] === 5) {
-                                // Verify course name
-                                const courseName = (data.tournamentCourse || tournament?.course || '').toLowerCase();
-                                if (courseName.includes('salamanca forum')) {
-                                    card.pars[14] = 4;
+            
+            const setupListener = (idToUse) => {
+                const ref = getUserSubdocRef(db, playerProfile || player, 'results', idToUse);
+                return onSnapshot(ref, (snap) => {
+                    if (snap.exists()) {
+                        const data = snap.data();
+                        
+                        // Salamanca par fix
+                        if (data.scorecards) {
+                            Object.keys(data.scorecards).forEach(ridx => {
+                                const sc = data.scorecards[ridx];
+                                if (sc.pars && sc.pars[14] === 5 && (data.tournamentCourse||'').toLowerCase().includes('salamanca forum')) {
+                                    sc.pars[14] = 4;
                                 }
-                            }
-                        });
-                    }
+                            });
+                        }
 
-                    setResults(prev => ({ ...prev, [player]: data }));
-                    
-                    // NEW: If result has embedded tournament metadata, update the tournament context
-                    if (data.tournamentName) {
-                        setTournament(prev => ({
-                            ...prev,
-                            name: data.tournamentName,
-                            course: data.tournamentCourse || prev?.course || '',
-                        }));
+                        setResults(prev => ({ ...prev, [player]: data }));
+                        if (data.tournamentName) {
+                            setTournament(prev => ({
+                                ...prev,
+                                name: data.tournamentName,
+                                course: data.tournamentCourse || prev?.course || '',
+                            }));
+                        }
+                    } else if (!results[player]) {
+                        setResults(prev => ({ ...prev, [player]: null }));
                     }
-                } else {
-                    setResults(prev => ({ ...prev, [player]: null }));
+                    setLoading(false);
+                }, (err) => {
+                    console.error(`Error listening to ${player}:`, err);
+                    setLoading(false);
+                });
+            };
+
+            // Listener 1: Direct ID
+            unsubscribes.push(setupListener(eventId));
+
+            // Listener 2: Deterministic ID Fallback
+            const isLegacyId = !isNaN(parseInt(eventId)) && String(eventId).length < 10;
+            if (isLegacyId && tournament) {
+                const detId = generateTournamentDeterministicId(tournament.name, tournament.dates);
+                if (detId !== eventId) {
+                    unsubscribes.push(setupListener(detId));
                 }
-                setLoading(false);
-            }, (err) => {
-                console.error(`Error listening to ${player}:`, err);
-                setError(prev => ({ ...prev, [player]: 'Error de conexión en vivo.' }));
-                setLoading(false);
-            });
-            unsubscribes.push(unsub);
+            } else if (!isLegacyId && tournamentsData) {
+                // Also handle the reverse: if we are in deterministic but their result is in legacy
+                const legacyTournament = tournamentsData.find(t => 
+                    generateTournamentDeterministicId(t.name, t.dates) === eventId
+                );
+                if (legacyTournament) {
+                    unsubscribes.push(setupListener(String(legacyTournament.id)));
+                }
+            }
         });
 
-        return () => {
-            unsubscribes.forEach(fn => fn());
-        };
-    }, [eventId, playersStr, profiles]);
+        return () => unsubscribes.forEach(u => u());
+    }, [eventId, playersStr, profiles, !!tournament]);
 
     const getScoreColor = (strokes, par) => {
         if (!strokes || !par) return 'transparent';
