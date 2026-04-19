@@ -105,21 +105,27 @@ export default function TeamLiveScorecard() {
             const resultsRef = collection(db, 'users', getUserDocId(playerProfile || player), 'results');
             
             const unsub = onSnapshot(resultsRef, (snap) => {
-                const tournamentNameLower = (tournament?.name || '').toLowerCase().trim();
+                const tournamentNameClean = (tournament?.name || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                const targetKeywords = tournamentNameClean.split(/\s+/).filter(w => w.length > 3);
                 
                 let bestMatch = null;
                 
                 snap.docs.forEach(doc => {
                     const data = doc.data();
-                    const dName = (data.tournamentName || '').toLowerCase().trim();
+                    const dNameClean = (data.tournamentName || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
                     const dId = doc.id;
                     
-                    // Match by ID or by Name
-                    const isIdMatch = (dId === eventId);
-                    const isNameMatch = tournamentNameLower && dName.includes(tournamentNameLower);
-                    const isReverseNameMatch = dName && tournamentNameLower.includes(dName);
+                    // Match by ID
+                    if (dId === eventId) {
+                        bestMatch = { id: dId, ...data };
+                        return;
+                    }
+
+                    // Match by Keywords (if at least 2 key words match)
+                    const dKeywords = dNameClean.split(/\s+/);
+                    const matchCount = targetKeywords.filter(kw => dKeywords.some(dk => dk.includes(kw) || kw.includes(dk))).length;
                     
-                    if (isIdMatch || isNameMatch || isReverseNameMatch) {
+                    if (matchCount >= 2 || (targetKeywords.length === 1 && matchCount >= 1)) {
                         bestMatch = { id: dId, ...data };
                     }
                 });
