@@ -10,6 +10,7 @@
     "build": "vite build",
     "build:staging": "vite build --mode staging",
     "build:production": "vite build --mode production",
+    "deploy": "npx vercel --prod --yes",
     "lint": "eslint .",
     "preview": "vite preview",
     "preview:staging": "vite preview --mode staging"
