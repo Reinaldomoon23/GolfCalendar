@@ -30,6 +30,7 @@ export default function PublicScorecardView() {
     const [toast, setToast] = useState(null); // { message, emoji, color }
     const prevScoresRef = useRef({});
     const [profileReady, setProfileReady] = useState(false);
+    const [activeRoundTab, setActiveRoundTab] = useState(null);
 
     const i18n = {
         es: {
@@ -323,6 +324,13 @@ export default function PublicScorecardView() {
         return () => unsubscribe();
     }, [profileDocId, username, eventId]);
 
+    // Synchronize selected tab with detected round if not set
+    useEffect(() => {
+        if (activeRoundTab === null && foundActiveRIdx !== null) {
+            setActiveRoundTab(foundActiveRIdx);
+        }
+    }, [foundActiveRIdx]);
+
     const getScoreColor = (strokes, par) => {
         if (!strokes || !par || strokes === '-' || strokes === 0) return 'transparent';
         const diff = strokes - (par || 4); // Default par 4 fallback
@@ -410,16 +418,23 @@ export default function PublicScorecardView() {
         for (let i = 0; i < maxRounds; i++) allPossibleKeys.add(String(i));
         roundsKeys = Array.from(allPossibleKeys).sort((a, b) => parseInt(a) - parseInt(b));
         
-        // 1. Try to find the round from the URL (check for ?r=X or ?round=X)
-        const requestedR = queryRIdx !== null ? queryRIdx : searchParams.get('round');
-        if (requestedR !== null) {
-            const match = roundsKeys.find(rk => String(rk) === String(requestedR));
-            if (match) {
-                foundActiveRIdx = match;
+        // 1. Prioritize user selection (Tab)
+        if (activeRoundTab !== null && roundsKeys.includes(String(activeRoundTab))) {
+            foundActiveRIdx = String(activeRoundTab);
+        }
+
+        // 2. Try to find the round from the URL (check for ?r=X or ?round=X)
+        if (foundActiveRIdx === null) {
+            const requestedR = queryRIdx !== null ? queryRIdx : searchParams.get('round');
+            if (requestedR !== null) {
+                const match = roundsKeys.find(rk => String(rk) === String(requestedR));
+                if (match) {
+                    foundActiveRIdx = match;
+                }
             }
         }
 
-        // 2. If no valid round in URL, find a round in progress (< 18 holes)
+        // 3. Logic-based detection (find round in progress or last played)
         if (foundActiveRIdx === null) {
             for (let i = roundsKeys.length - 1; i >= 0; i--) {
                 const rIdx = roundsKeys[i];
@@ -455,10 +470,13 @@ export default function PublicScorecardView() {
             }
         }
 
-        // 4. Ultimate fallback: last round available
+        // 4. Default to first if still null
         if (foundActiveRIdx === null && roundsKeys.length > 0) {
-            foundActiveRIdx = roundsKeys[roundsKeys.length - 1];
+            foundActiveRIdx = roundsKeys[0];
         }
+
+        // Ensure state synchronizes with detection for the UI tabs
+
 
         if (foundActiveRIdx !== null) {
             // Ensure the active scorecard exists even if empty, to avoid crashes
@@ -611,8 +629,9 @@ export default function PublicScorecardView() {
                                 style={{ width: '48px', height: '48px', borderRadius: '50%', border: '2px solid #3b82f6', objectFit: 'cover' }}
                             />
                             <div style={{ textAlign: 'left' }}>
-                                <div style={{ fontSize: '0.7rem', color: '#ef4444', fontWeight: 'bold', letterSpacing: '0.05em', display: 'flex', alignItems: 'center' }}>
-                                    {t.live} <span className="live-dot">🔴</span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#10b981', fontWeight: 'bold', fontSize: '1.2rem' }}>
+                                    <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#10b981', animation: 'livePulse 1.5s infinite' }}></div>
+                                    {result ? t.live : 'ESPERANDO INICIO...'}
                                 </div>
                                 <div style={{ fontWeight: 'bold', fontSize: '1.1rem', lineHeight: '1.1' }}>
                                     {userProfile?.full_name || activeResult?.full_name || username}
@@ -624,6 +643,33 @@ export default function PublicScorecardView() {
                         </h1>
                         <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
                             <MapPin size={10} /> {activeResult?.tournamentCourse || tournament?.course}
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', padding: '4px 0' }}>
+                            {roundsKeys.map((rk) => {
+                                const isActive = String(rk) === String(foundActiveRIdx);
+                                const hasData = activeResult.scorecards[rk] && Object.values(activeResult.scorecards[rk].strokes || {}).some(s => s !== '' && s !== '-');
+                                return (
+                                    <button
+                                        key={rk}
+                                        onClick={() => setActiveRoundTab(rk)}
+                                        style={{
+                                            padding: '4px 12px',
+                                            borderRadius: '15px',
+                                            border: isActive ? '1px solid #3b82f6' : '1px solid #334155',
+                                            background: isActive ? '#3b82f6' : (hasData ? '#1e293b' : 'transparent'),
+                                            color: isActive ? 'white' : (hasData ? '#cbd5e1' : '#64748b'),
+                                            fontSize: '0.8rem',
+                                            fontWeight: isActive ? 'bold' : 'normal',
+                                            cursor: 'pointer',
+                                            whiteSpace: 'nowrap',
+                                            transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        R{parseInt(rk) + 1}
+                                    </button>
+                                );
+                            })}
                         </div>
 
                         {weather && (
@@ -659,6 +705,36 @@ export default function PublicScorecardView() {
                                     <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#3b82f6' }}>{parStats[activePar]}</div>
                                 </div>
                             </div>
+
+                            {/* Previous Rounds Comparison */}
+                            {(() => {
+                                const prevScores = roundsKeys
+                                    .filter(rk => String(rk) !== String(foundActiveRIdx))
+                                    .map(rk => {
+                                        const s = activeResult.scorecards[rk]?.strokes?.[activeHole - 1];
+                                        if (s && s !== '-' && s !== '') return { round: parseInt(rk) + 1, score: s, par: activeResult.scorecards[rk]?.pars?.[activeHole - 1] };
+                                        return null;
+                                    })
+                                    .filter(Boolean);
+
+                                if (prevScores.length > 0) {
+                                    return (
+                                        <div style={{ borderTop: '1px solid #475569', paddingTop: '8px', display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
+                                            {prevScores.map(ps => {
+                                                const diff = parseInt(ps.score) - (parseInt(ps.par) || activePar);
+                                                const sColor = diff > 0 ? '#ef4444' : diff < 0 ? '#10b981' : '#cbd5e1';
+                                                return (
+                                                    <div key={ps.round} style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                                        <span style={{ color: '#94a3b8' }}>R{ps.round}:</span>
+                                                        <span style={{ fontWeight: 'bold', color: sColor }}>{ps.score}</span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    );
+                                }
+                                return null;
+                            })()}
 
                             {paceData && (
                                 <div style={{ 

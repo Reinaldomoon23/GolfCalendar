@@ -22,6 +22,7 @@ export default function TeamLiveScorecard() {
     const [tournament, setTournament] = useState(null);
     const [results, setResults] = useState({});
     const [error, setError] = useState(null);
+    const [selectedRound, setSelectedRound] = useState(null);
 
     // Fetch unified users info from Firestore
     useEffect(() => {
@@ -314,6 +315,51 @@ export default function TeamLiveScorecard() {
                     {tournament?.name || 'Cargando Torneo...'}
                 </h1>
                 <p style={{ fontSize: '0.8rem', color: '#475569', margin: '4px 0 0 0' }}>{tournament?.course}</p>
+                
+                {/* Round Switcher Tabs */}
+                {(() => {
+                    const parseDateHelper = (dateStr) => {
+                        if (!dateStr) return { days: 1 };
+                        const parts = dateStr.split(' - ');
+                        if (parts.length === 0) return { days: 1 };
+                        const d1Part = parts[0].split('/');
+                        const d2Part = parts.length > 1 ? parts[1].split('/') : d1Part;
+                        const d1 = new Date(d1Part[2], d1Part[1] - 1, d1Part[0]).setHours(0, 0, 0, 0);
+                        const d2 = new Date(d2Part[2], d2Part[1] - 1, d2Part[0]).setHours(0, 0, 0, 0);
+                        return { days: Math.min(10, Math.max(1, Math.round((d2 - d1) / (24 * 60 * 60 * 1000)) + 1)) };
+                    };
+                    const numRounds = parseDateHelper(tournament?.dates || '').days;
+                    if (numRounds <= 1) return null;
+                    const rounds = Array.from({ length: numRounds }, (_, i) => String(i));
+                    
+                    return (
+                        <div style={{ display: 'flex', gap: '8px', marginTop: '12px', overflowX: 'auto', maxWidth: '100%', paddingBottom: '4px' }}>
+                            {rounds.map(rk => {
+                                const isActive = (selectedRound === null && rk === '0') || selectedRound === rk;
+                                return (
+                                    <button
+                                        key={rk}
+                                        onClick={() => setSelectedRound(rk)}
+                                        style={{
+                                            padding: '6px 14px',
+                                            borderRadius: '20px',
+                                            border: isActive ? '1px solid #3b82f6' : '1px solid #334155',
+                                            background: isActive ? '#3b82f6' : '#1e293b',
+                                            color: isActive ? 'white' : '#94a3b8',
+                                            fontSize: '0.75rem',
+                                            fontWeight: 'bold',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s',
+                                            whiteSpace: 'nowrap'
+                                        }}
+                                    >
+                                        RONDA {parseInt(rk) + 1}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    );
+                })()}
             </div>
 
             <div style={{ padding: '1rem', maxWidth: '800px', margin: '0 auto' }}>
@@ -459,8 +505,9 @@ export default function TeamLiveScorecard() {
                                             );
                                         }
 
-                                        // We just render the active round for now to keep it compact
-                                        const displayRounds = [activeRIdx];
+                                        // If a specific round is selected globally, show only that.
+                                        // Otherwise, show only the latest/active one to keep multi-view readable.
+                                        const displayRounds = selectedRound !== null ? [selectedRound] : [activeRIdx];
 
                                         return (
                                             <>
