@@ -24,6 +24,7 @@ import { onSnapshot } from 'firebase/firestore';
 import { getUserDocId, getUserProfileRef, fetchUserProfileByUsername } from './utils/userProfiles';
 import { selfHealPhoto } from './services/profile.service';
 import { writeSavedUser } from './utils/cache';
+import { setDoc, doc } from 'firebase/firestore';
 
 // Hooks
 import { useAuth } from './hooks/useAuth';
@@ -41,6 +42,30 @@ import { IS_MULTI, DEFAULT_PREFERENCES } from './config/app';
 
 function AppContent() {
   const location = useLocation();
+
+  // ─── Direct Global Tournament Injection (Bomb-proof) ──────────────────
+  useEffect(() => {
+    const inject = async () => {
+      try {
+        await setDoc(doc(db, 'tournaments', 'TORR0226'), {
+          id: "TORR0226",
+          name: "Torremirona Cup (Infantil/Aleví/Benjamí)",
+          dates: "14/02/2026 - 15/02/2026",
+          course: "Torremirona",
+          organizer: "Torremirona Golf Club",
+          country: "España",
+          circuit: "FCG",
+          category: "Juvenil",
+          qualifications: ["Grand Prix", "Valedera"],
+          groups: ["club", "grand-prix"]
+        });
+        console.log('[App] Tournament TORR0226 injected successfully.');
+      } catch (err) {
+        console.error('[App] Injection failed:', err);
+      }
+    };
+    inject();
+  }, []);
 
   // ── PWA Service Worker (silent auto-update) ────────────────────────────
   const { updateServiceWorker } = useRegisterSW({

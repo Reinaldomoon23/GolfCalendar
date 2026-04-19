@@ -1,5 +1,17 @@
 [
     {
+        "id": "TORR0226",
+        "name": "Torremirona Cup (Infantil/Aleví/Benjamí)",
+        "dates": "14/02/2026 - 15/02/2026",
+        "course": "Torremirona",
+        "organizer": "Torremirona Golf Club",
+        "country": "España",
+        "circuit": "FCG",
+        "category": "Juvenil",
+        "qualifications": ["Grand Prix", "Valedera"],
+        "groups": ["club", "grand-prix"]
+    },
+    {
         "id": 1,
         "dates": "18/01/2026",
         "name": "ORDEN DE MERITO",
