@@ -579,6 +579,7 @@ Si necesitas más contexto, lee estos archivos en orden:
 - No cambies la lógica de autenticación
 - No toques configuración de Firebase (`src/firebase.js`)
 - No modifiques reglas de Firestore directamente
+- 🚨 **PROHIBIDO EL USO DE SCRIPTS FTP (`deploy.sh`, `deploy.cjs`)**. La infraestructura antigua ha sido reemplazada 100% por Vercel. Cualquier despliegue a producción requiere única y exclusivamente ejecutar `git push origin HEAD`. Lee `DEPLOYMENT_PIPELINE.md` para entender por qué.
 
 ### ✅ SÍ PUEDES:
 - Corregir imports

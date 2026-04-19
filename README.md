@@ -1,23 +1,28 @@
 # Golf Tracker - PWA de Gestión de Golf
 
-**Versión**: 2.4.8
+**Versión**: 2.5.7
 **Estado**: En producción
-**URL**: https://reinaldomoon.top/GolfTeam/
+**Hosting Principal (Vercel)**: Vercel (Auto-deployed vía GitHub Push)
 
 ---
 
-## 🚀 Inicio Rápido
+## 🚀 Inicio Rápido y Despliegue (IMPORTANTE PARA IAs)
 
-```bash
-# Instalar dependencias
-npm install
+1. **Despliegue a Producción (Vercel)**:  
+   La arquitectura de despliegue actual depende EN SU TOTALIDAD de Vercel. 
+   Para publicar código en vivo basta con hacer:
+   ```bash
+   git add .
+   git commit -m "Descripción"
+   git push origin HEAD
+   ```
+   🚨 **PROHIBIDO EL USO DE FTP O SCRIPTS (`deploy.sh`, `deploy.cjs`)**. La infraestructura antigua de `reinaldomoon.top/GolfTeam/` ha sido relevada por Vercel. Para detalles completos de infraestructura lee `DEPLOYMENT_PIPELINE.md`.
 
-# Ejecutar en desarrollo
-npm run dev
-
-# Build para producción
-npm run build
-```
+2. **Entorno de desarrollo local**:
+   ```bash
+   npm install
+   npm run dev
+   ```
 
 ---
 
