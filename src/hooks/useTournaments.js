@@ -78,11 +78,35 @@ export function useTournaments(user, preferences, handleUpdatePreferences, resul
     return () => unsub();
   }, [user?.username]);
 
-  // ─── Merge official + custom with filters ─────────────────────────────────
-  const tournaments = useMemo(
-    () => mergeTournaments(baseTournaments, customTournaments, preferences, user),
-    [baseTournaments, customTournaments, preferences, user?.username]
-  );
+  // ─── Merge official + custom + orphan results (Injected) ────────────────
+  const tournaments = useMemo(() => {
+    // Start with the standard merge
+    let merged = mergeTournaments(baseTournaments, customTournaments, preferences, user);
+
+    // BOMB-PROOF: If there are results for an ID that isn't in our list yet (Injected Hashtags)
+    // we create a "virtual" tournament card so the user can see their strokes immediately.
+    if (results) {
+      Object.keys(results).forEach((resId) => {
+        const alreadyExists = merged.some(t => String(t.id) === String(resId));
+        
+        // If it's a 8-char Hashtag and doesn't exist, create it
+        if (!alreadyExists && String(resId).length === 8) {
+          const resData = results[resId];
+          merged.push({
+            id: resId,
+            name: resData.tournamentName || "Torneo Centralizado",
+            dates: resData.dates || "Fecha oficial",
+            course: resData.course || "Campo oficial",
+            type: 'official',
+            isInjected: true,
+            groups: ['central']
+          });
+        }
+      });
+    }
+
+    return merged;
+  }, [baseTournaments, customTournaments, preferences, user?.username, results]);
 
   // ─── Available seasons ────────────────────────────────────────────────────
   useEffect(() => {
