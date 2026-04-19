@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, collection } from 'firebase/firestore';
 import { db } from '../firebase';
 import { ChevronLeft, Info } from 'lucide-react';
 import ProfileImage from './ProfileImage';
@@ -9,7 +9,6 @@ import {
     getUserDocId,
     getUserSubdocRef
 } from '../utils/userProfiles';
-import { collection, onSnapshot } from 'firebase/firestore';
 import tournamentsData from '../data/tournaments.json';
 import { generateTournamentDeterministicId } from '../services/tournaments.service';
 
