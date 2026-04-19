@@ -104,14 +104,14 @@ export default function TeamLiveScorecard() {
             const resultsRef = collection(db, 'users', getUserDocId(playerProfile || player), 'results');
             
             const unsub = onSnapshot(resultsRef, (snap) => {
-                const tournamentNameClean = (tournament?.name || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                const targetKeywords = tournamentNameClean.split(/\s+/).filter(w => w.length > 3);
+                const tournamentNameClean = (tournament?.name || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
+                const targetKey = tournamentNameClean.substring(0, 10); // Use a prefix to avoid empty match
                 
                 let bestMatch = null;
                 
                 snap.docs.forEach(doc => {
                     const data = doc.data();
-                    const dNameClean = (data.tournamentName || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    const dNameClean = (data.tournamentName || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
                     const dId = doc.id;
                     
                     // Match by ID
@@ -120,12 +120,11 @@ export default function TeamLiveScorecard() {
                         return;
                     }
 
-                    // Match by Keywords (if at least 2 key words match)
-                    const dKeywords = dNameClean.split(/\s+/);
-                    const matchCount = targetKeywords.filter(kw => dKeywords.some(dk => dk.includes(kw) || kw.includes(dk))).length;
-                    
-                    if (matchCount >= 2 || (targetKeywords.length === 1 && matchCount >= 1)) {
-                        bestMatch = { id: dId, ...data };
+                    // Match by Name Similarity (Check if name contains key parts or vice versa)
+                    if (tournamentNameClean && dNameClean) {
+                        if (dNameClean.includes(tournamentNameClean) || tournamentNameClean.includes(dNameClean)) {
+                            bestMatch = { id: dId, ...data };
+                        }
                     }
                 });
 
