@@ -379,23 +379,35 @@ export default function PublicScorecardView() {
         const unsubs = [];
         
         CORE_PLAYERS.forEach(pUsername => {
-            if (pUsername === username) return; // Skip current player, already listening
+            if (pUsername === username) return;
             
-            // 1. Fetch profile once
             if (!teamProfiles[pUsername]) {
                 fetchUserProfileByUsername(db, pUsername).then(prof => {
                     if (prof) setTeamProfiles(prev => ({ ...prev, [pUsername]: prof }));
                 });
             }
 
-            // 2. Listen to results
-            const resRef = getUserSubdocRef(db, pUsername, 'results', eventId);
-            const unsub = onSnapshot(resRef, (snap) => {
-                if (snap.exists()) {
-                    setTeamResults(prev => ({ ...prev, [pUsername]: snap.data() }));
+            // Function to setup a listener for a specific ID
+            const setupListener = (idToUse) => {
+                const resRef = getUserSubdocRef(db, pUsername, 'results', idToUse);
+                return onSnapshot(resRef, (snap) => {
+                    if (snap.exists()) {
+                        setTeamResults(prev => ({ ...prev, [pUsername]: snap.data() }));
+                    }
+                });
+            };
+
+            // Join the primary listener
+            unsubs.push(setupListener(eventId));
+
+            // If eventId is legacy (numeric), try also the deterministic ID if we have tournament info
+            const isLegacyId = !isNaN(parseInt(eventId)) && String(eventId).length < 10;
+            if (isLegacyId && tournament) {
+                const detId = generateTournamentDeterministicId(tournament.name, tournament.dates);
+                if (detId !== eventId) {
+                    unsubs.push(setupListener(detId));
                 }
-            });
-            unsubs.push(unsub);
+            }
         });
 
         return () => unsubs.forEach(u => u());
