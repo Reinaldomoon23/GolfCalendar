@@ -10,6 +10,7 @@ import HandicapView from './components/HandicapView';
 import LoginViewFirebase from './components/LoginViewFirebase';
 import PublicScorecardView from './components/PublicScorecardView';
 import TeamLiveScorecard from './components/TeamLiveScorecard';
+import TournamentsCentralView from './components/TournamentsCentralView';
 import AdminDashboardView from './components/admin/AdminDashboardView';
 import AdminRoute from './components/admin/AdminRoute';
 
@@ -515,6 +516,13 @@ function AppContent() {
           } />
           <Route path="/stats" element={<StatsView user={user} linkedUsers={linkedUsers} results={results} tournaments={tournaments} />} />
           <Route path="/handicap" element={<HandicapView user={user} currentHandicap={handicap} history={history} results={results} tournaments={tournaments} />} />
+          <Route path="/tournaments" element={
+            <TournamentsCentralView 
+              user={user} 
+              tournaments={tournaments} 
+              onAddTournament={handleAddTournament} 
+            />
+          } />
           <Route path="/admin" element={
             <AdminRoute user={sessionOwner || user}>
               <AdminDashboardView user={sessionOwner || user} />

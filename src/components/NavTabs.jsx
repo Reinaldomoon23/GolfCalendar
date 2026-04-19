@@ -5,7 +5,7 @@
  */
 
 import { Link, useLocation } from 'react-router-dom';
-import { Calendar as CalendarIcon, BarChart3, TrendingUp } from 'lucide-react';
+import { Calendar as CalendarIcon, BarChart3, TrendingUp, Trophy } from 'lucide-react';
 
 export default function NavTabs() {
   const { pathname } = useLocation();
@@ -13,6 +13,7 @@ export default function NavTabs() {
   const isCalendar = pathname === '/';
   const isStats = pathname === '/stats';
   const isHandicap = pathname === '/handicap';
+  const isTournaments = pathname === '/tournaments';
 
   return (
     <nav className="nav-tabs">
@@ -32,6 +33,12 @@ export default function NavTabs() {
         <button className={`btn ${isHandicap ? 'btn-primary' : 'card'}`}>
           <TrendingUp size={20} />
           Hándicap
+        </button>
+      </Link>
+      <Link to="/tournaments" style={{ textDecoration: 'none' }}>
+        <button className={`btn ${isTournaments ? 'btn-primary' : 'card'}`}>
+          <Trophy size={20} />
+          Torneos
         </button>
       </Link>
     </nav>
