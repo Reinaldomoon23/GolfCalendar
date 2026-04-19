@@ -248,7 +248,13 @@ function AppContent() {
       setPreferences(prev => ({ ...prev, ...data, themes: data.themes || {} }));
     });
 
-    if (user.username === 'jordi') {
+    if (user.username?.toLowerCase() === 'mariaros' || user.full_name?.toLowerCase().includes('maria ros')) {
+      const meritIdsToHide = [1, 5, 7, 10, 13, 18, 19, 20, 21, 24, 25, 26];
+      setPreferences(prev => ({
+          ...prev,
+          hiddenIds: Array.from(new Set([...(prev.hiddenIds || []), ...meritIdsToHide]))
+      }));
+    } else if (user.username === 'jordi') {
       const meritHiddenIds = [105, 2, 110, 4, 6, 8, 9, 11, 12, 14, 15, 16, 17, 22, 23, 27, 28, 103, 104];
       setPreferences({ groups: ['club'], hiddenIds: meritHiddenIds, themes: {} });
     }
@@ -390,6 +396,7 @@ function AppContent() {
     return (
       <div className="app-container fade-in" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div className="card" style={{ padding: '1.5rem 2rem', textAlign: 'center' }}>
+          <span style={{ fontSize: '0.8em', opacity: 0.7, color: 'var(--color-text-muted)' }}>(v2.5.5)</span>
           Conectando con Firebase...
         </div>
       </div>
@@ -399,8 +406,9 @@ function AppContent() {
   if (!user && IS_MULTI) return <LoginViewFirebase onLogin={handleLogin} />;
   if (!user && !IS_MULTI) return null;
 
-  // Special groups for certain users
-  const isSpecialUser = ['txell', 'ona'].includes(user?.username?.toLowerCase());
+  // Special groups for certain users (hide merit group)
+  const isSpecialUser = ['txell', 'ona', 'mariaros'].includes(user?.username?.toLowerCase()) || 
+                      user?.full_name?.toLowerCase().includes('maria ros');
 
   return (
     <div className="app-container fade-in">

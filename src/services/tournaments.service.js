@@ -109,6 +109,10 @@ export function mergeTournaments(baseTournaments, customTournaments, preferences
     // Jordi-specific override (only Orden de Merito)
     if (user?.username === 'jordi' && t.type !== 'merit') return false;
 
+    // MariaRos-specific: hide all Orden de Merito (type 'merit' or name 'ORDEN DE MERITO')
+    const isMariaRos = user?.username?.toLowerCase() === 'mariaros' || user?.full_name?.toLowerCase().includes('maria ros');
+    if (isMariaRos && (t.type === 'merit' || String(t.name).toUpperCase().includes('ORDEN DE MERITO'))) return false;
+
     // Custom overrides same ID
     if (customTournaments.some((ct) => String(ct.id) === String(t.id))) return false;
 

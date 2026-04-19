@@ -31,7 +31,8 @@ export function getHandicapFromCache(user) {
   if (!user) return null;
 
   // First try fields directly in user profile (from Firestore sync)
-  if (user.current_handicap || user.handicap_pdf_url || user.handicap_fetched_at) {
+  // Only treat as cached if current_handicap is actually set (not null)
+  if (user.current_handicap && (user.handicap_pdf_url || user.handicap_fetched_at)) {
     return {
       handicap: user.current_handicap || null,
       pdfUrl: user.handicap_pdf_url || null,
@@ -55,6 +56,8 @@ export function getHandicapFromCache(user) {
  */
 export function hasHandicapFreshCache(user) {
   if (!user) return false;
+  // If current_handicap is null, treat as no cache even if fetched_at exists
+  if (!user.current_handicap && !readHandicapCache(user)) return false;
   const existingCache = readHandicapCache(user);
   const cachedFetchedAt = existingCache?.fetchedAt || user.handicap_fetched_at;
   return isHandicapCacheFresh(cachedFetchedAt);

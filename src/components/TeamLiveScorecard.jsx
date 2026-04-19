@@ -327,57 +327,116 @@ export default function TeamLiveScorecard() {
                                 <ProfileImage photoPath={profile.photo_url} displayName={profile.full_name || player} alt={player} style={{ width: '40px', height: '40px', borderRadius: '50%', border: '2px solid #fff', objectFit: 'cover' }} />
                                 <h2 style={{ fontSize: '1.4rem', margin: 0, color: 'white' }}>{profile.full_name || profile.username || player}</h2>
                             </div>
+                            {(() => {
+                                // Synthesize a dummy result if none exists yet, to allow showing empty rounds
+                                let activeResult = result;
+                                if (!activeResult && tournament) {
+                                    activeResult = {
+                                        tournamentName: tournament.name,
+                                        tournamentCourse: tournament.course || tournament.location || '',
+                                        tournamentDates: tournament.dates || '',
+                                        tournamentPar: tournament.par || null,
+                                        scorecards: {},
+                                        rounds: {}
+                                    };
+                                }
 
-                            {!result ? (
-                                <div style={{ background: '#1e293b', padding: '1.5rem', borderRadius: '16px', textAlign: 'center', color: '#94a3b8' }}>
-                                    <p>Todavía no hay resultados registrados para esta jugadora en este torneo.</p>
-                                </div>
-                            ) : (
-                                <div>
-                                    {/* Render all rounds or just active? For multi, let's render all active rounds they have */}
-                                    {(() => {
-                                        const roundsKeys = Object.keys(result.scorecards || {});
-                                        if (roundsKeys.length === 0) return <p style={{ color: '#94a3b8', padding: '1rem' }}>Sin tarjetas.</p>;
+                                if (!activeResult) {
+                                    return (
+                                        <div style={{ background: '#1e293b', padding: '1.5rem', borderRadius: '16px', textAlign: 'center', color: '#94a3b8' }}>
+                                            <p>Todavía no hay resultados registrados para esta jugadora en este torneo.</p>
+                                        </div>
+                                    );
+                                }
 
-                                        // Find active round
-                                        let activeRIdx = roundsKeys[0];
-                                        for (let i = roundsKeys.length - 1; i >= 0; i--) {
-                                            const rIdx = roundsKeys[i];
-                                            const card = result.scorecards[rIdx];
-                                            let playedHoles = 0;
-                                            let matchPars = true;
-                                            for (let h = 0; h < 18; h++) {
-                                                const s = String(card.strokes?.[h] || '');
-                                                const p = String(card.pars?.[h] || '');
-                                                if (s !== '' && s !== '-') playedHoles++;
-                                                if (s !== p) matchPars = false;
+                                return (
+                                    <div>
+                                        {/* Render all rounds or just active? For multi, let's render all active rounds they have */}
+                                        {(() => {
+                                            const parseDateHelper = (dateStr) => {
+                                                if (!dateStr) return { days: 1 };
+                                                const parts = dateStr.split(' - ');
+                                                if (parts.length === 0) return { days: 1 };
+                                                const d1Part = parts[0].split('/');
+                                                const d2Part = parts.length > 1 ? parts[1].split('/') : d1Part;
+                                                const d1 = new Date(d1Part[2], d1Part[1] - 1, d1Part[0]).setHours(0, 0, 0, 0);
+                                                const d2 = new Date(d2Part[2], d2Part[1] - 1, d2Part[0]).setHours(0, 0, 0, 0);
+                                                return { days: Math.min(10, Math.max(1, Math.round((d2 - d1) / (24 * 60 * 60 * 1000)) + 1)) };
+                                            };
+
+                                            // Ensure scorecards exist
+                                            if (!activeResult.scorecards) activeResult.scorecards = {};
+
+                                            // Determine total expected rounds
+                                            const dateInfo = parseDateHelper(tournament?.dates || '');
+                                            const expectedRounds = dateInfo.days;
+
+                                            const allPossibleKeys = new Set(Object.keys(activeResult.scorecards));
+                                            for (let i = 0; i < expectedRounds; i++) allPossibleKeys.add(String(i));
+                                            const roundsKeys = Array.from(allPossibleKeys).sort((a, b) => parseInt(a) - parseInt(b));
+
+                                            if (roundsKeys.length === 0) return <p style={{ color: '#94a3b8', padding: '1rem' }}>Sin tarjetas.</p>;
+
+                                            // Find active round
+                                            const urlRoundRaw = searchParams.get('r') || searchParams.get('round');
+                                            let activeRIdx = null;
+
+                                            // 1. URL Parameter Priority
+                                            if (urlRoundRaw !== null) {
+                                                const requestedIdx = parseInt(urlRoundRaw);
+                                                if (roundsKeys.includes(String(requestedIdx))) {
+                                                    activeRIdx = String(requestedIdx);
+                                                }
                                             }
-                                            if ((playedHoles > 0 && !(playedHoles === 18 && matchPars)) || (result.rounds?.[parseInt(rIdx)] > 0)) {
-                                                activeRIdx = rIdx;
-                                                break;
-                                            }
-                                        }
 
-                                        // Calculate cumulative total for tournament
-                                        let cumulativeScore = 0;
-                                        let cumulativePar = 0;
-                                        let totalHolesPlayed = 0;
-
-                                        roundsKeys.forEach(key => {
-                                            const sc = result.scorecards[key];
-                                            for (let i = 0; i < 18; i++) {
-                                                const strokeStr = String(sc.strokes?.[i] || '');
-                                                if (strokeStr !== '' && strokeStr !== '-') {
-                                                    const s = parseInt(strokeStr);
-                                                    if (!isNaN(s) && s > 0) {
-                                                        cumulativeScore += s;
-                                                        const p = parseInt(sc.pars?.[i]);
-                                                        cumulativePar += (!isNaN(p) && p > 0 ? p : 4);
-                                                        totalHolesPlayed++;
+                                            // 2. Logic-based detection
+                                            if (activeRIdx === null) {
+                                                activeRIdx = roundsKeys[0];
+                                                for (let i = roundsKeys.length - 1; i >= 0; i--) {
+                                                    const rIdx = roundsKeys[i];
+                                                    const card = activeResult.scorecards[rIdx];
+                                                    if (!card) continue;
+                                                    let playedHoles = 0;
+                                                    let matchPars = true;
+                                                    for (let h = 0; h < 18; h++) {
+                                                        const s = String(card.strokes?.[h] || '');
+                                                        const p = String(card.pars?.[h] || '');
+                                                        if (s !== '' && s !== '-') playedHoles++;
+                                                        if (s !== p) matchPars = false;
+                                                    }
+                                                    if ((playedHoles > 0 && !(playedHoles === 18 && matchPars)) || (activeResult.rounds?.[parseInt(rIdx)] > 0)) {
+                                                        activeRIdx = rIdx;
+                                                        break;
                                                     }
                                                 }
                                             }
-                                        });
+
+                                            // 3. Fallback to last round available
+                                            if (activeRIdx === null && roundsKeys.length > 0) {
+                                                activeRIdx = roundsKeys[roundsKeys.length - 1];
+                                            }
+
+                                            // Calculate cumulative total for tournament
+                                            let cumulativeScore = 0;
+                                            let cumulativePar = 0;
+                                            let totalHolesPlayed = 0;
+
+                                            roundsKeys.forEach(key => {
+                                                const sc = activeResult.scorecards[key];
+                                                if (!sc?.strokes) return;
+                                                for (let i = 0; i < 18; i++) {
+                                                    const strokeStr = String(sc.strokes?.[i] || '');
+                                                    if (strokeStr !== '' && strokeStr !== '-') {
+                                                        const s = parseInt(strokeStr);
+                                                        if (!isNaN(s) && s > 0) {
+                                                            cumulativeScore += s;
+                                                            const p = parseInt(sc.pars?.[i]);
+                                                            cumulativePar += (!isNaN(p) && p > 0 ? p : 4);
+                                                            totalHolesPlayed++;
+                                                        }
+                                                    }
+                                                }
+                                            });
 
                                         const cumulativeDiff = cumulativeScore - cumulativePar;
                                         const cumulativeDiffStr = cumulativeDiff > 0 ? `+${cumulativeDiff}` : cumulativeDiff < 0 ? `${cumulativeDiff}` : 'E';
@@ -606,7 +665,8 @@ export default function TeamLiveScorecard() {
                                         );
                                     })()}
                                 </div>
-                            )}
+                            );
+                        })()}
                         </div>
                     );
                 })}

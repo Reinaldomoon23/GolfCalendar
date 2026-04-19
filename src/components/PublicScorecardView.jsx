@@ -353,7 +353,8 @@ export default function PublicScorecardView() {
         par: result.tournamentPar || result.par || null
     } : null);
 
-    // We still wait for tournamentInfo to render the UI, but we'll make it feel faster
+    // Once tournamentInfo is available, render immediately — even before the Firestore listener responds.
+    // This ensures users always see the scorecard structure right away (never blank).
     if (!tournamentInfo) {
         return (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: 'white', background: '#0f172a' }}>
@@ -371,8 +372,43 @@ export default function PublicScorecardView() {
     let paceData = null;
     let foundActiveRIdx = null;
 
-    if (result && result.scorecards) {
-        const roundsKeys = Object.keys(result.scorecards).sort((a, b) => parseInt(a) - parseInt(b));
+    // Always synthesize a result object — even if no Firestore doc exists yet.
+    // This ensures the scorecard grid renders immediately without waiting for live data.
+    let activeResult = result || {
+        tournamentName: tournamentInfo.name,
+        tournamentCourse: tournamentInfo.course || '',
+        tournamentDates: tournamentInfo.dates || '',
+        tournamentPar: tournamentInfo.par || null,
+        scorecards: {},
+        rounds: {}
+    };
+
+    const parseDateHelper = (dateStr) => {
+        if (!dateStr) return { start: 0, end: 0, days: 1 };
+        const parts = dateStr.split(' - ');
+        if (parts.length === 0) return { start: 0, end: 0, days: 1 };
+        const d1Part = parts[0].split('/');
+        const d2Part = parts.length > 1 ? parts[1].split('/') : d1Part;
+        const d1 = new Date(d1Part[2], d1Part[1] - 1, d1Part[0]).setHours(0, 0, 0, 0);
+        const d2 = new Date(d2Part[2], d2Part[1] - 1, d2Part[0]).setHours(0, 0, 0, 0);
+        const days = Math.min(10, Math.max(1, Math.round((d2 - d1) / (24 * 60 * 60 * 1000)) + 1));
+        return { start: d1, end: d2, days };
+    };
+
+    let roundsKeys = [];
+    if (activeResult) {
+        // Ensure activeResult.scorecards exists
+        if (!activeResult.scorecards) activeResult.scorecards = {};
+
+        // Calculate expected rounds based on dates
+        const dateInfo = parseDateHelper(activeResult.tournamentDates || tournament?.dates || '');
+        const maxRounds = dateInfo.days;
+
+        // Populate roundsKeys with all possible rounds (0 to maxRounds-1)
+        // AND any rounds that might already be in scorecards (just in case)
+        const allPossibleKeys = new Set(Object.keys(activeResult.scorecards || {}));
+        for (let i = 0; i < maxRounds; i++) allPossibleKeys.add(String(i));
+        roundsKeys = Array.from(allPossibleKeys).sort((a, b) => parseInt(a) - parseInt(b));
         
         // 1. Try to find the round from the URL (check for ?r=X or ?round=X)
         const requestedR = queryRIdx !== null ? queryRIdx : searchParams.get('round');
@@ -387,10 +423,11 @@ export default function PublicScorecardView() {
         if (foundActiveRIdx === null) {
             for (let i = roundsKeys.length - 1; i >= 0; i--) {
                 const rIdx = roundsKeys[i];
-                const card = result.scorecards[rIdx];
+                const card = activeResult.scorecards[rIdx];
+                if (!card) continue;
                 let playedHoles = 0;
                 for (let h = 0; h < 18; h++) {
-                    const s = String(card.strokes?.[h] || '');
+                    const s = String(card?.strokes?.[h] || '');
                     if (s !== '' && s !== '-' && s !== '0') playedHoles++;
                 }
                 if (playedHoles > 0 && playedHoles < 18) {
@@ -404,13 +441,14 @@ export default function PublicScorecardView() {
         if (foundActiveRIdx === null) {
             for (let i = roundsKeys.length - 1; i >= 0; i--) {
                 const rIdx = roundsKeys[i];
-                const card = result.scorecards[rIdx];
+                const card = activeResult.scorecards[rIdx];
+                if (!card) continue;
                 let playedHoles = 0;
                 for (let h = 0; h < 18; h++) {
-                    const s = String(card.strokes?.[h] || '');
+                    const s = String(card?.strokes?.[h] || '');
                     if (s !== '' && s !== '-') playedHoles++;
                 }
-                if (playedHoles > 0 || result.rounds?.[parseInt(rIdx)]) {
+                if (playedHoles > 0 || activeResult.rounds?.[parseInt(rIdx)]) {
                     foundActiveRIdx = rIdx;
                     break;
                 }
@@ -423,7 +461,17 @@ export default function PublicScorecardView() {
         }
 
         if (foundActiveRIdx !== null) {
-            const card = result.scorecards[foundActiveRIdx];
+            // Ensure the active scorecard exists even if empty, to avoid crashes
+            if (!activeResult.scorecards[foundActiveRIdx]) {
+                activeResult.scorecards[foundActiveRIdx] = {
+                    strokes: Array(18).fill('-'),
+                    pars: Array(18).fill(activeResult.tournamentPar ? Math.round(activeResult.tournamentPar / 18) : 4),
+                    putts: Array(18).fill('-'),
+                    girs: Array(18).fill('-')
+                };
+            }
+
+            const card = activeResult.scorecards[foundActiveRIdx];
             if (card) {
                 let currentRoundHoles = 0;
                 for (let i = 0; i < 18; i++) {
@@ -438,7 +486,7 @@ export default function PublicScorecardView() {
                 }
 
                 // Pace Calculation
-                const teeTimeStr = result.tee_time || tournament?.tee_time;
+                const teeTimeStr = activeResult.tee_time || tournament?.tee_time;
                 if (teeTimeStr && currentRoundHoles > 0) {
                     try {
                         const [hours, mins] = teeTimeStr.split(':').map(Number);
@@ -557,7 +605,7 @@ export default function PublicScorecardView() {
                     <div style={{ textAlign: 'center', flex: 1 }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '8px' }}>
                             <ProfileImage
-                                photoPath={userProfile?.photo_url || result?.photo_url}
+                                photoPath={userProfile?.photo_url || activeResult?.photo_url}
                                 displayName={userProfile?.full_name || username}
                                 alt={username}
                                 style={{ width: '48px', height: '48px', borderRadius: '50%', border: '2px solid #3b82f6', objectFit: 'cover' }}
@@ -567,15 +615,15 @@ export default function PublicScorecardView() {
                                     {t.live} <span className="live-dot">🔴</span>
                                 </div>
                                 <div style={{ fontWeight: 'bold', fontSize: '1.1rem', lineHeight: '1.1' }}>
-                                    {userProfile?.full_name || result?.full_name || username}
+                                    {userProfile?.full_name || activeResult?.full_name || username}
                                 </div>
                             </div>
                         </div>
                         <h1 style={{ margin: 0, fontSize: '0.9rem', color: '#cbd5e1' }}>
-                            {result?.tournamentName || tournament?.name}
+                            {activeResult?.tournamentName || tournament?.name}
                         </h1>
                         <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                            <MapPin size={10} /> {result?.tournamentCourse || tournament?.course}
+                            <MapPin size={10} /> {activeResult?.tournamentCourse || tournament?.course}
                         </div>
 
                         {weather && (
@@ -596,12 +644,7 @@ export default function PublicScorecardView() {
                 </div>
             </header>
 
-            {!result ? (
-                <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>
-                    <Flag size={32} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
-                    <p>{t.noResults}</p>
-                </div>
-            ) : (
+            {activeResult && (
                 <div style={{ padding: '0.5rem 0.6rem' }}>
                     {/* Active Hole & Pace Card - MOVED HERE for visibility */}
                     {activeHole && (
@@ -642,18 +685,15 @@ export default function PublicScorecardView() {
                     <div>
                         {/* Summary Loop over Rounds */}
                         {(() => {
-                            const roundsKeys = Object.keys(result.scorecards || {});
-                            if (roundsKeys.length === 0) return null;
-
                             let cumulativeScore = 0;
                             let cumulativePar = 0;
                             let totalHolesPlayed = 0;
                             const roundsSummary = [];
-                            roundsKeys.sort((a, b) => parseInt(a) - parseInt(b)).forEach(rIdx => {
+                            roundsKeys.forEach(rIdx => {
                                 let rScore = 0;
                                 let rPar = 0;
                                 let rHoles = 0;
-                                const card = result.scorecards[rIdx];
+                                const card = activeResult.scorecards[rIdx];
                                 if (card?.strokes) {
                                     for (let i = 0; i < 18; i++) {
                                         const strokeStr = String(card.strokes[i] || '');
@@ -695,8 +735,8 @@ export default function PublicScorecardView() {
 
                             // Target Diff Logic
                             let targetDiffRender = null;
-                            if (tournament?.target_score !== undefined && tournament?.target_score !== null) {
-                                const ts = parseInt(tournament.target_score);
+                            if (activeResult.target_score !== undefined && activeResult.target_score !== null) {
+                                const ts = parseInt(activeResult.target_score);
                                 const tDiff = cumulativeDiff - ts;
                                 const tDiffStr = tDiff > 0 ? `+${tDiff}` : tDiff < 0 ? `${tDiff}` : 'E';
                                 const tDiffColor = tDiff > 0 ? '#ef4444' : tDiff < 0 ? '#10b981' : '#f1f5f9';
@@ -766,7 +806,7 @@ export default function PublicScorecardView() {
                                     {/* Vueltas individuales */}
                                     {displayRounds.map((rIdx) => {
                                 const roundStr = parseInt(rIdx);
-                                const card = result.scorecards[rIdx];
+                                const card = activeResult.scorecards[rIdx];
 
                                 let playedStrokes = 0;
                                 let playedPar = 0;

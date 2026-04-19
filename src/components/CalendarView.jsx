@@ -2205,22 +2205,24 @@ export default function CalendarView({
                                             <button
                                                 onClick={async (e) => {
                                                     e.preventDefault();
-                                                    const baselink = window.location.origin + import.meta.env.BASE_URL.replace(/\/$/, '');
-                                                    // Ensure we are passing the explicit round index
-                                                    const link = `${baselink}/live/${user?.username}/${t.id}?r=${idx}`;
+                                                    const link = `${window.location.origin}/live/${user?.username}/${t.id}?r=${idx}`;
+                                                    const shareTitle = `${user?.full_name || user?.username} - ${selectedTournament?.name || t.name}`;
+                                                    const shareText = `⛳ Sigue la vuelta de ${user?.full_name || user?.username}\n\n🏆 ${selectedTournament?.name || t.name}\n📍 ${selectedTournament?.location || selectedTournament?.course || t.location || t.course || ''}\n\n🔴 EN DIRECTO`;
+
                                                     if (navigator.share) {
                                                         try {
                                                             await navigator.share({
-                                                                title: `${user?.full_name || user?.username} - ${selectedTournament?.name || t.name}`,
-                                                                text: `⛳ Sigue la vuelta de ${user?.full_name || user?.username}\n\n🏆 ${selectedTournament?.name || t.name}\n📍 ${selectedTournament?.location || selectedTournament?.course || t.location || t.course || ''}\n\n🔴 EN DIRECTO`,
+                                                                title: shareTitle,
+                                                                text: shareText,
                                                                 url: link
                                                             });
                                                         } catch (err) {
                                                             console.log('Error sharing:', err);
                                                         }
                                                     } else {
-                                                        navigator.clipboard.writeText(link);
-                                                        alert('Enlace de resultados en vivo copiado:\n' + link);
+                                                        const fullMessage = `${shareText}\n\n${link}`;
+                                                        navigator.clipboard.writeText(fullMessage);
+                                                        alert(`Enlace generado para [${user?.username || 'desconocido'}]:\n\n` + fullMessage);
                                                     }
                                                 }}
                                                 style={{
@@ -2248,22 +2250,25 @@ export default function CalendarView({
                                                 <button
                                                     onClick={async (e) => {
                                                         e.preventDefault();
-                                                        const baselink = window.location.origin + import.meta.env.BASE_URL.replace(/\/$/, '');
                                                         const players = managedUsers.length > 0 ? managedUsers.join(',') : [user?.username, ...(user?.managed_users || [])].filter(Boolean).join(',');
-                                                        const link = `${baselink}/live-team/${t.id}?players=${players}`;
+                                                        const link = `${window.location.origin}/live-team/${t.id}?players=${players}&r=${idx}`;
+                                                        const shareTitle = `Equipo ${user?.full_name || user?.username} - ${selectedTournament?.name || t.name}`;
+                                                        const shareText = `⛳ Sigue las vueltas del equipo en vivo\n\n🏆 ${selectedTournament?.name || t.name}\n📍 ${selectedTournament?.location || selectedTournament?.course || t.location || t.course || ''}\n👥 Múltiples jugadores\n\n🔴 EN DIRECTO`;
+
                                                         if (navigator.share) {
                                                             try {
                                                                 await navigator.share({
-                                                                    title: `Equipo ${user?.full_name || user?.username} - ${selectedTournament?.name || t.name}`,
-                                                                    text: `⛳ Sigue las vueltas del equipo en vivo\n\n🏆 ${selectedTournament?.name || t.name}\n📍 ${selectedTournament?.location || selectedTournament?.course || t.location || t.course || ''}\n👥 Múltiples jugadores\n\n🔴 EN DIRECTO`,
+                                                                    title: shareTitle,
+                                                                    text: shareText,
                                                                     url: link
                                                                 });
                                                             } catch (err) {
                                                                 console.log('Error sharing:', err);
                                                             }
                                                         } else {
-                                                            navigator.clipboard.writeText(link);
-                                                            alert('Enlace de MULTI-LIVE copiado:\n' + link);
+                                                            const fullMessage = `${shareText}\n\n${link}`;
+                                                            navigator.clipboard.writeText(fullMessage);
+                                                            alert('Enlace de MULTI-LIVE copiado al portapapeles:\n\n' + fullMessage);
                                                         }
                                                     }}
                                                     style={{

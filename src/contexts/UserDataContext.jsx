@@ -121,8 +121,17 @@ export function UserDataProvider({ children }) {
 
     // Special case for user "jordi"
     if (user.username === 'jordi') {
-      const meritHiddenIds = [105, 2, 110, 4, 6, 8, 9, 11, 12, 14, 15, 16, 17, 22, 23, 27, 28, 103, 104];
+      const meritHiddenIds = [1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 103, 104, 105, 110];
       setPreferences({ groups: ['club'], hiddenIds: meritHiddenIds, themes: {} });
+    }
+
+    // Special case for "mariaros" to hide Orden de Merito
+    if (user.username?.toLowerCase() === 'mariaros' || user.full_name?.toLowerCase().includes('maria ros')) {
+        const meritIdsToHide = [1, 5, 7, 10, 13, 18, 19, 20, 21, 24, 25, 26];
+        setPreferences(prev => ({
+            ...prev,
+            hiddenIds: Array.from(new Set([...(prev.hiddenIds || []), ...meritIdsToHide]))
+        }));
     }
 
     const unsubResults = subscribeToResults(user, setResults);
