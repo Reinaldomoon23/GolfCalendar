@@ -47,8 +47,8 @@ function AppContent() {
   useEffect(() => {
     const inject = async () => {
       try {
-        await setDoc(doc(db, 'tournaments', 'TORR0226'), {
-          id: "TORR0226",
+        await setDoc(doc(db, 'tournaments', 'FG43TF92'), {
+          id: "FG43TF92",
           name: "Torremirona Cup (Infantil/Aleví/Benjamí)",
           dates: "14/02/2026 - 15/02/2026",
           course: "Torremirona",
