@@ -43,29 +43,6 @@ import { IS_MULTI, DEFAULT_PREFERENCES } from './config/app';
 function AppContent() {
   const location = useLocation();
 
-  // ─── Direct Global Tournament Injection (Bomb-proof) ──────────────────
-  useEffect(() => {
-    const inject = async () => {
-      try {
-        await setDoc(doc(db, 'tournaments', 'FG43TF92'), {
-          id: "FG43TF92",
-          name: "Torremirona Cup (Infantil/Aleví/Benjamí)",
-          dates: "14/02/2026 - 15/02/2026",
-          course: "Torremirona",
-          organizer: "Torremirona Golf Club",
-          country: "España",
-          circuit: "FCG",
-          category: "Juvenil",
-          qualifications: ["Grand Prix", "Valedera"],
-          groups: ["club", "grand-prix"]
-        });
-        console.log('[App] Tournament TORR0226 injected successfully.');
-      } catch (err) {
-        console.error('[App] Injection failed:', err);
-      }
-    };
-    inject();
-  }, []);
 
   // ── PWA Service Worker (silent auto-update) ────────────────────────────
   const { updateServiceWorker } = useRegisterSW({
