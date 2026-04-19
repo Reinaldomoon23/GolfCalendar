@@ -825,7 +825,7 @@ export default function PublicScorecardView() {
                                     }
                                 }
 
-                                const manualStrokesTotal = result.rounds?.[roundStr];
+                                const manualStrokesTotal = activeResult.rounds?.[roundStr];
                                 const displayTotal = holesPlayed > 0 ? playedStrokes : manualStrokesTotal;
 
                                 let diffStr = 'E';
@@ -944,7 +944,7 @@ export default function PublicScorecardView() {
                                                     </div>
 
                                                     {/* Row: Putts (if tracked) */}
-                                                    {(result.track_putts || tournament?.track_putts) && (
+                                                    {(activeResult.track_putts || tournament?.track_putts) && (
                                                         <div style={{ display: 'flex', background: '#1e293b', fontSize: '0.9rem' }}>
                                                             <div style={{ width: '60px', padding: '8px', borderRight: '1px solid #334155', borderTop: '1px solid #334155', flexShrink: 0, textAlign: 'center', color: '#94a3b8', fontWeight: 'bold', boxSizing: 'border-box' }}>Putts</div>
                                                             {[...Array(9)].map((_, i) => {
@@ -968,7 +968,7 @@ export default function PublicScorecardView() {
                                                     )}
 
                                                     {/* Row: GIR (if tracked) */}
-                                                    {(result.track_girs || tournament?.track_girs) && (
+                                                    {(activeResult.track_girs || tournament?.track_girs) && (
                                                         <div style={{ display: 'flex', background: '#1e293b', fontSize: '0.9rem' }}>
                                                             <div style={{ width: '60px', padding: '8px', borderRight: '1px solid #334155', borderTop: '1px solid #334155', flexShrink: 0, textAlign: 'center', color: '#94a3b8', fontWeight: 'bold', boxSizing: 'border-box' }}>GIR</div>
                                                             {[...Array(9)].map((_, i) => {
@@ -1060,7 +1060,7 @@ export default function PublicScorecardView() {
                                                     </div>
 
                                                     {/* Row: Putts (if tracked) */}
-                                                    {(result.track_putts || tournament?.track_putts) && (
+                                                    {(activeResult.track_putts || tournament?.track_putts) && (
                                                         <div style={{ display: 'flex', background: '#1e293b', fontSize: '0.9rem' }}>
                                                             <div style={{ width: '60px', padding: '8px', borderRight: '1px solid #334155', borderTop: '1px solid #334155', flexShrink: 0, textAlign: 'center', color: '#94a3b8', fontWeight: 'bold', boxSizing: 'border-box' }}>Putts</div>
                                                             {[...Array(9)].map((_, i) => {
@@ -1084,7 +1084,7 @@ export default function PublicScorecardView() {
                                                     )}
 
                                                     {/* Row: GIR (if tracked) */}
-                                                    {(result.track_girs || tournament?.track_girs) && (
+                                                    {(activeResult.track_girs || tournament?.track_girs) && (
                                                         <div style={{ display: 'flex', background: '#1e293b', fontSize: '0.9rem' }}>
                                                             <div style={{ width: '60px', padding: '8px', borderRight: '1px solid #334155', borderTop: '1px solid #334155', flexShrink: 0, textAlign: 'center', color: '#94a3b8', fontWeight: 'bold', boxSizing: 'border-box' }}>GIR</div>
                                                             {[...Array(9)].map((_, i) => {

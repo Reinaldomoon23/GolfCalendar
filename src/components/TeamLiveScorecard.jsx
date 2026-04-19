@@ -497,7 +497,7 @@ export default function TeamLiveScorecard() {
                                                 )}
                                                 {displayRounds.map((rIdx) => {
                                             const roundStr = parseInt(rIdx);
-                                            const card = result.scorecards[rIdx];
+                                            const card = activeResult.scorecards[rIdx];
 
                                             let playedStrokes = 0;
                                             let playedPar = 0;
@@ -516,7 +516,7 @@ export default function TeamLiveScorecard() {
                                                 }
                                             }
 
-                                            const manualStrokesTotal = result.rounds?.[roundStr];
+                                            const manualStrokesTotal = activeResult.rounds?.[roundStr];
                                             const displayTotal = holesPlayed > 0 ? playedStrokes : manualStrokesTotal;
 
                                             let diffStr = 'E';
