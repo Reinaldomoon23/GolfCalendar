@@ -74,6 +74,7 @@ service cloud.firestore {
                'current_handicap',
                'handicap_pdf_url',
                'handicap_fetched_at',
+               'club',
                'updated_at'
              ]);
     }

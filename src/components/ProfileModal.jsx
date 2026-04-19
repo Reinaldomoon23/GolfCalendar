@@ -36,6 +36,8 @@ export default function ProfileModal({
   setFederationId,
   handicap,
   setHandicap,
+  club,
+  setClub,
   isUpdating,
   onSubmit,
   onRecoverProfile,
@@ -100,6 +102,19 @@ export default function ProfileModal({
             <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '8px', lineHeight: '1.4' }}>
               El nº de licencia genera el PDF automáticamente.
             </p>
+          </div>
+
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.8rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Club / Licencia
+            </label>
+            <input
+              type="text"
+              placeholder="Ej: Camiral, El Prat, Vallromanes..."
+              value={club}
+              onChange={e => setClub(e.target.value)}
+              style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #E5E1DE', boxSizing: 'border-box' }}
+            />
           </div>
 
           <div style={{ marginBottom: '1.5rem' }}>

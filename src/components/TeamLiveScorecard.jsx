@@ -370,8 +370,10 @@ export default function TeamLiveScorecard() {
                     return (
                         <div key={player} style={{ marginBottom: '3rem' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1rem', paddingBottom: '0.5rem', borderBottom: '2px solid #334155' }}>
-                                <ProfileImage photoPath={profile.photo_url} displayName={profile.full_name || player} alt={player} style={{ width: '40px', height: '40px', borderRadius: '50%', border: '2px solid #fff', objectFit: 'cover' }} />
-                                <h2 style={{ fontSize: '1.4rem', margin: 0, color: 'white' }}>{profile.full_name || profile.username || player}</h2>
+                                <div style={{ flex: 1 }}>
+                                    <h2 style={{ fontSize: '1.4rem', margin: 0, color: 'white' }}>{profile.full_name || profile.username || player}</h2>
+                                    {profile.club && <p style={{ margin: '2px 0 0 0', fontSize: '0.85rem', color: '#94a3b8' }}>{profile.club}</p>}
+                                </div>
                             </div>
                             {(() => {
                                 // Synthesize a dummy result if none exists yet, to allow showing empty rounds
@@ -440,7 +442,7 @@ export default function TeamLiveScorecard() {
                                                 activeRIdx = roundsKeys[0];
                                                 for (let i = roundsKeys.length - 1; i >= 0; i--) {
                                                     const rIdx = roundsKeys[i];
-                                                    const card = activeResult.scorecards[rIdx];
+                                                    const card = activeResult?.scorecards?.[rIdx];
                                                     if (!card) continue;
                                                     let playedHoles = 0;
                                                     let matchPars = true;
@@ -450,7 +452,7 @@ export default function TeamLiveScorecard() {
                                                         if (s !== '' && s !== '-') playedHoles++;
                                                         if (s !== p) matchPars = false;
                                                     }
-                                                    if ((playedHoles > 0 && !(playedHoles === 18 && matchPars)) || (activeResult.rounds?.[parseInt(rIdx)] > 0)) {
+                                                    if ((playedHoles > 0 && !(playedHoles === 18 && matchPars)) || (activeResult?.rounds?.[parseInt(rIdx)] > 0)) {
                                                         activeRIdx = rIdx;
                                                         break;
                                                     }
@@ -468,7 +470,7 @@ export default function TeamLiveScorecard() {
                                             let totalHolesPlayed = 0;
 
                                             roundsKeys.forEach(key => {
-                                                const sc = activeResult.scorecards[key];
+                                                const sc = activeResult?.scorecards?.[key];
                                                 if (!sc?.strokes) return;
                                                 for (let i = 0; i < 18; i++) {
                                                     const strokeStr = String(sc.strokes?.[i] || '');
@@ -544,7 +546,7 @@ export default function TeamLiveScorecard() {
                                                 )}
                                                 {displayRounds.map((rIdx) => {
                                             const roundStr = parseInt(rIdx);
-                                            const card = activeResult.scorecards[rIdx];
+                                            const card = activeResult?.scorecards?.[rIdx];
 
                                             let playedStrokes = 0;
                                             let playedPar = 0;
@@ -563,7 +565,7 @@ export default function TeamLiveScorecard() {
                                                 }
                                             }
 
-                                            const manualStrokesTotal = activeResult.rounds?.[roundStr];
+                                            const manualStrokesTotal = activeResult?.rounds?.[roundStr];
                                             const displayTotal = holesPlayed > 0 ? playedStrokes : manualStrokesTotal;
 
                                             let diffStr = 'E';

@@ -11,6 +11,7 @@ import {
     getUserSubdocRef
 } from '../utils/userProfiles';
 import tournamentsData from '../data/tournaments.json';
+import { generateTournamentDeterministicId } from '../services/tournaments.service';
 
 export default function PublicScorecardView() {
     const { username, id: eventId } = useParams();
@@ -31,6 +32,11 @@ export default function PublicScorecardView() {
     const prevScoresRef = useRef({});
     const [profileReady, setProfileReady] = useState(false);
     const [activeRoundTab, setActiveRoundTab] = useState(null);
+    const [activeViewTab, setActiveViewTab] = useState('scorecard'); // 'scorecard' | 'leaderboard'
+    const [teamResults, setTeamResults] = useState({});
+    const [teamProfiles, setTeamProfiles] = useState({});
+
+    const CORE_PLAYERS = ['nicole', 'txell', 'ona', 'maria', 'sofia', 'adriana', 'jordi'];
 
     const i18n = {
         es: {
@@ -65,6 +71,16 @@ export default function PublicScorecardView() {
         }
     };
     const t = i18n[lang];
+    
+    // ── Derived Data Declarations (Pre-declared to avoid TDZ) ───────────────
+    let tournamentInfo = null;
+    let activeResult = null;
+    let roundsKeys = [];
+    let foundActiveRIdx = null;
+    let activeHole = null;
+    let activePar = null;
+    let paceData = null;
+
     const profileDocId = getUserDocId(userProfile) || username;
 
     // Current Time Clock
@@ -221,16 +237,30 @@ export default function PublicScorecardView() {
 
             if (foundTournament) {
                 setTournament(foundTournament);
+                setError(null);
             } else {
+                // Last ditch effort: matches numeric ID even if string comparison failed
+                const numericId = parseInt(eventId);
+                if (!isNaN(numericId)) {
+                    const altMatch = tournamentsData.find(t => t.id === numericId);
+                    if (altMatch) {
+                        setTournament(altMatch);
+                        setError(null);
+                        return;
+                    }
+                }
                 setError(`Torneo no encontrado`);
             }
         };
         fetchTournament();
     }, [eventId, profileDocId, username, userProfile, profileReady]);
 
-    // Listen to live results — independent of tournament lookup
     useEffect(() => {
-        const resultRef = getUserSubdocRef(db, userProfile || username, 'results', eventId);
+        if (!profileReady) return;
+
+        let effectiveId = eventId;
+        const resultRef = getUserSubdocRef(db, userProfile || username, 'results', effectiveId);
+        
         const unsubscribe = onSnapshot(resultRef, (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
@@ -313,7 +343,25 @@ export default function PublicScorecardView() {
                     }));
                 }
             } else {
-                setResult(null);
+                // FALLBACK LOGIC: If no results for legacy ID, try deterministic ID
+                const isLegacyId = !isNaN(parseInt(eventId)) && String(eventId).length < 10;
+                if (isLegacyId && tournament) {
+                    const detId = generateTournamentDeterministicId(tournament.name, tournament.dates);
+                    if (detId !== eventId) {
+                        const fallbackRef = getUserSubdocRef(db, userProfile || username, 'results', detId);
+                        getDoc(fallbackRef).then(fallbackSnap => {
+                            if (fallbackSnap.exists()) {
+                                setResult(fallbackSnap.data());
+                            } else {
+                                setResult(null);
+                            }
+                        }).catch(() => setResult(null));
+                    } else {
+                        setResult(null);
+                    }
+                } else {
+                    setResult(null);
+                }
             }
             setLoading(false);
         }, (err) => {
@@ -322,7 +370,36 @@ export default function PublicScorecardView() {
         });
 
         return () => unsubscribe();
-    }, [profileDocId, username, eventId]);
+    }, [profileDocId, username, eventId, profileReady, tournament?.id]);
+
+    // ── Listen to other team members results for the same tournament ───────
+    useEffect(() => {
+        if (!profileReady) return;
+        
+        const unsubs = [];
+        
+        CORE_PLAYERS.forEach(pUsername => {
+            if (pUsername === username) return; // Skip current player, already listening
+            
+            // 1. Fetch profile once
+            if (!teamProfiles[pUsername]) {
+                fetchUserProfileByUsername(db, pUsername).then(prof => {
+                    if (prof) setTeamProfiles(prev => ({ ...prev, [pUsername]: prof }));
+                });
+            }
+
+            // 2. Listen to results
+            const resRef = getUserSubdocRef(db, pUsername, 'results', eventId);
+            const unsub = onSnapshot(resRef, (snap) => {
+                if (snap.exists()) {
+                    setTeamResults(prev => ({ ...prev, [pUsername]: snap.data() }));
+                }
+            });
+            unsubs.push(unsub);
+        });
+
+        return () => unsubs.forEach(u => u());
+    }, [eventId, profileReady]);
 
     // Synchronize selected tab with detected round if not set
     useEffect(() => {
@@ -331,66 +408,8 @@ export default function PublicScorecardView() {
         }
     }, [foundActiveRIdx]);
 
-    const getScoreColor = (strokes, par) => {
-        if (!strokes || !par || strokes === '-' || strokes === 0) return 'transparent';
-        const diff = strokes - (par || 4); // Default par 4 fallback
-        if (diff <= -2) return '#eab308'; // Eagle (amarillo)
-        if (diff === -1) return '#10b981'; // Birdie (verde)
-        if (diff === 0) return '#3b82f6'; // Par (azul)
-        if (diff === 1) return '#f97316'; // Bogey (naranja)
-        if (diff === 2) return '#ef4444'; // Doble bogey (rojo)
-        return '#000000'; // Triple bogey o peor (negro)
-    };
-
-    if (error) {
-        return (
-            <div style={{ textAlign: 'center', padding: '3rem', color: 'white' }}>
-                <h2>Ups!</h2>
-                <p>{error}</p>
-                <Link to="/" style={{ color: '#3b82f6' }}>Volver a la App</Link>
-            </div>
-        );
-    }
-
-    // Show loading only if we have neither tournament data nor result with embedded metadata
-    const tournamentInfo = tournament || (result?.tournamentName ? {
-        id: eventId,
-        name: result.tournamentName,
-        course: result.tournamentCourse || '',
-        dates: result.tournamentDates || '',
-        par: result.tournamentPar || result.par || null
-    } : null);
-
-    // Once tournamentInfo is available, render immediately — even before the Firestore listener responds.
-    // This ensures users always see the scorecard structure right away (never blank).
-    if (!tournamentInfo) {
-        return (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: 'white', background: '#0f172a' }}>
-                 <div style={{ textAlign: 'center' }}>
-                    <div style={{ width: '40px', height: '40px', border: '3px solid #334155', borderTop: '3px solid #3b82f6', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 15px' }} />
-                    <p style={{ fontSize: '0.9rem', opacity: 0.8 }}>{t.loading}</p>
-                 </div>
-            </div>
-        );
-    }
-
-    // Determine the active hole
-    let activeHole = null;
-    let activePar = null;
-    let paceData = null;
-    let foundActiveRIdx = null;
-
-    // Always synthesize a result object — even if no Firestore doc exists yet.
-    // This ensures the scorecard grid renders immediately without waiting for live data.
-    let activeResult = result || {
-        tournamentName: tournamentInfo.name,
-        tournamentCourse: tournamentInfo.course || '',
-        tournamentDates: tournamentInfo.dates || '',
-        tournamentPar: tournamentInfo.par || null,
-        scorecards: {},
-        rounds: {}
-    };
-
+    // ── Update derived data BEFORE conditional returns ──────────────────────
+    
     const parseDateHelper = (dateStr) => {
         if (!dateStr) return { start: 0, end: 0, days: 1 };
         const parts = dateStr.split(' - ');
@@ -403,136 +422,164 @@ export default function PublicScorecardView() {
         return { start: d1, end: d2, days };
     };
 
-    let roundsKeys = [];
-    if (activeResult) {
-        // Ensure activeResult.scorecards exists
-        if (!activeResult.scorecards) activeResult.scorecards = {};
+    tournamentInfo = tournament || (result?.tournamentName ? {
+        id: eventId,
+        name: result.tournamentName,
+        course: result.tournamentCourse || '',
+        dates: result.tournamentDates || '',
+        par: result.tournamentPar || result.par || null
+    } : null);
 
-        // Calculate expected rounds based on dates
-        const dateInfo = parseDateHelper(activeResult.tournamentDates || tournament?.dates || '');
-        const maxRounds = dateInfo.days;
+    if (tournamentInfo) {
+        activeResult = result || {
+            tournamentName: tournamentInfo.name,
+            tournamentCourse: tournamentInfo.course || '',
+            tournamentDates: tournamentInfo.dates || '',
+            tournamentPar: tournamentInfo.par || null,
+            scorecards: {},
+            rounds: {}
+        };
 
-        // Populate roundsKeys with all possible rounds (0 to maxRounds-1)
-        // AND any rounds that might already be in scorecards (just in case)
-        const allPossibleKeys = new Set(Object.keys(activeResult.scorecards || {}));
-        for (let i = 0; i < maxRounds; i++) allPossibleKeys.add(String(i));
-        roundsKeys = Array.from(allPossibleKeys).sort((a, b) => parseInt(a) - parseInt(b));
-        
-        // 1. Prioritize user selection (Tab)
-        if (activeRoundTab !== null && roundsKeys.includes(String(activeRoundTab))) {
-            foundActiveRIdx = String(activeRoundTab);
-        }
-
-        // 2. Try to find the round from the URL (check for ?r=X or ?round=X)
-        if (foundActiveRIdx === null) {
-            const requestedR = queryRIdx !== null ? queryRIdx : searchParams.get('round');
-            if (requestedR !== null) {
-                const match = roundsKeys.find(rk => String(rk) === String(requestedR));
-                if (match) {
-                    foundActiveRIdx = match;
+        if (activeResult) {
+            // Ensure essential properties exist
+            if (!activeResult.scorecards) activeResult.scorecards = {};
+            if (!activeResult.rounds) activeResult.rounds = {};
+            const dateInfo = parseDateHelper(activeResult.tournamentDates || tournament?.dates || '');
+            const maxRounds = dateInfo.days;
+            const allPossibleKeys = new Set(Object.keys(activeResult.scorecards || {}));
+            for (let i = 0; i < maxRounds; i++) allPossibleKeys.add(String(i));
+            roundsKeys = Array.from(allPossibleKeys).sort((a, b) => parseInt(a) - parseInt(b));
+            
+            if (activeRoundTab !== null && roundsKeys.includes(String(activeRoundTab))) {
+                foundActiveRIdx = String(activeRoundTab);
+            }
+            if (foundActiveRIdx === null) {
+                const requestedR = queryRIdx !== null ? queryRIdx : searchParams.get('round');
+                if (requestedR !== null) {
+                    const match = roundsKeys.find(rk => String(rk) === String(requestedR));
+                    if (match) foundActiveRIdx = match;
                 }
             }
-        }
-
-        // 3. Logic-based detection (find round in progress or last played)
-        if (foundActiveRIdx === null) {
-            for (let i = roundsKeys.length - 1; i >= 0; i--) {
-                const rIdx = roundsKeys[i];
-                const card = activeResult.scorecards[rIdx];
-                if (!card) continue;
-                let playedHoles = 0;
-                for (let h = 0; h < 18; h++) {
-                    const s = String(card?.strokes?.[h] || '');
-                    if (s !== '' && s !== '-' && s !== '0') playedHoles++;
-                }
-                if (playedHoles > 0 && playedHoles < 18) {
-                    foundActiveRIdx = rIdx;
-                    break;
-                }
-            }
-        }
-
-        // 3. Fallback to any round with data
-        if (foundActiveRIdx === null) {
-            for (let i = roundsKeys.length - 1; i >= 0; i--) {
-                const rIdx = roundsKeys[i];
-                const card = activeResult.scorecards[rIdx];
-                if (!card) continue;
-                let playedHoles = 0;
-                for (let h = 0; h < 18; h++) {
-                    const s = String(card?.strokes?.[h] || '');
-                    if (s !== '' && s !== '-') playedHoles++;
-                }
-                if (playedHoles > 0 || activeResult.rounds?.[parseInt(rIdx)]) {
-                    foundActiveRIdx = rIdx;
-                    break;
-                }
-            }
-        }
-
-        // 4. Default to first if still null
-        if (foundActiveRIdx === null && roundsKeys.length > 0) {
-            foundActiveRIdx = roundsKeys[0];
-        }
-
-        // Ensure state synchronizes with detection for the UI tabs
-
-
-        if (foundActiveRIdx !== null) {
-            // Ensure the active scorecard exists even if empty, to avoid crashes
-            if (!activeResult.scorecards[foundActiveRIdx]) {
-                activeResult.scorecards[foundActiveRIdx] = {
-                    strokes: Array(18).fill('-'),
-                    pars: Array(18).fill(activeResult.tournamentPar ? Math.round(activeResult.tournamentPar / 18) : 4),
-                    putts: Array(18).fill('-'),
-                    girs: Array(18).fill('-')
-                };
-            }
-
-            const card = activeResult.scorecards[foundActiveRIdx];
-            if (card) {
-                let currentRoundHoles = 0;
-                for (let i = 0; i < 18; i++) {
-                    const stroke = String(card.strokes?.[i] || '');
-                    if (stroke !== '' && stroke !== '-' && stroke !== '0') {
-                        currentRoundHoles++;
+            if (foundActiveRIdx === null) {
+                for (let i = roundsKeys.length - 1; i >= 0; i--) {
+                    const rIdx = roundsKeys[i];
+                    const card = activeResult?.scorecards?.[rIdx];
+                    if (!card) continue;
+                    let playedHoles = 0;
+                    for (let h = 0; h < 18; h++) {
+                        const s = String(card?.strokes?.[h] || '');
+                        if (s !== '' && s !== '-' && s !== '0') playedHoles++;
                     }
-                    if (activeHole === null && (stroke === '' || stroke === '-' || stroke === '0')) {
-                        activeHole = i + 1;
-                        activePar = parseInt(card.pars?.[i]) || 4;
+                    if (playedHoles > 0 && playedHoles < 18) {
+                        foundActiveRIdx = rIdx;
+                        break;
                     }
                 }
+            }
+            if (foundActiveRIdx === null) {
+                for (let i = roundsKeys.length - 1; i >= 0; i--) {
+                    const rIdx = roundsKeys[i];
+                    const card = activeResult?.scorecards?.[rIdx];
+                    if (!card) continue;
+                    let playedHoles = 0;
+                    for (let h = 0; h < 18; h++) {
+                        const s = String(card?.strokes?.[h] || '');
+                        if (s !== '' && s !== '-') playedHoles++;
+                    }
+                    if (playedHoles > 0 || activeResult.rounds?.[parseInt(rIdx)]) {
+                        foundActiveRIdx = rIdx;
+                        break;
+                    }
+                }
+            }
+            if (foundActiveRIdx === null && roundsKeys.length > 0) {
+                foundActiveRIdx = roundsKeys[0];
+            }
 
-                // Pace Calculation
-                const teeTimeStr = activeResult.tee_time || tournament?.tee_time;
-                if (teeTimeStr && currentRoundHoles > 0) {
-                    try {
-                        const [hours, mins] = teeTimeStr.split(':').map(Number);
-                        const start = new Date();
-                        start.setHours(hours, mins, 0, 0);
-                        
-                        const now = new Date();
-                        const elapsedMs = now - start;
-                        if (elapsedMs > 0) {
-                            const elapsedMins = Math.floor(elapsedMs / 60000);
-                            const minsPerHole = elapsedMins / currentRoundHoles;
-                            const remainingHoles = 18 - currentRoundHoles;
-                            const remainingMins = Math.round(remainingHoles * minsPerHole);
-                            const finishTime = new Date(now.getTime() + remainingMins * 60000);
-                            
-                            paceData = {
-                                elapsed: `${Math.floor(elapsedMins / 60) > 0 ? `${Math.floor(elapsedMins / 60)}h ` : ''}${elapsedMins % 60}m`,
-                                finish: finishTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                                minsPerHole: minsPerHole.toFixed(1)
-                            };
+            if (foundActiveRIdx !== null) {
+                if (!activeResult.scorecards[foundActiveRIdx]) {
+                    activeResult.scorecards[foundActiveRIdx] = {
+                        strokes: Array(18).fill('-'),
+                        pars: Array(18).fill(activeResult.tournamentPar ? Math.round(activeResult.tournamentPar / 18) : 4),
+                        putts: Array(18).fill('-'),
+                        girs: Array(18).fill('-')
+                    };
+                }
+                const card = activeResult.scorecards[foundActiveRIdx];
+                if (card) {
+                    let currentRoundHoles = 0;
+                    for (let i = 0; i < 18; i++) {
+                        const stroke = String(card.strokes?.[i] || '');
+                        if (stroke !== '' && stroke !== '-' && stroke !== '0') {
+                            currentRoundHoles++;
                         }
-                    } catch (e) {
-                        console.error("Error calculating pace:", e);
+                        if (activeHole === null && (stroke === '' || stroke === '-' || stroke === '0')) {
+                            activeHole = i + 1;
+                            activePar = parseInt(card.pars?.[i]) || 4;
+                        }
+                    }
+                    const teeTimeStr = activeResult.tee_time || tournament?.tee_time;
+                    if (teeTimeStr && currentRoundHoles > 0) {
+                        try {
+                            const [hours, mins] = teeTimeStr.split(':').map(Number);
+                            const start = new Date();
+                            start.setHours(hours, mins, 0, 0);
+                            const now = new Date();
+                            const elapsedMs = now - start;
+                            if (elapsedMs > 0) {
+                                const elapsedMins = Math.floor(elapsedMs / 60000);
+                                const minsPerHole = elapsedMins / currentRoundHoles;
+                                const remainingHoles = 18 - currentRoundHoles;
+                                const remainingMins = Math.round(remainingHoles * minsPerHole);
+                                const finishTime = new Date(now.getTime() + remainingMins * 60000);
+                                paceData = {
+                                    elapsed: `${Math.floor(elapsedMins / 60) > 0 ? `${Math.floor(elapsedMins / 60)}h ` : ''}${elapsedMins % 60}m`,
+                                    finish: finishTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                                    minsPerHole: minsPerHole.toFixed(1)
+                                };
+                            }
+                        } catch (e) {
+                            console.error("Error calculating pace:", e);
+                        }
                     }
                 }
             }
         }
     }
+
+    const getScoreColor = (strokes, par) => {
+        if (!strokes || !par || strokes === '-' || strokes === 0) return 'transparent';
+        const diff = strokes - (par || 4); // Default par 4 fallback
+        if (diff <= -2) return '#eab308'; // Eagle (amarillo)
+        if (diff === -1) return '#10b981'; // Birdie (verde)
+        if (diff === 0) return '#3b82f6'; // Par (azul)
+        if (diff === 1) return '#f97316'; // Bogey (naranja)
+        if (diff === 2) return '#ef4444'; // Doble bogey (rojo)
+        return '#000000'; // Triple bogey o peor (negro)
+    };
+    // Once tournamentInfo is available, render immediately.
+    // This ensures users always see the scorecard structure right away.
+    if (!tournamentInfo && !error) {
+        return (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: 'white', background: '#0f172a' }}>
+                 <div style={{ textAlign: 'center' }}>
+                    <div style={{ width: '40px', height: '40px', border: '3px solid #334155', borderTop: '3px solid #3b82f6', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 15px' }} />
+                    <p style={{ fontSize: '0.9rem', opacity: 0.8 }}>{t.loading}</p>
+                 </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div style={{ textAlign: 'center', padding: '3rem', color: 'white' }}>
+                <h2>Ups!</h2>
+                <p>{error}</p>
+                <Link to="/" style={{ color: '#3b82f6' }}>Volver a la App</Link>
+            </div>
+        );
+    }
+
 
     return (
         <div style={{
@@ -633,10 +680,57 @@ export default function PublicScorecardView() {
                                     <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#10b981', animation: 'livePulse 1.5s infinite' }}></div>
                                     {result ? t.live : 'ESPERANDO INICIO...'}
                                 </div>
-                                <div style={{ fontWeight: 'bold', fontSize: '1.1rem', lineHeight: '1.1' }}>
+                                <div style={{ fontWeight: 'bold', fontSize: '1.2rem', lineHeight: '1.1' }}>
                                     {userProfile?.full_name || activeResult?.full_name || username}
                                 </div>
+                                {(userProfile?.club || activeResult?.club) && (
+                                    <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '2px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                        {userProfile?.club || activeResult?.club}
+                                    </div>
+                                )}
                             </div>
+                        </div>
+
+                        {/* VIEW TABS: Scorecard vs Leaderboard */}
+                        <div style={{ 
+                            display: 'flex', 
+                            background: '#0f172a', 
+                            padding: '4px', 
+                            borderRadius: '10px', 
+                            margin: '10px auto',
+                            maxWidth: '300px',
+                            border: '1px solid #334155'
+                        }}>
+                            <button 
+                                onClick={() => setActiveViewTab('scorecard')}
+                                style={{ 
+                                    flex: 1, 
+                                    padding: '8px', 
+                                    borderRadius: '8px',
+                                    border: 'none',
+                                    background: activeViewTab === 'scorecard' ? '#3b82f6' : 'transparent',
+                                    color: activeViewTab === 'scorecard' ? 'white' : '#64748b',
+                                    fontSize: '0.8rem',
+                                    fontWeight: 'bold',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                }}
+                            >MI VUELTA</button>
+                            <button 
+                                onClick={() => setActiveViewTab('leaderboard')}
+                                style={{ 
+                                    flex: 1, 
+                                    padding: '8px', 
+                                    borderRadius: '8px',
+                                    border: 'none',
+                                    background: activeViewTab === 'leaderboard' ? '#3b82f6' : 'transparent',
+                                    color: activeViewTab === 'leaderboard' ? 'white' : '#64748b',
+                                    fontSize: '0.8rem',
+                                    fontWeight: 'bold',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                }}
+                            >CLASIFICACIÓN</button>
                         </div>
                         <h1 style={{ margin: 0, fontSize: '0.9rem', color: '#cbd5e1' }}>
                             {activeResult?.tournamentName || tournament?.name}
@@ -648,7 +742,8 @@ export default function PublicScorecardView() {
                         <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', padding: '4px 0' }}>
                             {roundsKeys.map((rk) => {
                                 const isActive = String(rk) === String(foundActiveRIdx);
-                                const hasData = activeResult.scorecards[rk] && Object.values(activeResult.scorecards[rk].strokes || {}).some(s => s !== '' && s !== '-');
+                                const card = activeResult?.scorecards?.[rk];
+                                const hasData = card && Object.values(card.strokes || {}).some(s => s !== '' && s !== '-');
                                 return (
                                     <button
                                         key={rk}
@@ -690,9 +785,9 @@ export default function PublicScorecardView() {
                 </div>
             </header>
 
-            {activeResult && (
+            {activeViewTab === 'scorecard' ? (
                 <div style={{ padding: '0.5rem 0.6rem' }}>
-                    {/* Active Hole & Pace Card - MOVED HERE for visibility */}
+                    {/* Active Hole & Pace Card */}
                     {activeHole && (
                         <div style={{ background: '#334155', borderRadius: '10px', padding: '10px', marginBottom: '10px', display: 'flex', flexDirection: 'column', gap: '10px', border: '1px solid #475569', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -769,7 +864,8 @@ export default function PublicScorecardView() {
                                 let rScore = 0;
                                 let rPar = 0;
                                 let rHoles = 0;
-                                const card = activeResult.scorecards[rIdx];
+                                const card = activeResult?.scorecards?.[rIdx];
+                                if (!card) return;
                                 if (card?.strokes) {
                                     for (let i = 0; i < 18; i++) {
                                         const strokeStr = String(card.strokes[i] || '');
@@ -882,7 +978,7 @@ export default function PublicScorecardView() {
                                     {/* Vueltas individuales */}
                                     {displayRounds.map((rIdx) => {
                                 const roundStr = parseInt(rIdx);
-                                const card = activeResult.scorecards[rIdx];
+                                const card = activeResult?.scorecards?.[rIdx];
 
                                 let playedStrokes = 0;
                                 let playedPar = 0;
@@ -901,7 +997,7 @@ export default function PublicScorecardView() {
                                     }
                                 }
 
-                                const manualStrokesTotal = activeResult.rounds?.[roundStr];
+                                const manualStrokesTotal = activeResult?.rounds?.[roundStr];
                                 const displayTotal = holesPlayed > 0 ? playedStrokes : manualStrokesTotal;
 
                                 let diffStr = 'E';
@@ -1198,9 +1294,74 @@ export default function PublicScorecardView() {
                             );
                         })()}
                     </div>
-                </div >
-            )
-            }
-        </div >
+                </div>
+            ) : (
+                /* ── LEADERBOARD VIEW ── */
+                <div style={{ padding: '0.8rem', animation: 'fadeIn 0.3s ease' }}>
+                    <div style={{ background: '#1e293b', borderRadius: '12px', overflow: 'hidden', border: '1px solid #334155', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.5)' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
+                            <thead>
+                                <tr style={{ background: '#0f172a', color: '#94a3b8', textTransform: 'uppercase', fontSize: '0.65rem', letterSpacing: '0.1em' }}>
+                                    <th style={{ padding: '14px 10px' }}>POS</th>
+                                    <th style={{ padding: '14px 10px' }}>JUGADOR</th>
+                                    <th style={{ padding: '14px 10px', textAlign: 'center' }}>HOYO</th>
+                                    <th style={{ padding: '14px 10px', textAlign: 'right' }}>SCORE</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {(() => {
+                                    const allItems = [];
+                                    if (result) allItems.push({ username: username, data: result, profile: userProfile });
+                                    Object.keys(teamResults).forEach(u => {
+                                        allItems.push({ username: u, data: teamResults[u], profile: teamProfiles[u] });
+                                    });
+
+                                    const processed = allItems.map(item => {
+                                        let totalStrokes = 0;
+                                        let totalPar = 0;
+                                        let lastHole = 0;
+                                        if (item.data.scorecards) {
+                                            Object.values(item.data.scorecards).forEach(card => {
+                                                if (!card.strokes) return;
+                                                for(let i=0; i<18; i++) {
+                                                    const s = parseInt(card.strokes[i]);
+                                                    const p = parseInt(card.pars?.[i]) || 4;
+                                                    if (s > 0) {
+                                                        totalStrokes += s;
+                                                        totalPar += p;
+                                                        lastHole = i + 1;
+                                                    }
+                                                }
+                                            });
+                                        }
+                                        const diff = totalStrokes - totalPar;
+                                        const isPlaying = totalStrokes > 0;
+                                        return { ...item, diff, lastHole, sortKey: isPlaying ? diff : 999 };
+                                    }).sort((a, b) => a.sortKey - b.sortKey);
+
+                                    return processed.map((item, idx) => (
+                                        <tr key={item.username} style={{ borderBottom: '1px solid #334155', background: item.username === username ? '#1e3a8a44' : 'transparent' }}>
+                                            <td style={{ padding: '14px 10px', fontWeight: 'bold', color: idx === 0 ? '#eab308' : (idx === 1 ? '#94a3b8' : (idx === 2 ? '#b45309' : '#64748b')) }}>
+                                                {idx + 1}
+                                            </td>
+                                            <td style={{ padding: '14px 10px' }}>
+                                                <div style={{ fontWeight: '700', color: 'white', marginBottom: '1px' }}>{item.profile?.full_name?.split(' ')[0] || item.username.toUpperCase()}</div>
+                                                <div style={{ fontSize: '0.65rem', color: '#94a3b8', textTransform: 'uppercase' }}>{item.profile?.club || 'SIN CLUB'}</div>
+                                            </td>
+                                            <td style={{ padding: '14px 10px', textAlign: 'center', color: '#94a3b8' }}>
+                                                {item.lastHole === 18 ? 'F' : (item.lastHole || '-')}
+                                            </td>
+                                            <td style={{ padding: '14px 10px', textAlign: 'right', fontWeight: 'bold', color: item.diff < 0 ? '#10b981' : (item.diff > 0 ? '#ef4444' : '#ffffff') }}>
+                                                {item.diff === 999 ? '-' : (item.diff > 0 ? `+${item.diff}` : (item.diff < 0 ? item.diff : 'E'))}
+                                            </td>
+                                        </tr>
+                                    ));
+                                })()}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+        </div>
     );
 }

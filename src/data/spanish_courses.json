@@ -7700,35 +7700,6 @@
         ]
     },
     {
-        "name": "Golf Playa De Pals",
-        "pars": [
-            4,
-            4,
-            4,
-            4,
-            5,
-            3,
-            4,
-            5,
-            3,
-            4,
-            3,
-            4,
-            4,
-            5,
-            3,
-            5,
-            4,
-            5
-        ],
-        "address": "Carrer Del Golf 64",
-        "city": "Pals",
-        "zip": "17256",
-        "province": "GIRONA",
-        "region": "CATALUÑA",
-        "web": "https://rfegolf.es/club/golf_playa_de_pals?id=424"
-    },
-    {
         "name": "Golf Ría de Vigo",
         "pars": [
             4,

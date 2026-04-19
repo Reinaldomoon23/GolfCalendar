@@ -5,14 +5,17 @@
  * merged tournament list, season filtering, and CRUD operations.
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import tournamentsData from '../data/tournaments.json';
 import {
   subscribeToOfficialTournaments,
   subscribeToCustomTournaments,
+  subscribeToSharedTournaments,
   addCustomTournament,
   updateCustomTournament,
   deleteCustomTournament,
+  publishTournament,
+  normalizeUserTournaments,
   mergeTournaments,
   filterBySeason,
   getAvailableSeasons,
@@ -39,8 +42,10 @@ import { deleteResult } from '../services/results.service';
 export function useTournaments(user, preferences, handleUpdatePreferences, results) {
   const [baseTournaments, setBaseTournaments] = useState(tournamentsData);
   const [customTournaments, setCustomTournaments] = useState([]);
+  const [sharedTournaments, setSharedTournaments] = useState([]); // Community ones
   const [currentSeason, setCurrentSeason] = useState('2026');
   const [availableSeasons, setAvailableSeasons] = useState(['2026']);
+  const hasNormalized = useRef(false);
 
   // ─── Subscribe to official tournaments ────────────────────────────────────
   useEffect(() => {
@@ -52,6 +57,24 @@ export function useTournaments(user, preferences, handleUpdatePreferences, resul
   useEffect(() => {
     if (!user?.username) return;
     const unsub = subscribeToCustomTournaments(user, setCustomTournaments);
+    return () => unsub();
+  }, [user?.username]);
+
+  // ─── Normalization (Migration) ─────────────────────────────────────────────
+  useEffect(() => {
+    if (user && customTournaments.length > 0 && results && !hasNormalized.current) {
+      hasNormalized.current = true;
+      normalizeUserTournaments(user, customTournaments, results);
+    }
+  }, [user?.username, customTournaments.length, !!results]);
+
+  // ─── Subscribe to shared community tournaments ────────────────────────────
+  useEffect(() => {
+    const unsub = subscribeToSharedTournaments((shared) => {
+      // Filter out own shared tournaments to avoid double rendering with custom
+      const othersShared = shared.filter(t => t.sharedBy !== user?.username && t.sharedBy !== user?.uid);
+      setSharedTournaments(othersShared);
+    });
     return () => unsub();
   }, [user?.username]);
 
@@ -74,9 +97,12 @@ export function useTournaments(user, preferences, handleUpdatePreferences, resul
 
   // ─── CRUD handlers ────────────────────────────────────────────────────────
 
-  const handleAddTournament = async (newT) => {
+  const handleAddTournament = async (newT, shouldPublish = false) => {
     if (!user) return;
     await addCustomTournament(user, newT);
+    if (shouldPublish) {
+      await publishTournament(user, newT);
+    }
   };
 
   const handleUpdateTournament = async (updatedT) => {
@@ -110,5 +136,6 @@ export function useTournaments(user, preferences, handleUpdatePreferences, resul
     handleAddTournament,
     handleUpdateTournament,
     handleDeleteTournament,
+    sharedTournaments, // Export for discovery modal
   };
 }

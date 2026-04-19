@@ -6,12 +6,25 @@
  */
 
 import { db } from '../firebase';
-import { collection, onSnapshot, setDoc, deleteDoc } from 'firebase/firestore';
-import {
-  getUserSubcollectionRef,
-  getUserSubdocRef,
-} from '../utils/userProfiles';
+import { collection, doc, onSnapshot, setDoc, deleteDoc, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
+import { getUserSubcollectionRef, getUserSubdocRef } from '../utils/userProfiles';
 import { getYear } from '../utils/dateHelpers';
+
+/**
+ * Generates a deterministic unique ID for a tournament based on its name and dates.
+ * This ensures that identical tournaments created by different users share the same ID.
+ */
+export function generateTournamentDeterministicId(name, dates) {
+  if (!name || !dates) return 'temp_' + Date.now();
+  const slug = name.toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Remove accents
+    .replace(/[^a-z0-9]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+  // Take only digits from date (e.g. "31/01/2026 - 02/02/2026" -> "3101202602022026")
+  const dateStr = dates.replace(/[^0-9]/g, '');
+  return `${slug}_${dateStr}`;
+}
 
 // ─── Official Tournaments ─────────────────────────────────────────────────────
 
@@ -30,6 +43,54 @@ export function subscribeToOfficialTournaments(onUpdate) {
   });
 
   return unsubscribe;
+}
+
+// ─── Shared/Community Tournaments ───────────────────────────────────────────
+
+/**
+ * Subscribes to public shared tournaments from the community.
+ * @param {Function} onUpdate - Called with shared tournaments array
+ * @returns {Function} - Unsubscribe function
+ */
+export function subscribeToSharedTournaments(onUpdate) {
+  const q = query(collection(db, 'shared_tournaments'));
+  
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    const shared = snapshot.docs.map((doc) => ({ 
+      id: doc.id, 
+      ...doc.data(),
+      isShared: true,
+      groups: Array.from(new Set([...(doc.data().groups || []), 'comunidad']))
+    }));
+    onUpdate(shared);
+  });
+
+  return unsubscribe;
+}
+
+/**
+ * Publishes a tournament to the shared community pool.
+ * @param {object} user - User profile of the creator
+ * @param {object} tournament - Tournament data
+ */
+export async function publishTournament(user, tournament) {
+  if (!user || !tournament) throw new Error('User and tournament data required');
+
+  const deterministicId = generateTournamentDeterministicId(tournament.name, tournament.dates);
+  
+  const sharedData = {
+    ...tournament,
+    id: deterministicId, // Ensure the shared doc has the deterministic ID
+    originalId: tournament.id,
+    sharedBy: user.username || user.uid,
+    sharedByName: user.full_name || user.username,
+    sharedAt: serverTimestamp(),
+    isShared: true,
+    groups: tournament.groups || ['club']
+  };
+
+  // setDoc with the deterministic ID to avoid duplicates in the shared pool
+  await setDoc(doc(db, 'shared_tournaments', deterministicId), sharedData);
 }
 
 /**
@@ -60,8 +121,14 @@ export function subscribeToCustomTournaments(user, onUpdate) {
  * @returns {Promise<void>}
  */
 export async function addCustomTournament(user, tournament) {
-  if (!user || !tournament?.id) throw new Error('User and tournament.id are required');
-  await setDoc(getUserSubdocRef(db, user, 'custom_tournaments', tournament.id), tournament);
+  if (!user || !tournament?.name) throw new Error('User and tournament name are required');
+  
+  // Always use deterministic ID for custom tournaments to unify them across users
+  const deterministicId = generateTournamentDeterministicId(tournament.name, tournament.dates);
+  const tournamentWithId = { ...tournament, id: deterministicId };
+  
+  await setDoc(getUserSubdocRef(db, user, 'custom_tournaments', deterministicId), tournamentWithId);
+  return deterministicId;
 }
 
 /**
@@ -85,6 +152,45 @@ export async function deleteCustomTournament(user, tournamentId) {
   if (!user || !tournamentId) throw new Error('User and tournamentId are required');
   const ref = getUserSubdocRef(db, user, 'custom_tournaments', tournamentId);
   await deleteDoc(ref);
+}
+
+// ─── Normalization & Migration ────────────────────────────────────────────────
+
+/**
+ * Normalizes a user's custom tournaments to use deterministic IDs.
+ * This is used to unify identical tournaments created by different users.
+ * 
+ * @param {object} user - User profile
+ * @param {object[]} customTournaments - List of current custom tournaments
+ * @param {object} resultsMap - Map of results { [id]: data }
+ */
+export async function normalizeUserTournaments(user, customTournaments, resultsMap) {
+  if (!user || !customTournaments.length) return;
+
+  const { saveResult, deleteResult } = await import('./results.service');
+
+  for (const t of customTournaments) {
+    const detId = generateTournamentDeterministicId(t.name, t.dates);
+    
+    // If current ID is already correct or it's an official ID (not custom), skip
+    if (t.id === detId) continue;
+    
+    console.log(`[migration] Normalizing tournament "${t.name}" from ${t.id} to ${detId}`);
+
+    // 1. Create new tournament entry with deterministic ID
+    const newTournament = { ...t, id: detId };
+    await addCustomTournament(user, newTournament);
+
+    // 2. If there are results for the old ID, migrate them
+    if (resultsMap[t.id]) {
+      console.log(`[migration] Moving results for ${t.name}`);
+      await saveResult(user, detId, resultsMap[t.id]);
+      await deleteResult(user, t.id);
+    }
+
+    // 3. Delete old tournament entry
+    await deleteCustomTournament(user, t.id);
+  }
 }
 
 // ─── Merge & Filter ───────────────────────────────────────────────────────────
@@ -122,7 +228,39 @@ export function mergeTournaments(baseTournaments, customTournaments, preferences
     return true;
   });
 
-  return [...filtered, ...customTournaments];
+  // 2. Separate shared from custom in the input array to check for cross-duplicates
+  const fromCommunity = customTournaments.filter(t => t.isShared || String(t.id).includes('_')); // Detective logic for slug-based IDs
+  const localCustom = customTournaments.filter(t => !fromCommunity.includes(t));
+
+  // 3. MASTER SYNC LOGIC:
+  // For any tournament the user has "Added" (custom list), if it exists in the 
+  // master pool (baseTournaments or current shared snapshot), we SYNC the shared fields.
+  const masterTournamentsMap = new Map();
+  [...baseTournaments, ...fromCommunity].forEach(mt => {
+    if (mt.id) masterTournamentsMap.set(String(mt.id), mt);
+  });
+
+  const syncedCustomTournaments = customTournaments.map(ct => {
+    const master = masterTournamentsMap.get(String(ct.id));
+    if (master) {
+      // Sync shared truth fields but keep user-specific overrides
+      return {
+        ...ct,
+        name: master.name,
+        dates: master.dates,
+        course: master.course,
+        lastSyncedAt: new Date().toISOString()
+      };
+    }
+    return ct;
+  });
+
+  // 4. Final Merge: Only show community ones if NOT already in my selection
+  const filteredCommunity = fromCommunity.filter(st => 
+    !syncedCustomTournaments.some(lc => String(lc.id) === String(st.id))
+  );
+
+  return [...filtered, ...syncedCustomTournaments];
 }
 
 /**

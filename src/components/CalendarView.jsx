@@ -10,6 +10,8 @@ import MobileScorecardEditor from './MobileScorecardEditor';
 import spanishCourses from '../data/spanish_courses.json';
 import CalendarFilters from './CalendarFilters';
 import MonthGridView from './MonthGridView';
+import CommunityExplorerModal from './CommunityExplorerModal';
+import { generateTournamentDeterministicId } from '../services/tournaments.service';
 
 // -------------------------------------------------------------------------
 // LOGIC HELPERS (Shared with Results)
@@ -41,7 +43,35 @@ const getRoundDates = (dateStr) => {
 };
 
 
+
+const getTournamentPar = (t, result, spanishCourses) => {
+    // 1. Check if the result record has a saved par override
+    if (result?.tournamentPar) return result.tournamentPar;
+    // 2. Check if the tournament record has its own par
+    if (t?.par) return t.par;
+    // 3. Perform a course lookup if possible
+    if (t?.course && spanishCourses) {
+        const courseName = t.course.toLowerCase();
+        const courseData = spanishCourses.find(c => 
+            c.name.toLowerCase() === courseName ||
+            c.name.toLowerCase().includes(courseName) ||
+            courseName.includes(c.name.toLowerCase())
+        );
+        if (courseData && courseData.pars) {
+            const sum = courseData.pars.reduce((a, b) => a + (parseInt(b) || 0), 0);
+            if (sum > 0) {
+                // Special case for Salamanca Forum (hack preserved)
+                if (courseName.includes('salamanca forum') && sum === 71) return 70;
+                return sum;
+            }
+        }
+    }
+    // 4. Default fallback
+    return 72;
+};
+
 export default function CalendarView({
+
     results = {},
     tournaments: initialTournaments = [],
     onAddTournament,
@@ -57,7 +87,8 @@ export default function CalendarView({
     onSaveSpecificResult,
     onDeleteResult,
     user,
-    managedUsers = []
+    managedUsers = [],
+    allAvailableTournaments = []
 }) {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -95,6 +126,7 @@ export default function CalendarView({
     // Let's hide the old filter buttons if they overlap, or keep them as "Time Filters" (Upcoming/All).
 
     const [showAddForm, setShowAddForm] = useState(false);
+    const [isCommunityModalOpen, setIsCommunityModalOpen] = useState(false);
     const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
     // Adaptive Course List State
@@ -390,7 +422,8 @@ export default function CalendarView({
         type: 'club',
         grand_prix: false,
         valedera: false,
-        sace: false
+        sace: false,
+        publishToCommunity: false
     });
 
 
@@ -471,7 +504,28 @@ export default function CalendarView({
         };
 
 
-        if (onAddTournament) onAddTournament(t);
+        // CHECK FOR DUPLICATES BEFORE SAVING
+        const detId = generateTournamentDeterministicId(t.name, t.dates);
+        const existing = allAvailableTournaments.find(at => at.id === detId || (at.name === t.name && at.dates === t.dates));
+
+        if (existing && !existing.custom) {
+            const confirmMsg = `Hemos detectado que el torneo "${existing.name}" ya existe en el catálogo. \n\n¿Deseas apuntarte al torneo oficial en lugar de crear uno nuevo? (Esto te conectará con el resto de jugadores)`;
+            if (window.confirm(confirmMsg)) {
+                // User chose to join existing one
+                const joinedTournament = {
+                    ...existing,
+                    id: existing.id,
+                    custom: true,
+                    isShared: true,
+                    joinedAt: new Date().toISOString()
+                };
+                if (onAddTournament) await onAddTournament(joinedTournament, false);
+                setShowAddForm(false);
+                return;
+            }
+        }
+
+        if (onAddTournament) onAddTournament(t, newTournament.publishToCommunity);
 
         // UX Improvement: If adding a past tournament, switch filter to 'all' so it doesn't "disappear"
         const tDate = parseDate(dateString);
@@ -493,7 +547,8 @@ export default function CalendarView({
             type: 'club',
             grand_prix: false,
             valedera: false,
-            sace: false
+            sace: false,
+            publishToCommunity: false
         });
     };
 
@@ -1346,8 +1401,7 @@ export default function CalendarView({
                                         const r = results[t.id];
                                         const validRoundsCount = (r.rounds || []).filter(v => (parseInt(v) || 0) > 0).length;
 
-                                        let basePar = editingDetails?.par || t.par || 72;
-                                        if (t.course?.toLowerCase().includes('salamanca forum') && (basePar === 71 || !t.par)) basePar = 70;
+                                        let basePar = getTournamentPar(t, results[t.id], spanishCourses);
                                         let totalPar = basePar;
 
                                         if (validRoundsCount > 1 && basePar < 100) {
@@ -2908,6 +2962,13 @@ export default function CalendarView({
                             </button>
                         </div>
                     )}
+                    <button 
+                        className="btn btn-secondary" 
+                        onClick={() => setIsCommunityModalOpen(true)}
+                        style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '10px 15px', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'white', color: '#1e293b', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '600' }}
+                    >
+                        <Share2 size={18} /> Explorar
+                    </button>
                     <button className="btn btn-primary" onClick={() => setShowAddForm(true)}>
                         <Plus size={18} style={{ marginRight: '5px' }} /> Nuevo Torneo
                     </button>
@@ -3021,6 +3082,31 @@ export default function CalendarView({
                                         onChange={e => setNewTournament({ ...newTournament, sace: e.target.checked })}
                                     />
                                     <label htmlFor="isSACE" style={{ fontSize: '0.9rem' }}>SACE</label>
+                                </div>
+                            </div>
+
+                            <div style={{
+                                padding: '12px',
+                                background: 'rgba(37, 99, 235, 0.05)',
+                                borderRadius: '8px',
+                                border: '1px dashed rgba(37, 99, 235, 0.2)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px'
+                            }}>
+                                <input
+                                    type="checkbox"
+                                    id="publishToCommunity"
+                                    checked={newTournament.publishToCommunity}
+                                    onChange={e => setNewTournament({ ...newTournament, publishToCommunity: e.target.checked })}
+                                />
+                                <div>
+                                    <label htmlFor="publishToCommunity" style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#2563eb', display: 'block' }}>
+                                        🌍 Publicar en la comunidad
+                                    </label>
+                                    <span style={{ fontSize: '0.75rem', color: '#666' }}>
+                                        Permite que otros usuarios vean y añadan este torneo a su calendario.
+                                    </span>
                                 </div>
                             </div>
 
@@ -3150,6 +3236,12 @@ export default function CalendarView({
                                             COINCIDE
                                         </span>
                                     )}
+                                    {t.isShared && (
+                                        <span className="badge" style={{ backgroundColor: '#f59e0b', color: 'white', display: 'inline-flex', alignItems: 'center' }}>
+                                            <Share2 size={11} style={{ marginRight: '4px' }} />
+                                            COMPARTIDO POR {t.sharedByName?.toUpperCase() || 'USUARIO'}
+                                        </span>
+                                    )}
                                 </div>
 
                                 <h3 style={{
@@ -3225,8 +3317,7 @@ export default function CalendarView({
                                                                         {result.total}
                                                                         <span style={{ fontSize: '0.8rem', fontWeight: 'normal', color: 'var(--color-text-muted)' }}>golpes</span>
                                                                         {(() => {
-                                                                            let par = t.par || 72;
-                                                                            if (t.course?.toLowerCase().includes('salamanca forum') && (par === 71 || !t.par)) par = 70;
+                                                                            const par = getTournamentPar(t, result, spanishCourses);
                                                                             const diff = result.total - par;
                                                                             const diffStr = diff > 0 ? `(+${diff})` : diff < 0 ? `(${diff})` : '(E)';
                                                                             const color = diff > 0 ? '#ef4444' : diff < 0 ? '#22c55e' : '#64748b';
@@ -3306,6 +3397,28 @@ export default function CalendarView({
             )}
 
             {renderContextMenu()}
+
+            <CommunityExplorerModal
+                isOpen={isCommunityModalOpen}
+                onClose={() => setIsCommunityModalOpen(false)}
+                sharedTournaments={allAvailableTournaments}
+                joinedTournaments={tournaments.filter(t => t.custom && t.isShared)}
+                onAdd={async (t) => {
+                    if (onAddTournament) {
+                        // Crucially, we keep the SAME ID
+                        const joinedTournament = {
+                            ...t,
+                            id: t.id, // Use original shared ID
+                            custom: true,
+                            isShared: true,
+                            joinedAt: new Date().toISOString()
+                        };
+                        await onAddTournament(joinedTournament, false);
+                        setIsCommunityModalOpen(false);
+                        alert(`¡Te has apuntado a "${t.name}"!`);
+                    }
+                }}
+            />
         </div>
     );
 }

@@ -5,6 +5,7 @@ const GROUPS = [
     { id: 'rfeg', label: 'RFEG', color: '#dc2626' }, // Red
     { id: 'fcg', label: 'FCG', color: '#d97706' }, // Orange
     { id: 'club', label: 'Club', color: '#059669' }, // Green
+    { id: 'comunidad', label: 'Comunidad🌍', color: '#2563eb' }, // Blue
     { id: 'adultos', label: 'Circuitos Adultos', color: '#4b5563' } // Gray
 ];
 

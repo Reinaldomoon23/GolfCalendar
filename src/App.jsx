@@ -140,6 +140,7 @@ function AppContent() {
   const [editFederationId, setEditFederationId] = useState('');
   const [editEmail, setEditEmail] = useState('');
   const [editHandicap, setEditHandicap] = useState('');
+  const [editClub, setEditClub] = useState('');
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
 
   const openProfileModal = () => {
@@ -147,6 +148,7 @@ function AppContent() {
     setEditFederationId(user.federation_id || '');
     setEditEmail(user.email || '');
     setEditHandicap(user.current_handicap || '');
+    setEditClub(user.club || '');
     setIsProfileModalOpen(true);
   };
 
@@ -159,6 +161,7 @@ function AppContent() {
         federationId: editFederationId,
         email: editEmail,
         current_handicap: editHandicap,
+        club: editClub
       });
       setUser(updatedUser);
       if (IS_MULTI) writeSavedUser(updatedUser);
@@ -175,6 +178,7 @@ function AppContent() {
         full_name: editFullName,
         federation_id: editFederationId,
         current_handicap: editHandicap,
+        club: editClub
       };
       setUser(fallbackUser);
       if (IS_MULTI) writeSavedUser(fallbackUser);
@@ -354,6 +358,7 @@ function AppContent() {
     handleAddTournament,
     handleUpdateTournament,
     handleDeleteTournament,
+    sharedTournaments,
   } = useTournaments(user, preferences, handleUpdatePreferences, results);
 
   // ── Results handlers ─────────────────────────────────────────────────────
@@ -459,6 +464,7 @@ function AppContent() {
               onDeleteTournament={handleDeleteTournament}
               onUpdateTournament={handleUpdateTournament}
               managedUsers={linkedUsers.map(u => u.username)}
+              allAvailableTournaments={[...(baseTournaments || []), ...(sharedTournaments || [])]}
             />
           } />
           <Route path="/event/:id" element={
@@ -479,6 +485,7 @@ function AppContent() {
               onDeleteTournament={handleDeleteTournament}
               onUpdateTournament={handleUpdateTournament}
               managedUsers={linkedUsers.map(u => u.username)}
+              allAvailableTournaments={[...(baseTournaments || []), ...(sharedTournaments || [])]}
             />
           } />
           <Route path="/stats" element={<StatsView user={user} linkedUsers={linkedUsers} results={results} tournaments={tournaments} />} />
@@ -505,6 +512,8 @@ function AppContent() {
         setFederationId={setEditFederationId}
         handicap={editHandicap}
         setHandicap={setEditHandicap}
+        club={editClub}
+        setClub={setEditClub}
         isUpdating={isUpdatingProfile}
         onSubmit={handleUpdateProfile}
         onRecoverProfile={handleRecoverProfile}
