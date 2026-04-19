@@ -152,7 +152,7 @@ export default function TeamLiveScorecard() {
         });
 
         return () => unsubscribes.forEach(u => u());
-    }, [eventId, playersStr, profiles, tournament?.name]);
+    }, [eventId, playersStr, profiles, tournament?.name, tournamentsData?.length]);
 
     const getScoreColor = (strokes, par) => {
         if (!strokes || !par) return 'transparent';
