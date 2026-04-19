@@ -21,11 +21,10 @@ import ProfileModal from './components/ProfileModal';
 
 // Firebase
 import { db } from './firebase';
-import { onSnapshot } from 'firebase/firestore';
+import { onSnapshot, setDoc, doc } from 'firebase/firestore';
 import { getUserDocId, getUserProfileRef, fetchUserProfileByUsername } from './utils/userProfiles';
 import { selfHealPhoto } from './services/profile.service';
 import { writeSavedUser } from './utils/cache';
-import { setDoc, doc } from 'firebase/firestore';
 
 // Hooks
 import { useAuth } from './hooks/useAuth';
