@@ -446,19 +446,6 @@ const MobileScorecardEditor = ({
                         ANT
                     </button>
 
-                    {onSave && (
-                        <button
-                            onClick={onSave}
-                            style={{
-                                padding: '0.75rem 1.25rem', borderRadius: '16px', fontWeight: '800',
-                                backgroundColor: '#f59e0b', color: 'white', border: 'none',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                boxShadow: '0 2px 8px rgba(245, 158, 11, 0.3)', cursor: 'pointer'
-                            }}
-                        >
-                            <Save size={18} />
-                        </button>
-                    )}
 
                     <button
                         onClick={holeIdx === 17 ? onClose : onNext}
@@ -470,7 +457,7 @@ const MobileScorecardEditor = ({
                             boxShadow: holeIdx === 17 ? 'none' : '0 2px 8px rgba(16, 185, 129, 0.3)', cursor: 'pointer'
                         }}
                     >
-                        {holeIdx === 17 ? 'FINALIZAR' : 'SIGUIENTE'}
+                        {holeIdx === 17 ? 'OK' : 'SIGUIENTE'}
                         {holeIdx !== 17 && <ChevronRight size={20} />}
                     </button>
                 </div>

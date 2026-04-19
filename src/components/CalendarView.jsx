@@ -789,7 +789,6 @@ export default function CalendarView({
 
         if (onSaveSpecificResult) {
             onSaveSpecificResult(selectedTournament.id, entry);
-            alert("✅ Guardado correctamente.");
         } else {
             const newResults = { ...results, [selectedTournament.id]: entry };
             if (onUpdateResults) onUpdateResults(newResults);
