@@ -6,8 +6,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  const appMode = env.VITE_APP_MODE || 'single';
-  const base = env.VITE_BASE_URL || '/';
+  const base = '/';
 
   return {
     plugins: [
