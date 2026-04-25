@@ -1,7 +1,7 @@
 {
   "name": "roundtracker",
   "private": true,
-  "version": "3.0.0",
+  "version": "3.0.1",
   "type": "module",
   "description": "RoundTracker - Professional golf tournament and handicap tracking app",
   "author": "Reinaldo Moon",
@@ -11,6 +11,7 @@
     "build:staging": "vite build --mode staging",
     "build:production": "vite build --mode production",
     "deploy": "npx vercel --prod --yes",
+    "deploy:all": "npm run build && npx vercel --prod --yes && node deploy_ftp_root.cjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "preview:staging": "vite preview --mode staging"

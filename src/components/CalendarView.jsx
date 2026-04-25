@@ -758,12 +758,7 @@ export default function CalendarView({
         });
 
         if (mismatchFound) {
-            const proceed = window.confirm(
-                "⚠️ ¡Atención! Los golpes manuales no coinciden con la suma de la tarjeta en estas rondas:\n\n" +
-                mismatchDetails.join("\n") +
-                "\n\n¿Deseas guardar de todas formas?"
-            );
-            if (!proceed) return;
+            console.warn("⚠️ Mismatch found, saving anyway:\n", mismatchDetails.join("\n"));
         }
 
         const validScores = formData.rounds.filter(r => r && !isNaN(r)).map(Number);
