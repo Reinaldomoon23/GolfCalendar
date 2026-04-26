@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Search, Trophy, MapPin, Globe, Flag, Plus, CheckCircle } from 'lucide-react';
-import { isPast } from '../utils/dateHelpers';
+import { isPast, parseDateHelper } from '../utils/dateHelpers';
 
 export default function TournamentsCentralView({ user, tournaments, onAddTournament }) {
   const [search, setSearch] = useState('');
@@ -169,7 +169,7 @@ export default function TournamentsCentralView({ user, tournaments, onAddTournam
           letter-spacing: 0.05em;
         }
         .month-group {
-          margin-bottom: 20px;
+          margin-bottom: 80px;
         }
         .tournaments-view {
           padding: 20px;

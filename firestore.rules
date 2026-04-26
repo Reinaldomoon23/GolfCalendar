@@ -181,6 +181,11 @@ service cloud.firestore {
       }
     }
 
+    match /shared_tournaments/{tournamentId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
     // System config (feature flags, settings)
     match /system_config/{documentId} {
       allow read, write: if isAdmin();

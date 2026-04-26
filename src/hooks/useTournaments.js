@@ -6,7 +6,6 @@
  */
 
 import { useState, useEffect, useMemo, useRef } from 'react';
-import tournamentsData from '../data/tournaments.json';
 import {
   subscribeToOfficialTournaments,
   subscribeToCustomTournaments,
@@ -25,28 +24,19 @@ import {
 } from '../services/tournaments.service';
 import { deleteResult } from '../services/results.service';
 
+const SEASONS_DATA = {
+  '2026': () => import('../data/seasons/tournaments_2026.json').then(m => m.default),
+  '2025': () => Promise.resolve([])
+};
+
 /**
  * @param {object|null} user - Active user profile
- * @param {object} preferences - User preferences (for group/hidden filtering)
- * @param {Function} handleUpdatePreferences - Callback to update hidden tournament IDs
- * @param {object} results - Current results map (to delete result when tournament is deleted)
- * @returns {{
- *   tournaments: object[],
- *   filteredTournaments: object[],
- *   customTournaments: object[],
- *   currentSeason: string,
- *   setCurrentSeason: Function,
- *   availableSeasons: string[],
- *   handleAddTournament: Function,
- *   handleUpdateTournament: Function,
- *   handleDeleteTournament: Function,
- * }}
  */
 export function useTournaments(user, preferences, handleUpdatePreferences, results) {
   const [baseTournaments, setBaseTournaments] = useState([]);
   const [customTournaments, setCustomTournaments] = useState([]);
-  const [sharedTournaments, setSharedTournaments] = useState([]); // Community ones
-  const [subscribedTournaments, setSubscribedTournaments] = useState([]); // Subscribed via reference
+  const [sharedTournaments, setSharedTournaments] = useState([]); 
+  const [subscribedTournaments, setSubscribedTournaments] = useState([]); 
   const [currentSeason, setCurrentSeason] = useState('2026');
   const [availableSeasons, setAvailableSeasons] = useState(['2026', '2025']);
   const hasNormalized = useRef(false);
@@ -72,11 +62,8 @@ export function useTournaments(user, preferences, handleUpdatePreferences, resul
 
   // ─── Subscribe to official tournaments (Live overrides) ───────────────────
   useEffect(() => {
-    // This override adds real-time tournaments from Firestore
-    // but the base list remains the static JSON for the season
     const unsub = subscribeToOfficialTournaments((liveTournaments) => {
       setBaseTournaments(prev => {
-        // Merge: keep static ones but override if live exists with same ID
         const merged = [...prev];
         liveTournaments.forEach(lt => {
           const idx = merged.findIndex(t => String(t.id) === String(lt.id));
@@ -107,38 +94,29 @@ export function useTournaments(user, preferences, handleUpdatePreferences, resul
   // ─── Subscribe to shared community tournaments ────────────────────────────
   useEffect(() => {
     const unsub = subscribeToSharedTournaments((shared) => {
-      // Filter out own shared tournaments to avoid double rendering with custom
       const othersShared = shared.filter(t => t.sharedBy !== user?.username && t.sharedBy !== user?.uid);
       setSharedTournaments(othersShared);
     });
     return () => unsub();
   }, [user?.username]);
 
-  // ─── Subscribe to tournaments the user has joined (reference model) ───────
+  // ─── Subscribe to tournaments the user has joined ─────────────────────────
   useEffect(() => {
     if (!user?.username) return;
     const unsub = subscribeToSubscribedTournaments(user, setSubscribedTournaments);
     return () => unsub();
   }, [user?.username]);
 
-  // ─── Merge official + custom + subscribed + orphan results ──────────────
+  // ─── Merge ───────────────────────────────────────────────────────────────
   const tournaments = useMemo(() => {
-    // Start with the standard merge (official + custom)
     let merged = mergeTournaments(baseTournaments, customTournaments, preferences, user);
-
-    // Inject subscribed tournaments that aren't already in the list
     subscribedTournaments.forEach(st => {
       const alreadyPresent = merged.some(t => String(t.id) === String(st.id));
       if (!alreadyPresent) merged.push(st);
     });
-
-    // BOMB-PROOF: If there are results for an ID that isn't in our list yet (Injected Hashtags)
-    // we create a "virtual" tournament card so the user can see their strokes immediately.
     if (results) {
       Object.keys(results).forEach((resId) => {
         const alreadyExists = merged.some(t => String(t.id) === String(resId));
-        
-        // If it's a 8-char Hashtag and doesn't exist, create it
         if (!alreadyExists && String(resId).length === 8) {
           const resData = results[resId];
           merged.push({
@@ -153,22 +131,17 @@ export function useTournaments(user, preferences, handleUpdatePreferences, resul
         }
       });
     }
-
     return merged;
   }, [baseTournaments, customTournaments, subscribedTournaments, preferences, user?.username, results]);
 
-  // ─── Available seasons ────────────────────────────────────────────────────
   useEffect(() => {
     setAvailableSeasons(getAvailableSeasons(tournaments));
   }, [tournaments.length]);
 
-  // ─── Filtered by season ───────────────────────────────────────────────────
   const filteredTournaments = useMemo(
     () => filterBySeason(tournaments, currentSeason),
     [tournaments, currentSeason]
   );
-
-  // ─── CRUD handlers ────────────────────────────────────────────────────────
 
   const handleAddTournament = async (newT, shouldPublish = false) => {
     if (!user) return;
@@ -178,13 +151,11 @@ export function useTournaments(user, preferences, handleUpdatePreferences, resul
     }
   };
 
-  // Join a shared tournament (reference model — does NOT copy, stays in sync)
   const handleJoinTournament = async (tournament) => {
     if (!user) return;
     await joinTournament(user, tournament);
   };
 
-  // Leave a shared tournament
   const handleLeaveTournament = async (tournamentId) => {
     if (!user) return;
     await leaveTournament(user, tournamentId);
@@ -197,14 +168,12 @@ export function useTournaments(user, preferences, handleUpdatePreferences, resul
 
   const handleDeleteTournament = async (id) => {
     const isCustom = customTournaments.some((t) => String(t.id) === String(id));
-
     if (isCustom) {
       if (user) await deleteCustomTournament(user, id);
     } else {
       const newHidden = [...(preferences.hiddenIds || []), id];
       handleUpdatePreferences(null, newHidden);
     }
-
     if (results[id] && user) {
       await deleteResult(user, id);
     }
@@ -224,6 +193,6 @@ export function useTournaments(user, preferences, handleUpdatePreferences, resul
     handleDeleteTournament,
     handleJoinTournament,
     handleLeaveTournament,
-    sharedTournaments, // Export for discovery modal
+    sharedTournaments,
   };
 }
