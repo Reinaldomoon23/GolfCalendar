@@ -15,6 +15,9 @@ export default function TournamentsCentralView({ user, tournaments, onAddTournam
       // 1. Ocultar torneos pasados (Excepto si ya estamos inscritos)
       if (isPast(t.dates)) return false;
 
+      // FUERZA BRUTA: El ID 12 (Sub16) y ID 13 (OM) TIENEN QUE VERSE SIEMPRE
+      if (t.id === 12 || t.id === 13 || t.id === '12' || t.id === '13') return true;
+
       const matchesSearch = t.name.toLowerCase().includes(search.toLowerCase()) || 
                           (t.id && String(t.id).toLowerCase().includes(search.toLowerCase()));
       
