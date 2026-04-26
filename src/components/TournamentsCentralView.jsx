@@ -28,20 +28,23 @@ export default function TournamentsCentralView({ user, tournaments, subscribedTo
   }, [tournaments]);
 
   // Filter and Sort logic
+  // Filter and Sort logic
   const filtered = useMemo(() => {
     return finalTournaments.filter(t => {
       // 1. Ocultar torneos pasados (Excepto si ya estamos inscritos)
-      if (isPast(t.dates)) return false;
+      const isJoined = subscribedTournaments.some(st => String(st.id) === String(t.id));
+      if (isPast(t.dates) && !isJoined) return false;
 
-      // FUERZA BRUTA: El ID 12 (Sub16) y ID 13 (OM) TIENEN QUE VERSE SIEMPRE
-      if (t.id === 12 || t.id === 13 || t.id === '12' || t.id === '13') return true;
+      // FUERZA BRUTA: El ID 12 (Sub16), ID 13 (OM) y ID 15 (Infantil Catalunya) TIENEN QUE VERSE SIEMPRE
+      const immortalIds = [12, 13, 15, '12', '13', '15'];
+      if (immortalIds.includes(t.id)) return true;
 
       const matchesSearch = t.name.toLowerCase().includes(search.toLowerCase()) || 
                           (t.id && String(t.id).toLowerCase().includes(search.toLowerCase()));
       
       // Si es un torneo importante (Nacional/Regional), saltarse los filtros de circuito/país
       const isImportant = t.type === 'national_championship' || t.type === 'regional_championship';
-      if (isImportant && matchesSearch) return true;
+      if (isImportant && (matchesSearch || search === '')) return true;
 
       const matchesCountry = filterCountry === 'Todos' || t.country === filterCountry;
       const matchesCircuit = filterCircuit === 'Todos' || t.circuit === filterCircuit;
