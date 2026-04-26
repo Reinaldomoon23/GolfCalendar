@@ -32,12 +32,20 @@ SESIÓN: 2026-04-26 | Modelo: Antigravity (Google DeepMind)
 --------------------------------------------------------------------------
 
 --------------------------------------------------------------------------
-PRÓXIMO PASO: 1.5 — Reglas de Seguridad de Firestore
+[COMPLETADO] PASO 1.5 — Reglas de Seguridad de Firestore
+  Archivo modificado: firestore.rules
+  Cambio: Añadidas reglas para la colección tournaments_leaderboard permitiendo lectura pública y escritura autenticada.
 --------------------------------------------------------------------------
-  Ver instrucciones detalladas en LEADERBOARD_ROADMAP.md → PASO 1.5
-  Resumen:
-    Añadir las reglas para la nueva colección "tournaments_leaderboard" en la base de datos de Firebase.
 
-SIGUIENTE DESPUÉS DE 1.5: PASO 2.1 — Refactorización de Creación de Torneos Centralizados
+==========================================================================
+ FASE 2: GESTIÓN DE TORNEOS (REFACTORIZACIÓN)
+==========================================================================
+
+--------------------------------------------------------------------------
+PRÓXIMO PASO: 2.1 — Refactorización de Creación de Torneos Centralizados
+--------------------------------------------------------------------------
+  Ver instrucciones detalladas en LEADERBOARD_ROADMAP.md → PASO 2.1
+  Resumen:
+    Añadir campo isShared y sharedId a los torneos.
 
 ==========================================================================
