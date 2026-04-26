@@ -128,6 +128,14 @@ service cloud.firestore {
         // Write: Owner, manager, or admin
         allow write: if isAdmin() || canAccessUser(userId);
       }
+
+      match /subscribed_tournaments/{tournamentId} {
+        // Read: Owner only (private subscription list)
+        allow read: if isAdmin() || canAccessUser(userId);
+
+        // Write: Owner, manager, or admin
+        allow write: if isAdmin() || canAccessUser(userId);
+      }
     }
 
     // =============================================================
@@ -155,6 +163,16 @@ service cloud.firestore {
     }
 
     // =============================================================
+    // SHARED TOURNAMENTS (Community Pool)
+    // =============================================================
+
+    match /shared_tournaments/{tournamentId} {
+      // Read: Public
+      allow read: if true;
+
+      // Write: Any authenticated user can publish or update participant counts
+      allow write: if isAuthenticated();
+    }
     // TOURNAMENTS LEADERBOARD (Resultados centralizados)
     // =============================================================
 

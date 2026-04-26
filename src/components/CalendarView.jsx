@@ -90,7 +90,10 @@ export default function CalendarView({
     onDeleteResult,
     user,
     managedUsers = [],
-    allAvailableTournaments = []
+    allAvailableTournaments = [],
+    onJoinTournament,
+    onLeaveTournament,
+    subscribedTournaments = [],
 }) {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -3442,21 +3445,26 @@ export default function CalendarView({
                 onClose={() => setIsCommunityModalOpen(false)}
                 sharedTournaments={allAvailableTournaments}
                 joinedTournaments={tournaments.filter(t => t.custom && t.isShared)}
-                onAdd={async (t) => {
+                subscribedTournaments={subscribedTournaments}
+                onJoin={onJoinTournament ? async (t) => {
+                    await onJoinTournament(t);
+                    setIsCommunityModalOpen(false);
+                } : null}
+                onLeave={onLeaveTournament}
+                onAdd={!onJoinTournament ? async (t) => {
+                    // Legacy fallback if no join handler
                     if (onAddTournament) {
-                        // Crucially, we keep the SAME ID
                         const joinedTournament = {
                             ...t,
-                            id: t.id, // Use original shared ID
+                            id: t.id,
                             custom: true,
                             isShared: true,
                             joinedAt: new Date().toISOString()
                         };
                         await onAddTournament(joinedTournament, false);
                         setIsCommunityModalOpen(false);
-                        alert(`¡Te has apuntado a "${t.name}"!`);
                     }
-                }}
+                } : null}
             />
         </div>
     );

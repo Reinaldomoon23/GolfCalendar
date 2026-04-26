@@ -360,6 +360,9 @@ function AppContent() {
     handleAddTournament,
     handleUpdateTournament,
     handleDeleteTournament,
+    handleJoinTournament,
+    handleLeaveTournament,
+    subscribedTournaments,
     sharedTournaments,
   } = useTournaments(user, preferences, handleUpdatePreferences, results);
 
@@ -465,7 +468,10 @@ function AppContent() {
               onDeleteResult={handleDeleteResult}
               onDeleteTournament={handleDeleteTournament}
               onUpdateTournament={handleUpdateTournament}
+              onJoinTournament={handleJoinTournament}
+              onLeaveTournament={handleLeaveTournament}
               managedUsers={linkedUsers.map(u => u.username)}
+              subscribedTournaments={subscribedTournaments}
               allAvailableTournaments={[...(baseTournaments || []), ...(sharedTournaments || [])]}
             />
           } />
@@ -486,7 +492,10 @@ function AppContent() {
               onDeleteResult={handleDeleteResult}
               onDeleteTournament={handleDeleteTournament}
               onUpdateTournament={handleUpdateTournament}
+              onJoinTournament={handleJoinTournament}
+              onLeaveTournament={handleLeaveTournament}
               managedUsers={linkedUsers.map(u => u.username)}
+              subscribedTournaments={subscribedTournaments}
               allAvailableTournaments={[...(baseTournaments || []), ...(sharedTournaments || [])]}
             />
           } />

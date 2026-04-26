@@ -6,7 +6,7 @@
  */
 
 import { db } from '../firebase';
-import { collection, doc, onSnapshot, setDoc, deleteDoc, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
+import { collection, doc, onSnapshot, setDoc, deleteDoc, addDoc, serverTimestamp, query, where, getDocs, getDoc, writeBatch } from 'firebase/firestore';
 import { getUserSubcollectionRef, getUserSubdocRef } from '../utils/userProfiles';
 import { getYear } from '../utils/dateHelpers';
 
@@ -288,4 +288,140 @@ export function getAvailableSeasons(tournaments, baseYear = '2026') {
     if (y) years.add(y);
   });
   return Array.from(years).sort().reverse();
+}
+
+// ─── Subscription System (Join/Leave tournaments) ─────────────────────────────
+
+/**
+ * Subscribes a user to a shared tournament.
+ * Saves a lightweight reference (NOT a copy) in /users/{uid}/subscribed_tournaments/{id}.
+ * The actual tournament data always comes from the source shared_tournaments doc.
+ *
+ * @param {object} user - User profile
+ * @param {object} tournament - Tournament from shared_tournaments (must have id)
+ * @returns {Promise<void>}
+ */
+export async function joinTournament(user, tournament) {
+  if (!user || !tournament?.id) throw new Error('User and tournament required');
+
+  const ref = getUserSubdocRef(db, user, 'subscribed_tournaments', String(tournament.id));
+  await setDoc(ref, {
+    tournamentId: String(tournament.id),
+    joinedAt: serverTimestamp(),
+    source: 'shared',         // Track where it came from
+    // Cache a minimal snapshot for offline support
+    name: tournament.name,
+    dates: tournament.dates,
+    course: tournament.course,
+  }, { merge: true });
+
+  // Increment participant counter on the shared tournament doc (fire-and-forget)
+  try {
+    const sharedRef = doc(db, 'shared_tournaments', String(tournament.id));
+    const snap = await getDoc(sharedRef);
+    if (snap.exists()) {
+      const current = snap.data().subscriberCount || 0;
+      await setDoc(sharedRef, { subscriberCount: current + 1 }, { merge: true });
+    }
+  } catch (e) {
+    console.warn('[joinTournament] Could not update subscriberCount:', e.message);
+  }
+}
+
+/**
+ * Unsubscribes a user from a shared tournament.
+ * Removes the reference from /users/{uid}/subscribed_tournaments/{id}.
+ *
+ * @param {object} user - User profile
+ * @param {string} tournamentId - Tournament ID to leave
+ * @returns {Promise<void>}
+ */
+export async function leaveTournament(user, tournamentId) {
+  if (!user || !tournamentId) throw new Error('User and tournamentId required');
+
+  const ref = getUserSubdocRef(db, user, 'subscribed_tournaments', String(tournamentId));
+  await deleteDoc(ref);
+
+  // Decrement subscriber counter (fire-and-forget)
+  try {
+    const sharedRef = doc(db, 'shared_tournaments', String(tournamentId));
+    const snap = await getDoc(sharedRef);
+    if (snap.exists()) {
+      const current = snap.data().subscriberCount || 1;
+      await setDoc(sharedRef, { subscriberCount: Math.max(0, current - 1) }, { merge: true });
+    }
+  } catch (e) {
+    console.warn('[leaveTournament] Could not update subscriberCount:', e.message);
+  }
+}
+
+/**
+ * Subscribes in real-time to the user's subscribed tournament references,
+ * then resolves each one against the live shared_tournaments source data.
+ *
+ * Returns full tournament objects (from source), tagged with isSubscribed: true.
+ *
+ * @param {object} user - User profile
+ * @param {Function} onUpdate - Called with array of resolved tournament objects
+ * @returns {Function} - Unsubscribe function
+ */
+export function subscribeToSubscribedTournaments(user, onUpdate) {
+  if (!user?.username) return () => {};
+
+  const ref = getUserSubcollectionRef(db, user, 'subscribed_tournaments');
+
+  const unsub = onSnapshot(ref, async (snapshot) => {
+    if (snapshot.empty) { onUpdate([]); return; }
+
+    const refs = snapshot.docs.map(d => d.data().tournamentId).filter(Boolean);
+
+    // Resolve each reference against the live source doc
+    const resolved = await Promise.all(
+      refs.map(async (tid) => {
+        try {
+          const sourceSnap = await getDoc(doc(db, 'shared_tournaments', tid));
+          if (sourceSnap.exists()) {
+            return {
+              id: sourceSnap.id,
+              ...sourceSnap.data(),
+              isShared: true,
+              isSubscribed: true,
+              groups: Array.from(new Set([...(sourceSnap.data().groups || []), 'comunidad'])),
+            };
+          }
+          return null;
+        } catch {
+          return null;
+        }
+      })
+    );
+
+    onUpdate(resolved.filter(Boolean));
+  });
+
+  return unsub;
+}
+
+/**
+ * Fetches the participant count for a list of shared tournament IDs.
+ * Uses one-shot getDocs (not real-time) to minimize reads.
+ *
+ * @param {string[]} tournamentIds
+ * @returns {Promise<Record<string, number>>} - { [id]: count }
+ */
+export async function fetchParticipantCounts(tournamentIds) {
+  if (!tournamentIds?.length) return {};
+
+  const counts = {};
+  await Promise.all(
+    tournamentIds.map(async (id) => {
+      try {
+        const snap = await getDoc(doc(db, 'shared_tournaments', id));
+        counts[id] = snap.exists() ? (snap.data().subscriberCount || 0) : 0;
+      } catch {
+        counts[id] = 0;
+      }
+    })
+  );
+  return counts;
 }

@@ -11,10 +11,13 @@ import {
   subscribeToOfficialTournaments,
   subscribeToCustomTournaments,
   subscribeToSharedTournaments,
+  subscribeToSubscribedTournaments,
   addCustomTournament,
   updateCustomTournament,
   deleteCustomTournament,
   publishTournament,
+  joinTournament,
+  leaveTournament,
   normalizeUserTournaments,
   mergeTournaments,
   filterBySeason,
@@ -43,6 +46,7 @@ export function useTournaments(user, preferences, handleUpdatePreferences, resul
   const [baseTournaments, setBaseTournaments] = useState(tournamentsData);
   const [customTournaments, setCustomTournaments] = useState([]);
   const [sharedTournaments, setSharedTournaments] = useState([]); // Community ones
+  const [subscribedTournaments, setSubscribedTournaments] = useState([]); // Subscribed via reference
   const [currentSeason, setCurrentSeason] = useState('2026');
   const [availableSeasons, setAvailableSeasons] = useState(['2026']);
   const hasNormalized = useRef(false);
@@ -78,10 +82,23 @@ export function useTournaments(user, preferences, handleUpdatePreferences, resul
     return () => unsub();
   }, [user?.username]);
 
-  // ─── Merge official + custom + orphan results (Injected) ────────────────
+  // ─── Subscribe to tournaments the user has joined (reference model) ───────
+  useEffect(() => {
+    if (!user?.username) return;
+    const unsub = subscribeToSubscribedTournaments(user, setSubscribedTournaments);
+    return () => unsub();
+  }, [user?.username]);
+
+  // ─── Merge official + custom + subscribed + orphan results ──────────────
   const tournaments = useMemo(() => {
-    // Start with the standard merge
+    // Start with the standard merge (official + custom)
     let merged = mergeTournaments(baseTournaments, customTournaments, preferences, user);
+
+    // Inject subscribed tournaments that aren't already in the list
+    subscribedTournaments.forEach(st => {
+      const alreadyPresent = merged.some(t => String(t.id) === String(st.id));
+      if (!alreadyPresent) merged.push(st);
+    });
 
     // BOMB-PROOF: If there are results for an ID that isn't in our list yet (Injected Hashtags)
     // we create a "virtual" tournament card so the user can see their strokes immediately.
@@ -106,7 +123,7 @@ export function useTournaments(user, preferences, handleUpdatePreferences, resul
     }
 
     return merged;
-  }, [baseTournaments, customTournaments, preferences, user?.username, results]);
+  }, [baseTournaments, customTournaments, subscribedTournaments, preferences, user?.username, results]);
 
   // ─── Available seasons ────────────────────────────────────────────────────
   useEffect(() => {
@@ -127,6 +144,18 @@ export function useTournaments(user, preferences, handleUpdatePreferences, resul
     if (shouldPublish) {
       await publishTournament(user, newT);
     }
+  };
+
+  // Join a shared tournament (reference model — does NOT copy, stays in sync)
+  const handleJoinTournament = async (tournament) => {
+    if (!user) return;
+    await joinTournament(user, tournament);
+  };
+
+  // Leave a shared tournament
+  const handleLeaveTournament = async (tournamentId) => {
+    if (!user) return;
+    await leaveTournament(user, tournamentId);
   };
 
   const handleUpdateTournament = async (updatedT) => {
@@ -154,12 +183,15 @@ export function useTournaments(user, preferences, handleUpdatePreferences, resul
     tournaments,
     filteredTournaments,
     customTournaments,
+    subscribedTournaments,
     currentSeason,
     setCurrentSeason,
     availableSeasons,
     handleAddTournament,
     handleUpdateTournament,
     handleDeleteTournament,
+    handleJoinTournament,
+    handleLeaveTournament,
     sharedTournaments, // Export for discovery modal
   };
 }

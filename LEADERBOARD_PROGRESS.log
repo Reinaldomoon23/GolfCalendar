@@ -42,10 +42,22 @@ SESIÓN: 2026-04-26 | Modelo: Antigravity (Google DeepMind)
 ==========================================================================
 
 --------------------------------------------------------------------------
-PRÓXIMO PASO: 2.1 — Refactorización de Creación de Torneos Centralizados
+[COMPLETADO] PASO 2.1 y 2.2 — Nueva Arquitectura de Suscripción a Torneos
 --------------------------------------------------------------------------
-  Ver instrucciones detalladas en LEADERBOARD_ROADMAP.md → PASO 2.1
+  Archivos modificados: 
+    - src/services/tournaments.service.js
+    - src/hooks/useTournaments.js
+    - src/components/CommunityExplorerModal.jsx
+    - src/components/CalendarView.jsx
+    - src/App.jsx
   Resumen:
-    Añadir campo isShared y sharedId a los torneos.
+    Se ha implementado el modelo de "Suscripción" en lugar de "Copia Local".
+    Al pulsar "Apuntarse", se guarda una referencia en `/users/{uid}/subscribed_tournaments/{id}`.
+    El `CommunityExplorerModal` ahora muestra el recuento en vivo de cuántas jugadoras están apuntadas usando un contador optimizado.
+    Se puede hacer Join y Leave (Desapuntarse).
 
 ==========================================================================
+ PRÓXIMO PASO: PASO 2.3 — Badge de participantes en lista de torneos
+==========================================================================
+  Ver instrucciones en LEADERBOARD_ROADMAP.md → PASO 2.3
+  Resumen: Mostrar en las tarjetas del CalendarView (vista principal) un icono con el número de participantes apuntados a un torneo compartido.
