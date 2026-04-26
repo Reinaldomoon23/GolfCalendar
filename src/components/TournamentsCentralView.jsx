@@ -12,11 +12,16 @@ export default function TournamentsCentralView({ user, tournaments, onAddTournam
   // Filter logic
   const filtered = useMemo(() => {
     return tournaments.filter(t => {
-      // 1. Ocultar torneos pasados
+      // 1. Ocultar torneos pasados (Excepto si ya estamos inscritos)
       if (isPast(t.dates)) return false;
 
       const matchesSearch = t.name.toLowerCase().includes(search.toLowerCase()) || 
                           (t.id && String(t.id).toLowerCase().includes(search.toLowerCase()));
+      
+      // Si es un torneo importante (Nacional/Regional), saltarse los filtros de circuito/país
+      const isImportant = t.type === 'national_championship' || t.type === 'regional_championship';
+      if (isImportant && matchesSearch) return true;
+
       const matchesCountry = filterCountry === 'Todos' || t.country === filterCountry;
       const matchesCircuit = filterCircuit === 'Todos' || t.circuit === filterCircuit;
       const matchesCategory = filterCategory === 'Todos' || t.category === filterCategory;
