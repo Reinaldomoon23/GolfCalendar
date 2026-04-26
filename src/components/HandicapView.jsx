@@ -52,9 +52,9 @@ const HandicapView = ({ currentHandicap, history = [] }) => {
             const lastEntry = sorted[sorted.length - 1];
             // Si el handicap actual es diferente al último registrado en el historial,
             // inyectamos un punto "Actual" para que la gráfica lo refleje.
-            if (String(lastEntry.handicap) !== String(currentHandicap)) {
+            if (parseFloat(lastEntry.handicap) !== parseFloat(currentHandicap)) {
                 sorted.push({
-                    handicap: currentHandicap,
+                    handicap: parseFloat(currentHandicap),
                     date: new Date().toISOString(),
                     source: 'current',
                     tournament: 'Hándicap actual'

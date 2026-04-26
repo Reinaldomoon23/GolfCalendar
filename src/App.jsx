@@ -169,7 +169,7 @@ function AppContent() {
       if (IS_MULTI) writeSavedUser(updatedUser);
       setIsProfileModalOpen(false);
       alert('Perfil actualizado correctamente');
-      refreshHandicap();
+      setHandicap(editHandicap);
     } catch (err) {
       console.error(err);
       alert('Aviso: Algunos datos pueden no haberse guardado en el servidor, pero se han asimilado localmente.');
@@ -184,6 +184,7 @@ function AppContent() {
       };
       setUser(fallbackUser);
       if (IS_MULTI) writeSavedUser(fallbackUser);
+      setHandicap(editHandicap);
       setIsProfileModalOpen(false);
     } finally {
       setIsUpdatingProfile(false);
