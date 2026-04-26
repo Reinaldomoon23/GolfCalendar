@@ -105,7 +105,7 @@ const HandicapView = ({ currentHandicap, history = [] }) => {
                 borderWidth: 2.5,
             },
         ],
-    }), [history]);
+    }), [displayHistory, history.length]);
 
     const chartOptions = useMemo(() => ({
         responsive: true,
