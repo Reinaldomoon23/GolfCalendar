@@ -842,7 +842,7 @@ export default function CalendarView({
         };
 
         return tournaments.filter(t => {
-            // Priority 0: Explicit Hidden Groups (previous logic...)
+            // Priority 0: Explicit Hidden Groups
             if (hiddenGroups && hiddenGroups.length > 0) {
                 const shouldHide = hiddenGroups.some(g => {
                     if (g === 'merit') return (t.merit || t.type === 'merit');
@@ -851,17 +851,22 @@ export default function CalendarView({
                 if (shouldHide) return false;
             }
 
+            // Priority 1: If it's an official tournament we've joined, ALWAYS SHOW in our calendar
+            const isSubscribed = t.isShared || t.type === 'official' || t.type === 'national_championship' || t.type === 'regional_championship';
+
             if (activeGroups && activeGroups.length > 0) {
                 const matchesFilter = activeGroups.some(g => {
                     if (g === 'valedero') return t.valedera;
-
                     if (g === 'txell' || g === 'ona') return true;
 
                     const tGroups = t.groups || [];
                     const tType = t.type || 'club';
                     return tGroups.includes(g) || tType === g;
                 });
-                if (!matchesFilter) return false;
+                
+                // If it doesn't match the group filter BUT it's an important official tournament, 
+                // we keep it if it's subscribed or official.
+                if (!matchesFilter && !isSubscribed) return false;
             }
 
             // Allow manual overrides? Usually we just filter.
