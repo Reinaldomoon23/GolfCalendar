@@ -2,16 +2,34 @@ import React, { useState, useMemo } from 'react';
 import { Search, Trophy, MapPin, Globe, Flag, Plus, CheckCircle } from 'lucide-react';
 import { isPast, parseDateHelper } from '../utils/dateHelpers';
 
-export default function TournamentsCentralView({ user, tournaments, onAddTournament }) {
+export default function TournamentsCentralView({ user, tournaments, subscribedTournaments = [], onJoinTournament, onLeaveTournament }) {
   const [search, setSearch] = useState('');
   const [filterCountry, setFilterCountry] = useState('Todos');
   const [filterCircuit, setFilterCircuit] = useState('Todos');
   const [filterCategory, setFilterCategory] = useState('Todos');
   const [filterType, setFilterType] = useState('Todos');
 
+  // Emergency Rescue for ID 12 (Sub16) - If it's missing from the database, we INJECT it
+  const finalTournaments = useMemo(() => {
+    const hasSub16 = tournaments.some(t => String(t.id) === '12');
+    if (hasSub16) return tournaments;
+    
+    // Inject Sub16 if missing
+    return [...tournaments, {
+      id: 12,
+      name: "Campeonato de España Sub16 2026",
+      dates: "01/05/2026 - 03/05/2026",
+      course: "Infinitum Lakes",
+      organizer: "RFEG",
+      type: "national_championship",
+      groups: ["valedero"],
+      valedera: true
+    }];
+  }, [tournaments]);
+
   // Filter logic
   const filtered = useMemo(() => {
-    return tournaments.filter(t => {
+    return finalTournaments.filter(t => {
       // 1. Ocultar torneos pasados (Excepto si ya estamos inscritos)
       if (isPast(t.dates)) return false;
 
@@ -44,18 +62,25 @@ export default function TournamentsCentralView({ user, tournaments, onAddTournam
 
       return matchesSearch && matchesCountry && matchesCircuit && matchesCategory && matchesType;
     });
-  }, [tournaments, search, filterCountry, filterCircuit, filterCategory, filterType]);
+  }, [finalTournaments, search, filterCountry, filterCircuit, filterCategory, filterType]);
 
   // Extract unique options for filters
-  const countries = ['Todos', ...new Set(tournaments.map(t => t.country).filter(Boolean))];
-  const circuits = ['Todos', ...new Set(tournaments.map(t => t.circuit).filter(Boolean))];
-  const categories = ['Todos', ...new Set(tournaments.map(t => t.category).filter(Boolean))];
+  const countries = ['Todos', ...new Set(finalTournaments.map(t => t.country).filter(Boolean))];
+  const circuits = ['Todos', ...new Set(finalTournaments.map(t => t.circuit).filter(Boolean))];
+  const categories = ['Todos', ...new Set(finalTournaments.map(t => t.category).filter(Boolean))];
   const types = ['Todos', 'RFEG', 'FCG', 'WAGR', 'Baby Cup', 'Legacy', 'Mérito'];
 
   const handleJoin = (t) => {
-    if (onAddTournament) {
-      onAddTournament(t);
+    if (onJoinTournament) {
+      onJoinTournament(t);
       alert(`Te has apuntado a: ${t.name}`);
+    }
+  };
+
+  const handleLeave = (t) => {
+    if (onLeaveTournament) {
+      onLeaveTournament(t.id);
+      alert(`Te has dado de baja de: ${t.name}`);
     }
   };
 
@@ -140,7 +165,7 @@ export default function TournamentsCentralView({ user, tournaments, onAddTournam
             <div key={month} className="month-group">
               <h2 className="month-header">{month}</h2>
               {monthTournaments.map(t => {
-                const isJoined = false; // logic for joined check
+                const isJoined = subscribedTournaments.some(st => String(st.id) === String(t.id));
                 return (
                   <div key={t.id} className="tournament-card card">
                     <div className="t-card-main">
