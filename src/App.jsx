@@ -76,7 +76,26 @@ function AppContent() {
     return () => navigator.serviceWorker?.removeEventListener('controllerchange', handleControllerChange);
   }, []);
 
-  const handleAppUpdate = () => updateServiceWorker(true);
+  const handleAppUpdate = async () => {
+    // 1. Unregister all service workers
+    if (navigator.serviceWorker) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      for (let registration of registrations) {
+        await registration.unregister();
+      }
+    }
+    // 2. Clear caches
+    if (window.caches) {
+      const keys = await caches.keys();
+      for (let key of keys) {
+        await caches.delete(key);
+      }
+    }
+    // 3. Clear local storage partially or just force reload
+    updateServiceWorker(true);
+    // 4. Force hard reload
+    window.location.reload(true);
+  };
 
   // ── Core state ───────────────────────────────────────────────────────────
   const [results, setResults] = useState({});
@@ -408,7 +427,7 @@ function AppContent() {
     return (
       <div className="app-container fade-in" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div className="card" style={{ padding: '1.5rem 2rem', textAlign: 'center' }}>
-          <span style={{ fontSize: '0.8em', opacity: 0.7, color: 'var(--color-text-muted)' }}>(v2.5.5)</span>
+          <span style={{ fontSize: '0.8em', opacity: 0.7, color: 'var(--color-text-muted)' }}>(v2.8.4)</span>
           Conectando con Firebase...
         </div>
       </div>
