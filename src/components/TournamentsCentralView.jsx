@@ -187,7 +187,7 @@ export default function TournamentsCentralView({ user, tournaments, subscribedTo
                       <div className="t-participants-info">
                         <CheckCircle size={14} className="participants-icon" />
                         <span className="participants-count">
-                          {t.participantsCount || 0} jugadoras inscritas
+                          {(t.participantsCount || 0) + (isJoined && !(t.participantsNames || []).includes(user?.full_name) ? 1 : 0)} jugadoras inscritas
                         </span>
                         {user?.role === 'admin' && (
                           <button 
