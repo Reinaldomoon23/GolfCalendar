@@ -10,22 +10,7 @@ export default function TournamentsCentralView({ user, tournaments, subscribedTo
   const [filterType, setFilterType] = useState('Todos');
 
   // Emergency Rescue for ID 12 (Sub16) - If it's missing from the database, we INJECT it
-  const finalTournaments = useMemo(() => {
-    const hasSub16 = tournaments.some(t => String(t.id) === '12');
-    if (hasSub16) return tournaments;
-    
-    // Inject Sub16 if missing
-    return [...tournaments, {
-      id: 12,
-      name: "Campeonato de España Sub16 2026",
-      dates: "01/05/2026 - 03/05/2026",
-      course: "Infinitum Lakes",
-      organizer: "RFEG",
-      type: "national_championship",
-      groups: ["valedero"],
-      valedera: true
-    }];
-  }, [tournaments]);
+  const finalTournaments = tournaments;
 
   // Filter and Sort logic
   // Filter and Sort logic
