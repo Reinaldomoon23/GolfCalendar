@@ -15,10 +15,6 @@ export default function TournamentsCentralView({ user, tournaments, onAddTournam
       // 1. Ocultar torneos pasados
       if (isPast(t.dates)) return false;
 
-      // Show only official centralized ones (the ones with a code or specific type)
-      const isOfficial = t.type === 'official' || (t.id && String(t.id).length > 5);
-      if (!isOfficial) return false;
-
       const matchesSearch = t.name.toLowerCase().includes(search.toLowerCase()) || 
                           (t.id && String(t.id).toLowerCase().includes(search.toLowerCase()));
       const matchesCountry = filterCountry === 'Todos' || t.country === filterCountry;

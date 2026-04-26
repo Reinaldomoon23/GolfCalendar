@@ -43,17 +43,49 @@ import { deleteResult } from '../services/results.service';
  * }}
  */
 export function useTournaments(user, preferences, handleUpdatePreferences, results) {
-  const [baseTournaments, setBaseTournaments] = useState(tournamentsData);
+  const [baseTournaments, setBaseTournaments] = useState([]);
   const [customTournaments, setCustomTournaments] = useState([]);
   const [sharedTournaments, setSharedTournaments] = useState([]); // Community ones
   const [subscribedTournaments, setSubscribedTournaments] = useState([]); // Subscribed via reference
   const [currentSeason, setCurrentSeason] = useState('2026');
-  const [availableSeasons, setAvailableSeasons] = useState(['2026']);
+  const [availableSeasons, setAvailableSeasons] = useState(['2026', '2025']);
   const hasNormalized = useRef(false);
 
-  // ─── Subscribe to official tournaments ────────────────────────────────────
+  // ─── Load base data based on season ───────────────────────────────────────
   useEffect(() => {
-    const unsub = subscribeToOfficialTournaments(setBaseTournaments);
+    const loadSeason = async () => {
+      try {
+        const loader = SEASONS_DATA[currentSeason];
+        if (loader) {
+          const data = await loader();
+          setBaseTournaments(data);
+        } else {
+          setBaseTournaments([]);
+        }
+      } catch (e) {
+        console.error(`Failed to load tournaments for season ${currentSeason}`, e);
+        setBaseTournaments([]);
+      }
+    };
+    loadSeason();
+  }, [currentSeason]);
+
+  // ─── Subscribe to official tournaments (Live overrides) ───────────────────
+  useEffect(() => {
+    // This override adds real-time tournaments from Firestore
+    // but the base list remains the static JSON for the season
+    const unsub = subscribeToOfficialTournaments((liveTournaments) => {
+      setBaseTournaments(prev => {
+        // Merge: keep static ones but override if live exists with same ID
+        const merged = [...prev];
+        liveTournaments.forEach(lt => {
+          const idx = merged.findIndex(t => String(t.id) === String(lt.id));
+          if (idx !== -1) merged[idx] = lt;
+          else merged.push(lt);
+        });
+        return merged;
+      });
+    });
     return () => unsub();
   }, []);
 
