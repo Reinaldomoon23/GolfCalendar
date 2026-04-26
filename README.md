@@ -1,6 +1,6 @@
 # Golf Tracker - PWA de Gestión de Golf
 
-**Versión**: 2.5.7
+**Versión**: 2.5.8
 **Estado**: En producción
 **Hosting Principal (Vercel)**: Vercel (Auto-deployed vía GitHub Push)
 
