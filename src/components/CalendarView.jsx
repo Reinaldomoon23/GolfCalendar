@@ -851,8 +851,8 @@ export default function CalendarView({
                 if (shouldHide) return false;
             }
 
-            // Priority 1: If it's an official tournament we've joined, ALWAYS SHOW in our calendar
-            const isSubscribed = t.isShared || t.type === 'official' || t.type === 'national_championship' || t.type === 'regional_championship';
+            // Priority 1: If it's a tournament we've joined, ALWAYS SHOW in our calendar
+            const isSubscribed = subscribedTournaments.some(st => String(st.id) === String(t.id));
 
             if (activeGroups && activeGroups.length > 0) {
                 const matchesFilter = activeGroups.some(g => {
