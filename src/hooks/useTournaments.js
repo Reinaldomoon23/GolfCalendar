@@ -37,6 +37,7 @@ export function useTournaments(user, preferences, handleUpdatePreferences, resul
   const [customTournaments, setCustomTournaments] = useState([]);
   const [sharedTournaments, setSharedTournaments] = useState([]); 
   const [subscribedTournaments, setSubscribedTournaments] = useState([]); 
+  const [subscribedIds, setSubscribedIds] = useState([]);
   const [currentSeason, setCurrentSeason] = useState('2026');
   const [availableSeasons, setAvailableSeasons] = useState(['2026', '2025']);
   const hasNormalized = useRef(false);
@@ -103,7 +104,10 @@ export function useTournaments(user, preferences, handleUpdatePreferences, resul
   // ─── Subscribe to tournaments the user has joined ─────────────────────────
   useEffect(() => {
     if (!user?.username) return;
-    const unsub = subscribeToSubscribedTournaments(user, setSubscribedTournaments);
+    const unsub = subscribeToSubscribedTournaments(user, (data, rawIds) => {
+      setSubscribedTournaments(data);
+      if (rawIds) setSubscribedIds(rawIds);
+    });
     return () => unsub();
   }, [user?.username]);
 
@@ -195,5 +199,6 @@ export function useTournaments(user, preferences, handleUpdatePreferences, resul
     handleJoinTournament,
     handleLeaveTournament,
     sharedTournaments,
+    subscribedIds,
   };
 }

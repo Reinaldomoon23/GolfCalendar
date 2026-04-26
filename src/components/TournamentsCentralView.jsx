@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Search, Trophy, MapPin, Globe, Flag, Plus, CheckCircle } from 'lucide-react';
 import { isPast, parseDateHelper } from '../utils/dateHelpers';
 
-export default function TournamentsCentralView({ user, tournaments, subscribedTournaments = [], onJoinTournament, onLeaveTournament }) {
+export default function TournamentsCentralView({ user, tournaments, subscribedTournaments = [], subscribedIds = [], onJoinTournament, onLeaveTournament }) {
   const [search, setSearch] = useState('');
   const [filterCountry, setFilterCountry] = useState('Todos');
   const [filterCircuit, setFilterCircuit] = useState('Todos');
@@ -32,7 +32,7 @@ export default function TournamentsCentralView({ user, tournaments, subscribedTo
   const filtered = useMemo(() => {
     return finalTournaments.filter(t => {
       // 1. Ocultar torneos pasados (Excepto si ya estamos inscritos)
-      const isJoined = subscribedTournaments.some(st => String(st.id) === String(t.id));
+      const isJoined = (subscribedIds || []).some(id => String(id) === String(t.id));
       if (isPast(t.dates) && !isJoined) return false;
 
       // FUERZA BRUTA: El ID 12 (Sub16), ID 13 (OM) y ID 15 (Infantil Catalunya) TIENEN QUE VERSE SIEMPRE
@@ -72,7 +72,7 @@ export default function TournamentsCentralView({ user, tournaments, subscribedTo
       if (!startB) return -1;
       return startA.getTime() - startB.getTime();
     });
-  }, [finalTournaments, search, filterCountry, filterCircuit, filterCategory, filterType]);
+  }, [finalTournaments, search, filterCountry, filterCircuit, filterCategory, filterType, subscribedIds]);
 
   // Extract unique options for filters
   const countries = ['Todos', ...new Set(finalTournaments.map(t => t.country).filter(Boolean))];
@@ -175,7 +175,7 @@ export default function TournamentsCentralView({ user, tournaments, subscribedTo
             <div key={month} className="month-group">
               <h2 className="month-header">{month}</h2>
               {monthTournaments.map(t => {
-                const isJoined = subscribedTournaments.some(st => String(st.id) === String(t.id));
+                const isJoined = (subscribedIds || []).some(id => String(id) === String(t.id));
                 return (
                   <div key={t.id} className="tournament-card card">
                     <div className="t-card-main">

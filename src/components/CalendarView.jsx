@@ -94,6 +94,7 @@ export default function CalendarView({
     onJoinTournament,
     onLeaveTournament,
     subscribedTournaments = [],
+    subscribedIds = [],
 }) {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -852,7 +853,7 @@ export default function CalendarView({
             }
 
             // Priority 1: If it's a tournament we've joined, ALWAYS SHOW in our calendar
-            const isSubscribed = subscribedTournaments.some(st => String(st.id) === String(t.id));
+            const isSubscribed = (subscribedIds || []).some(id => String(id) === String(t.id));
 
             if (activeGroups && activeGroups.length > 0) {
                 const matchesFilter = activeGroups.some(g => {

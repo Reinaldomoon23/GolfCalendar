@@ -384,6 +384,7 @@ function AppContent() {
     handleJoinTournament,
     handleLeaveTournament,
     subscribedTournaments,
+    subscribedIds,
     sharedTournaments,
   } = useTournaments(user, preferences, handleUpdatePreferences, results);
 
@@ -427,7 +428,7 @@ function AppContent() {
     return (
       <div className="app-container fade-in" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div className="card" style={{ padding: '1.5rem 2rem', textAlign: 'center' }}>
-          <span style={{ fontSize: '0.8em', opacity: 0.7, color: 'var(--color-text-muted)' }}>(v2.9.1)</span>
+          <span style={{ fontSize: '0.8em', opacity: 0.7, color: 'var(--color-text-muted)' }}>(v2.9.2)</span>
           Conectando con Firebase...
         </div>
       </div>
@@ -493,6 +494,7 @@ function AppContent() {
               onLeaveTournament={handleLeaveTournament}
               managedUsers={linkedUsers.map(u => u.username)}
               subscribedTournaments={subscribedTournaments}
+              subscribedIds={subscribedIds}
               allAvailableTournaments={[...(baseTournaments || []), ...(sharedTournaments || [])]}
             />
           } />
@@ -517,6 +519,7 @@ function AppContent() {
               onLeaveTournament={handleLeaveTournament}
               managedUsers={linkedUsers.map(u => u.username)}
               subscribedTournaments={subscribedTournaments}
+              subscribedIds={subscribedIds}
               allAvailableTournaments={[...(baseTournaments || []), ...(sharedTournaments || [])]}
             />
           } />

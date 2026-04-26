@@ -371,13 +371,13 @@ export function subscribeToSubscribedTournaments(user, onUpdate) {
   const ref = getUserSubcollectionRef(db, user, 'subscribed_tournaments');
 
   const unsub = onSnapshot(ref, async (snapshot) => {
-    if (snapshot.empty) { onUpdate([]); return; }
+    if (snapshot.empty) { onUpdate([], []); return; }
 
-    const refs = snapshot.docs.map(d => d.data().tournamentId).filter(Boolean);
+    const rawIds = snapshot.docs.map(d => d.data().tournamentId).filter(Boolean);
 
     // Resolve each reference against the live source doc
     const resolved = await Promise.all(
-      refs.map(async (tid) => {
+      rawIds.map(async (tid) => {
         try {
           const sourceSnap = await getDoc(doc(db, 'shared_tournaments', tid));
           if (sourceSnap.exists()) {
@@ -396,7 +396,7 @@ export function subscribeToSubscribedTournaments(user, onUpdate) {
       })
     );
 
-    onUpdate(resolved.filter(Boolean));
+    onUpdate(resolved.filter(Boolean), rawIds);
   });
 
   return unsub;
