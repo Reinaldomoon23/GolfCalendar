@@ -116,13 +116,24 @@ export default function TournamentsCentralView({ user, tournaments, onAddTournam
           Object.entries(
             filtered.reduce((groups, t) => {
               const { start } = parseDateHelper(t.dates);
-              const monthName = start ? start.toLocaleString('es-ES', { month: 'long', year: 'numeric' }) : 'Sin fecha';
-              const capitalizedMonth = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+              let capitalizedMonth = 'Sin fecha';
+              if (start) {
+                // Ensure we get the month name in Spanish and capitalize it correctly
+                const monthName = start.toLocaleString('es-ES', { month: 'long', year: 'numeric' });
+                capitalizedMonth = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+              }
               if (!groups[capitalizedMonth]) groups[capitalizedMonth] = [];
               groups[capitalizedMonth].push(t);
               return groups;
             }, {})
-          ).map(([month, monthTournaments]) => (
+          ).sort((a, b) => {
+            // Sort months chronologically
+            const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            const [monthA, yearA] = a[0].split(' ');
+            const [monthB, yearB] = b[0].split(' ');
+            if (yearA !== yearB) return yearA - yearB;
+            return months.indexOf(monthA) - months.indexOf(monthB);
+          }).map(([month, monthTournaments]) => (
             <div key={month} className="month-group">
               <h2 className="month-header">{month}</h2>
               {monthTournaments.map(t => {
