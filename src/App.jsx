@@ -353,6 +353,7 @@ function AppContent() {
 
   // ── Tournaments hook ─────────────────────────────────────────────────────
   const {
+    baseTournaments,
     tournaments,
     filteredTournaments,
     currentSeason,

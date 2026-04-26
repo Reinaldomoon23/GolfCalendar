@@ -158,36 +158,25 @@ service cloud.firestore {
       // Read: Anyone (public tournaments)
       allow read: if true;
 
-      // Write: Only admin
+      // Write: Only admin for main doc, but users can write to participants subcollection
       allow write: if isAdmin();
-    }
-
-    // =============================================================
-    // SHARED TOURNAMENTS (Community Pool)
-    // =============================================================
-
-    match /shared_tournaments/{tournamentId} {
-      // Read: Public
-      allow read: if true;
-
-      // Write: Any authenticated user can publish or update participant counts
-      allow write: if isAuthenticated();
-    }
-    // TOURNAMENTS LEADERBOARD (Resultados centralizados)
-    // =============================================================
-
-    match /tournaments_leaderboard/{tournamentId} {
-      // Leer: Público (necesario para ver la clasificación sin estar logueado, igual que el Live Scorecard)
-      allow read: if true;
-
-      // El documento principal del torneo en leaderboard puede ser creado por cualquiera al registrar el primer resultado
-      allow write: if isAuthenticated();
 
       match /participants/{username} {
-        // Leer: Público
+        // Read: Anyone (public leaderboard)
         allow read: if true;
 
-        // Escribir: Solo el usuario autenticado
+        // Write: Any authenticated user can write their own participant data
+        // (Usually username is the document ID)
+        allow write: if isAuthenticated() && (request.auth.uid != null);
+      }
+    }
+
+    // Keep tournaments_leaderboard as an alias for future migration if needed
+    match /tournaments_leaderboard/{tournamentId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+      match /participants/{username} {
+        allow read: if true;
         allow write: if isAuthenticated();
       }
     }

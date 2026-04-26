@@ -19,37 +19,56 @@ const config = {
     try {
         fs.mkdirSync('diverted_dist', { recursive: true });
         
-        // Write the super .htaccess
-        const htaccessContent = `<IfModule mod_rewrite.c>
+        // Write the super .htaccess for subfolder
+        const htaccessSubfolder = `<IfModule mod_rewrite.c>
 RewriteEngine On
 RewriteBase /GolfTeam/
-
-# Evita redirigir la API (para que get_handicap.php siga funcionando para Vercel)
-# Si la ruta contiene /api/, no hagas nada [L]
 RewriteCond %{REQUEST_URI} ^/GolfTeam/api [NC]
 RewriteRule ^.*$ - [L]
-
-# Redirige todo el resto del tráfico web hacia la app de la producción en Vercel
 RewriteCond %{REQUEST_URI} !^/GolfTeam/api [NC]
 RewriteRule ^(.*)$ https://golf-calendar-v3.vercel.app/$1 [R=301,L]
 </IfModule>`;
         
-        fs.writeFileSync(path.join(__dirname, 'diverted_dist', '.htaccess'), htaccessContent);
+        // Write the super .htaccess for root
+        const htaccessRoot = `<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteBase /
+RewriteCond %{REQUEST_URI} ^/api [NC]
+RewriteRule ^.*$ - [L]
+RewriteCond %{REQUEST_URI} !^/api [NC]
+RewriteRule ^(.*)$ https://golf-calendar-v3.vercel.app/$1 [R=301,L]
+</IfModule>`;
 
-        // Upload a dummy index.php to override any index.html that might be lingering
         const indexContent = `<?php
 header("HTTP/1.1 301 Moved Permanently");
 header("Location: https://golf-calendar-v3.vercel.app/");
 exit;
 ?>`;
-        
-        fs.writeFileSync(path.join(__dirname, 'diverted_dist', 'index.php'), indexContent);
 
-        console.log("📤 Configurando la redireccion masiva en FTP...");
-        await ftpDeploy.deploy(config);
-        console.log("✅ Redirección 301 de servidor completada.");
+        // Deploy to /GolfTeam/
+        fs.writeFileSync(path.join(__dirname, 'diverted_dist', '.htaccess'), htaccessSubfolder);
+        fs.writeFileSync(path.join(__dirname, 'diverted_dist', 'index.php'), indexContent);
+        console.log("📤 Configurando redireccion en /GolfTeam/...");
+        await ftpDeploy.deploy({
+            ...config,
+            remoteRoot: "/public_html/GolfTeam/",
+            deleteRemote: true,
+            exclude: ["api/**", "profiles/**", "*.json", "*.php"] // Preserve data and API
+        });
+
+        // Deploy to root
+        fs.writeFileSync(path.join(__dirname, 'diverted_dist', '.htaccess'), htaccessRoot);
+        console.log("📤 Configurando redireccion en el ROOT...");
+        await ftpDeploy.deploy({
+            ...config,
+            remoteRoot: "/public_html/",
+            deleteRemote: true,
+            exclude: ["GolfTeam/**", "api/**", "profiles/**", "*.json", "phpinfo.php", "test_*.php"] // Don't wipe the subfolder we just updated!
+        });
+
+        console.log("✅ Redirección masiva y limpieza completada.");
 
     } catch (err) {
-        console.error("❌ Error subiendo la redirección:", err);
+        console.error("❌ Error en la limpieza/redirección:", err);
     }
 })();

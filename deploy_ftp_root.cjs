@@ -25,7 +25,14 @@ const config = {
     try {
         console.log("📤 Deploying frontend to " + config.remoteRoot + "...");
         await ftpDeploy.deploy(config);
-        console.log("✅ Frontend deployment finished!");
+        console.log("✅ Root deployment finished!");
+
+        // Also deploy to /GolfTeam/ subfolder as it's the official production URL in docs
+        const legacyConfig = { ...config, remoteRoot: "/public_html/GolfTeam/" };
+        console.log("📤 Deploying frontend to " + legacyConfig.remoteRoot + "...");
+        await ftpDeploy.deploy(legacyConfig);
+        console.log("✅ Legacy /GolfTeam/ deployment finished!");
+
     } catch (err) {
         console.log("❌ Deployment failed:", err);
     }
