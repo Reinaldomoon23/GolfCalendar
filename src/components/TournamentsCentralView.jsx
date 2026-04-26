@@ -27,7 +27,7 @@ export default function TournamentsCentralView({ user, tournaments, subscribedTo
     }];
   }, [tournaments]);
 
-  // Filter logic
+  // Filter and Sort logic
   const filtered = useMemo(() => {
     return finalTournaments.filter(t => {
       // 1. Ocultar torneos pasados (Excepto si ya estamos inscritos)
@@ -61,6 +61,13 @@ export default function TournamentsCentralView({ user, tournaments, subscribedTo
       }
 
       return matchesSearch && matchesCountry && matchesCircuit && matchesCategory && matchesType;
+    }).sort((a, b) => {
+      // Sort by start date
+      const { start: startA } = parseDateHelper(a.dates);
+      const { start: startB } = parseDateHelper(b.dates);
+      if (!startA) return 1;
+      if (!startB) return -1;
+      return startA.getTime() - startB.getTime();
     });
   }, [finalTournaments, search, filterCountry, filterCircuit, filterCategory, filterType]);
 

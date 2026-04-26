@@ -167,9 +167,10 @@ export function useTournaments(user, preferences, handleUpdatePreferences, resul
   };
 
   const handleDeleteTournament = async (id) => {
-    const isCustom = customTournaments.some((t) => String(t.id) === String(id));
-    if (isCustom) {
+    const customTournament = customTournaments.find((t) => String(t.id) === String(id));
+    if (customTournament) {
       if (user) await deleteCustomTournament(user, id);
+      // DO NOT hide official tournaments if we just deleted a custom one with the same ID
     } else {
       const newHidden = [...(preferences.hiddenIds || []), id];
       handleUpdatePreferences(null, newHidden);
