@@ -904,11 +904,9 @@ export default function PublicScorecardView() {
                             if (!isNaN(declaredCoursePar) && declaredCoursePar > 0 && totalHolesPlayed === 18 * roundsKeys.length) {
                                 // All holes played: use declared par per round × rounds
                                 cumulativePar = declaredCoursePar * roundsKeys.length;
-                            } else if (!isNaN(declaredCoursePar) && declaredCoursePar > 0 && totalHolesPlayed > 0) {
-                                // Partial round: scale declared par proportionally
-                                const totalPossibleHoles = 18 * roundsKeys.length;
-                                cumulativePar = Math.round((declaredCoursePar * roundsKeys.length) * (totalHolesPlayed / totalPossibleHoles));
                             }
+                            // If it's a partial round, we KEEP the exact sum of the pars of the holes played 
+                            // (which is already in cumulativePar) instead of scaling proportionally.
 
                             const cumulativeDiff = cumulativeScore - cumulativePar;
                             const cumulativeDiffStr = cumulativeDiff > 0 ? `+${cumulativeDiff}` : cumulativeDiff < 0 ? `${cumulativeDiff}` : 'E';
@@ -1022,10 +1020,8 @@ export default function PublicScorecardView() {
                                     if (!isNaN(declaredPar) && declaredPar > 0) {
                                         if (holesPlayed === 18) {
                                             roundPar = declaredPar;
-                                        } else {
-                                            // Proportional: scale declared par to holes played
-                                            roundPar = Math.round(declaredPar * holesPlayed / 18);
                                         }
+                                        // If not 18 holes, DO NOT scale proportionally. Use exact playedPar!
                                     }
                                     const diff = playedStrokes - roundPar;
                                     diffStr = diff > 0 ? `+${diff}` : diff < 0 ? `${diff}` : 'E';
