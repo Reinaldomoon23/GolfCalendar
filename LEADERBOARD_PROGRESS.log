@@ -25,18 +25,19 @@ SESIÓN: 2026-04-26 | Modelo: Antigravity (Google DeepMind)
   Muestra: tabla ordenada, medallas top3, usuario resaltado, estado vacío.
 
 --------------------------------------------------------------------------
-PRÓXIMO PASO: 1.4 — Integrar pestaña "Clasificación" en CalendarView.jsx
+[COMPLETADO] PASO 1.4 — Integrar pestaña "Clasificación" en CalendarView.jsx
+  Archivo modificado: src/components/CalendarView.jsx
+  Cambio: Añadidas pestañas "Mis Resultados" y "Clasificación" condicionadas a isSharedTournamentId().
+  Estado añadido detailTab y lógica de condicional de renderizado para mostrar TournamentLeaderboard.
 --------------------------------------------------------------------------
-  Ver instrucciones detalladas en LEADERBOARD_ROADMAP.md → PASO 1.4
-  Resumen:
-    1. Añadir import de TournamentLeaderboard e isSharedTournamentId
-    2. Añadir estado: const [detailTab, setDetailTab] = useState('results')
-    3. Añadir pestañas HTML antes del bloque "Introducir Resultados" (~línea 2062)
-    4. Condicionar el contenido de resultados con {detailTab === 'results' && ...}
-    5. Añadir bloque {detailTab === 'leaderboard' && <TournamentLeaderboard ... />}
-    6. Resetear detailTab a 'results' en el useEffect de selectedTournament (~línea 342)
 
-SIGUIENTE DESPUÉS DE 1.4: PASO 1.5 — Reglas de Firestore
-  Ver instrucciones en LEADERBOARD_ROADMAP.md → PASO 1.5
+--------------------------------------------------------------------------
+PRÓXIMO PASO: 1.5 — Reglas de Seguridad de Firestore
+--------------------------------------------------------------------------
+  Ver instrucciones detalladas en LEADERBOARD_ROADMAP.md → PASO 1.5
+  Resumen:
+    Añadir las reglas para la nueva colección "tournaments_leaderboard" en la base de datos de Firebase.
+
+SIGUIENTE DESPUÉS DE 1.5: PASO 2.1 — Refactorización de Creación de Torneos Centralizados
 
 ==========================================================================

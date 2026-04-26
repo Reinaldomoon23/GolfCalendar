@@ -12,6 +12,8 @@ import CalendarFilters from './CalendarFilters';
 import MonthGridView from './MonthGridView';
 import CommunityExplorerModal from './CommunityExplorerModal';
 import { generateTournamentDeterministicId } from '../services/tournaments.service';
+import TournamentLeaderboard from './TournamentLeaderboard';
+import { isSharedTournamentId } from '../services/leaderboard.service';
 
 // -------------------------------------------------------------------------
 // LOGIC HELPERS (Shared with Results)
@@ -125,6 +127,7 @@ export default function CalendarView({
     // Note: 'grand_prix' filter option is redundant if we have Groups, but let's keep it for "Highlight" logic or remove it?
     // Let's hide the old filter buttons if they overlap, or keep them as "Time Filters" (Upcoming/All).
 
+    const [detailTab, setDetailTab] = useState('results'); // 'results' | 'leaderboard'
     const [showAddForm, setShowAddForm] = useState(false);
     const [isCommunityModalOpen, setIsCommunityModalOpen] = useState(false);
     const [isFiltersOpen, setIsFiltersOpen] = useState(false);
@@ -174,6 +177,7 @@ export default function CalendarView({
 
     useEffect(() => {
         if (selectedTournament) {
+            setDetailTab('results'); // Reset tab to results when switching tournaments
             // Check if we navigated here with intent to edit
             const shouldEdit = location.state?.edit === true;
             setIsEditing(shouldEdit);
@@ -2059,9 +2063,41 @@ export default function CalendarView({
                                 </button>
                             </div>
 
-                            <div style={{ marginBottom: '1.5rem', borderBottom: '1px solid #eee', paddingBottom: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <h2 style={{ fontSize: '1.25rem', margin: 0, color: 'var(--color-primary)' }}>Introducir Resultados</h2>
-                            </div>
+                            {/* Solo mostrar pestañas si el torneo es centralizado */}
+                            {isSharedTournamentId(selectedTournament.id) && (
+                                <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', borderBottom: '2px solid #e2e8f0', paddingBottom: '0' }}>
+                                    <button
+                                        onClick={() => setDetailTab('results')}
+                                        style={{
+                                            padding: '10px 20px', border: 'none', background: 'none', cursor: 'pointer',
+                                            fontWeight: '700', fontSize: '0.9rem',
+                                            color: detailTab === 'results' ? 'var(--color-primary)' : '#94a3b8',
+                                            borderBottom: detailTab === 'results' ? '2px solid var(--color-primary)' : '2px solid transparent',
+                                            marginBottom: '-2px', transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        📝 Mis Resultados
+                                    </button>
+                                    <button
+                                        onClick={() => setDetailTab('leaderboard')}
+                                        style={{
+                                            padding: '10px 20px', border: 'none', background: 'none', cursor: 'pointer',
+                                            fontWeight: '700', fontSize: '0.9rem',
+                                            color: detailTab === 'leaderboard' ? 'var(--color-primary)' : '#94a3b8',
+                                            borderBottom: detailTab === 'leaderboard' ? '2px solid var(--color-primary)' : '2px solid transparent',
+                                            marginBottom: '-2px', transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        🏆 Clasificación
+                                    </button>
+                                </div>
+                            )}
+
+                            {detailTab === 'results' && (
+                                <>
+                                    <div style={{ marginBottom: '1.5rem', borderBottom: '1px solid #eee', paddingBottom: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <h2 style={{ fontSize: '1.25rem', margin: 0, color: 'var(--color-primary)' }}>Introducir Resultados</h2>
+                                    </div>
 
                             {/* Datos Extra / Stats Setup */}
                             <div style={{ marginBottom: '1.5rem', background: '#f8fafc', padding: '15px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
@@ -2745,6 +2781,15 @@ export default function CalendarView({
                                     </button>
                                 )}
                             </div>
+                        </>
+                    )}
+                    {detailTab === 'leaderboard' && (
+                        <TournamentLeaderboard
+                            tournamentId={String(selectedTournament.id)}
+                            par={getTournamentPar(selectedTournament, results[selectedTournament.id], spanishCourses)}
+                            currentUsername={user?.username}
+                        />
+                    )}
                         </div>
                     ) : (
                         /* Read Only View (Results Tab) */
