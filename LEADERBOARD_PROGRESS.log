@@ -1,0 +1,42 @@
+# LEADERBOARD_PROGRESS.log
+# Players Calendar — Sistema de Clasificación General
+# Actualizar este archivo cada vez que se complete un paso del roadmap
+
+==========================================================================
+SESIÓN: 2026-04-26 | Modelo: Antigravity (Google DeepMind)
+==========================================================================
+
+[COMPLETADO] PASO 1.1 — leaderboard.service.js
+  Archivo creado: src/services/leaderboard.service.js
+  Funciones implementadas:
+    - isSharedTournamentId(id) → detecta torneos centralizados
+    - joinTournamentAsParticipant(user, tournamentId, meta) → registra jugadora sin score
+    - updateParticipantScore(user, tournamentId, resultData) → escribe resumen público
+    - subscribeToLeaderboard(tournamentId, callback) → tiempo real, ordenado por golpes
+
+[COMPLETADO] PASO 1.2 — Auto-sync en UserDataContext.jsx
+  Archivo modificado: src/contexts/UserDataContext.jsx
+  Cambio: handleSaveSpecificResult() ahora llama a updateParticipantScore()
+  en background para torneos con ID centralizado (contiene '_').
+
+[COMPLETADO] PASO 1.3 — TournamentLeaderboard.jsx
+  Archivo creado: src/components/TournamentLeaderboard.jsx
+  Props: tournamentId, par, currentUsername
+  Muestra: tabla ordenada, medallas top3, usuario resaltado, estado vacío.
+
+--------------------------------------------------------------------------
+PRÓXIMO PASO: 1.4 — Integrar pestaña "Clasificación" en CalendarView.jsx
+--------------------------------------------------------------------------
+  Ver instrucciones detalladas en LEADERBOARD_ROADMAP.md → PASO 1.4
+  Resumen:
+    1. Añadir import de TournamentLeaderboard e isSharedTournamentId
+    2. Añadir estado: const [detailTab, setDetailTab] = useState('results')
+    3. Añadir pestañas HTML antes del bloque "Introducir Resultados" (~línea 2062)
+    4. Condicionar el contenido de resultados con {detailTab === 'results' && ...}
+    5. Añadir bloque {detailTab === 'leaderboard' && <TournamentLeaderboard ... />}
+    6. Resetear detailTab a 'results' en el useEffect de selectedTournament (~línea 342)
+
+SIGUIENTE DESPUÉS DE 1.4: PASO 1.5 — Reglas de Firestore
+  Ver instrucciones en LEADERBOARD_ROADMAP.md → PASO 1.5
+
+==========================================================================
