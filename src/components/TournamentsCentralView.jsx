@@ -132,10 +132,23 @@ export default function TournamentsCentralView({ user, tournaments, onAddTournam
                         <span>•</span>
                         <span>{t.course}</span>
                       </div>
-                      <div className="t-tags">
-                        {t.country && <span className="tag country">{t.country}</span>}
-                        {t.circuit && <span className="tag circuit">{t.circuit}</span>}
-                        {t.category && <span className="tag category">{t.category}</span>}
+                      {/* Participant Count & Admin View */}
+                      <div className="t-participants-info">
+                        <CheckCircle size={14} className="participants-icon" />
+                        <span className="participants-count">
+                          {t.participantsCount || 0} jugadoras inscritas
+                        </span>
+                        {user?.role === 'admin' && (
+                          <button 
+                            className="btn-text-only" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              alert(`Jugadoras inscritas en ${t.name}:\n${t.participantsNames?.join(', ') || 'Nadie todavía'}`);
+                            }}
+                          >
+                            (Ver quién)
+                          </button>
+                        )}
                       </div>
                     </div>
                     <div className="t-card-actions">
