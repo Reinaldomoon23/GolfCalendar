@@ -135,6 +135,25 @@ export function useTournaments(user, preferences, handleUpdatePreferences, resul
         }
       });
     }
+    
+    // --- MANUAL INJECTION OF CRITICAL TOURNAMENTS (Global Rescue) ---
+    const hasSub16 = merged.some(t => String(t.id) === '12');
+    if (!hasSub16) {
+      merged.push({
+        id: 12, name: "Campeonato de España Sub16 2026",
+        dates: "01/05/2026 - 03/05/2026", course: "Infinitum Lakes",
+        type: "national_championship", groups: ["valedero"], valedera: true
+      });
+    }
+    const hasCataInf = merged.some(t => String(t.id) === '15');
+    if (!hasCataInf) {
+      merged.push({
+        id: 15, name: "Campionat de Catalunya Infantil, Aleví i Benjamí",
+        dates: "06/06/2026 - 07/06/2026", course: "Golf Costa Brava",
+        type: "regional_championship", groups: ["valedero"], valedera: true
+      });
+    }
+
     return merged;
   }, [baseTournaments, customTournaments, subscribedTournaments, preferences, user?.username, results]);
 
