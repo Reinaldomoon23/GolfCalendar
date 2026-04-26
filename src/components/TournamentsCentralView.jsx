@@ -68,14 +68,12 @@ export default function TournamentsCentralView({ user, tournaments, subscribedTo
   const handleJoin = (t) => {
     if (onJoinTournament) {
       onJoinTournament(t);
-      alert(`Te has apuntado a: ${t.name}`);
     }
   };
 
   const handleLeave = (t) => {
     if (onLeaveTournament) {
       onLeaveTournament(t.id);
-      alert(`Te has dado de baja de: ${t.name}`);
     }
   };
 

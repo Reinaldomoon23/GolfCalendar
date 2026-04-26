@@ -199,7 +199,7 @@ export default function AppHeader({
             <option key={year} value={year}>{year}</option>
           ))}
         </select>
-        <span style={{ fontSize: '0.8em', opacity: 0.7, color: 'var(--color-text-muted)' }}>(v2.9.5)</span>
+        <span style={{ fontSize: '0.8em', opacity: 0.7, color: 'var(--color-text-muted)' }}>(v2.9.6)</span>
       </div>
 
       {/* ── Admin "viewing as" banner ─────────────────────────────────────── */}
