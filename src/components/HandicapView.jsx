@@ -42,13 +42,31 @@ const fmtDateLong = (isoString) => {
 const HandicapView = ({ currentHandicap, history = [] }) => {
 
 
-    // ── displayHistory: reverse history for chronological chart (oldest → newest)
-    // History comes from Firestore sorted by date desc (newest first)
-    // Need to reverse for left-to-right chart visualization
     const displayHistory = useMemo(() => {
         if (!history.length) return [];
-        return [...history].reverse();
-    }, [history]);
+        
+        // Clonamos y ordenamos de más antiguo a más reciente
+        const sorted = [...history].reverse();
+        
+        if (currentHandicap) {
+            const lastEntry = sorted[sorted.length - 1];
+            // Si el handicap actual es diferente al último registrado en el historial,
+            // inyectamos un punto "Actual" para que la gráfica lo refleje.
+            if (String(lastEntry.handicap) !== String(currentHandicap)) {
+                sorted.push({
+                    handicap: currentHandicap,
+                    date: new Date().toISOString(),
+                    source: 'current',
+                    tournament: 'Hándicap actual'
+                });
+            } else {
+                // Si coinciden, simplemente marcamos el último como 'current' para que se pinte verde
+                lastEntry.source = 'current';
+            }
+        }
+        
+        return sorted;
+    }, [history, currentHandicap]);
 
     // ── derived stats ─────────────────────────────────────────
     const stats = useMemo(() => {
