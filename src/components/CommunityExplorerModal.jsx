@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { X, Search, Plus, MapPin, Calendar, User, Share2, Info, Users, CheckCircle, LogOut } from 'lucide-react';
 import { fetchParticipantCounts } from '../services/tournaments.service';
+import { isPast } from '../utils/dateHelpers';
 
 const CATEGORIES = [
     { id: 'all', label: 'Todos', color: '#64748b' },
@@ -53,6 +54,13 @@ export default function CommunityExplorerModal({
     // Filter and Group tournaments
     const filtered = useMemo(() => {
         return sharedTournaments.filter(t => {
+            // 1. Ocultar torneos pasados (si la fecha de fin ya pasó)
+            // A menos que ya estemos apuntados (para poder verlos/quitarlos si fuera necesario)
+            const joined = subscribedTournaments.some(st => String(st.id) === String(t.id)) || 
+                          joinedTournaments.some(jt => String(jt.id) === String(t.id));
+            
+            if (!joined && isPast(t.dates)) return false;
+
             const matchesSearch = t.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                                (t.course || '').toLowerCase().includes(searchTerm.toLowerCase());
             
@@ -65,7 +73,7 @@ export default function CommunityExplorerModal({
             const tType = t.type || 'club';
             return tGroups.includes(activeCategory) || tType === activeCategory;
         });
-    }, [sharedTournaments, searchTerm, activeCategory]);
+    }, [sharedTournaments, searchTerm, activeCategory, subscribedTournaments, joinedTournaments]);
 
     const handleJoinClick = async (t) => {
         setJoiningId(String(t.id));

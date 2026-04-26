@@ -1,4 +1,4 @@
-# 🏆 LEADERBOARD ROADMAP — Sistema de Clasificación General Centralizada
+![alt text](image.png)# 🏆 LEADERBOARD ROADMAP — Sistema de Clasificación General Centralizada
 # Players Calendar / RoundTracker
 # Última actualización: 2026-04-26
 

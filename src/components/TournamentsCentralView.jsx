@@ -1,15 +1,20 @@
 import React, { useState, useMemo } from 'react';
 import { Search, Trophy, MapPin, Globe, Flag, Plus, CheckCircle } from 'lucide-react';
+import { isPast } from '../utils/dateHelpers';
 
 export default function TournamentsCentralView({ user, tournaments, onAddTournament }) {
   const [search, setSearch] = useState('');
   const [filterCountry, setFilterCountry] = useState('Todos');
   const [filterCircuit, setFilterCircuit] = useState('Todos');
   const [filterCategory, setFilterCategory] = useState('Todos');
+  const [filterType, setFilterType] = useState('Todos');
 
   // Filter logic
   const filtered = useMemo(() => {
     return tournaments.filter(t => {
+      // 1. Ocultar torneos pasados
+      if (isPast(t.dates)) return false;
+
       // Show only official centralized ones (the ones with a code or specific type)
       const isOfficial = t.type === 'official' || (t.id && String(t.id).length > 5);
       if (!isOfficial) return false;
@@ -20,14 +25,28 @@ export default function TournamentsCentralView({ user, tournaments, onAddTournam
       const matchesCircuit = filterCircuit === 'Todos' || t.circuit === filterCircuit;
       const matchesCategory = filterCategory === 'Todos' || t.category === filterCategory;
 
-      return matchesSearch && matchesCountry && matchesCircuit && matchesCategory;
+      let matchesType = true;
+      if (filterType !== 'Todos') {
+        const org = (t.organizer || '').toUpperCase();
+        const groups = t.groups || [];
+        if (filterType === 'RFEG') matchesType = org === 'RFEG';
+        else if (filterType === 'FCG') matchesType = org === 'FCG';
+        else if (filterType === 'Legacy') matchesType = groups.includes('legacy');
+        else if (filterType === 'Mérito') matchesType = t.type === 'merit';
+        else if (filterType === 'WAGR') matchesType = groups.includes('wagr');
+        else if (filterType === 'Baby Cup') matchesType = groups.includes('baby_cup');
+        else matchesType = t.type === filterType.toLowerCase();
+      }
+
+      return matchesSearch && matchesCountry && matchesCircuit && matchesCategory && matchesType;
     });
-  }, [tournaments, search, filterCountry, filterCircuit, filterCategory]);
+  }, [tournaments, search, filterCountry, filterCircuit, filterCategory, filterType]);
 
   // Extract unique options for filters
   const countries = ['Todos', ...new Set(tournaments.map(t => t.country).filter(Boolean))];
   const circuits = ['Todos', ...new Set(tournaments.map(t => t.circuit).filter(Boolean))];
   const categories = ['Todos', ...new Set(tournaments.map(t => t.category).filter(Boolean))];
+  const types = ['Todos', 'RFEG', 'FCG', 'WAGR', 'Baby Cup', 'Legacy', 'Mérito'];
 
   const handleJoin = (t) => {
     if (onAddTournament) {
@@ -63,6 +82,12 @@ export default function TournamentsCentralView({ user, tournaments, onAddTournam
             <label><Globe size={14} /> País</label>
             <select value={filterCountry} onChange={(e) => setFilterCountry(e.target.value)}>
               {countries.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <div className="filter-item">
+            <label><Trophy size={14} /> Tipo</label>
+            <select value={filterType} onChange={(e) => setFilterType(e.target.value)}>
+              {types.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
           </div>
           <div className="filter-item">
