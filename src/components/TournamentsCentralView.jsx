@@ -101,50 +101,76 @@ export default function TournamentsCentralView({ user, tournaments, onAddTournam
         </div>
       </section>
 
-      {/* Tournament List */}
+      {/* Tournament List Grouped by Month */}
       <section className="tournament-list">
         {filtered.length === 0 ? (
           <div className="empty-state card">
             <p>No se han encontrado torneos con esos filtros.</p>
           </div>
         ) : (
-          filtered.map(t => {
-            const isJoined = false; // logic for joined check would go here
-
-            return (
-              <div key={t.id} className="tournament-card card">
-                <div className="t-card-main">
-                  <div className="t-hashtag">{t.id}</div>
-                  <h3>{t.name}</h3>
-                  <div className="t-meta">
-                    <span>{t.dates}</span>
-                    <span>•</span>
-                    <span>{t.course}</span>
+          Object.entries(
+            filtered.reduce((groups, t) => {
+              const { start } = parseDateHelper(t.dates);
+              const monthName = start ? start.toLocaleString('es-ES', { month: 'long', year: 'numeric' }) : 'Sin fecha';
+              const capitalizedMonth = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+              if (!groups[capitalizedMonth]) groups[capitalizedMonth] = [];
+              groups[capitalizedMonth].push(t);
+              return groups;
+            }, {})
+          ).map(([month, monthTournaments]) => (
+            <div key={month} className="month-group">
+              <h2 className="month-header">{month}</h2>
+              {monthTournaments.map(t => {
+                const isJoined = false; // logic for joined check
+                return (
+                  <div key={t.id} className="tournament-card card">
+                    <div className="t-card-main">
+                      <div className="t-hashtag">{t.id}</div>
+                      <h3>{t.name}</h3>
+                      <div className="t-meta">
+                        <span>{t.dates}</span>
+                        <span>•</span>
+                        <span>{t.course}</span>
+                      </div>
+                      <div className="t-tags">
+                        {t.country && <span className="tag country">{t.country}</span>}
+                        {t.circuit && <span className="tag circuit">{t.circuit}</span>}
+                        {t.category && <span className="tag category">{t.category}</span>}
+                      </div>
+                    </div>
+                    <div className="t-card-actions">
+                      {isJoined ? (
+                        <button className="btn btn-success" disabled>
+                          <CheckCircle size={18} /> Inscrita
+                        </button>
+                      ) : (
+                        <button className="btn btn-primary" onClick={() => handleJoin(t)}>
+                          <Plus size={18} /> Apuntarse
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <div className="t-tags">
-                    {t.country && <span className="tag country">{t.country}</span>}
-                    {t.circuit && <span className="tag circuit">{t.circuit}</span>}
-                    {t.category && <span className="tag category">{t.category}</span>}
-                  </div>
-                </div>
-                <div className="t-card-actions">
-                  {isJoined ? (
-                    <button className="btn btn-success" disabled>
-                      <CheckCircle size={18} /> Inscrita
-                    </button>
-                  ) : (
-                    <button className="btn btn-primary" onClick={() => handleJoin(t)}>
-                      <Plus size={18} /> Apuntarse
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })
+                );
+              })}
+            </div>
+          ))
         )}
       </section>
 
       <style jsx>{`
+        .month-header {
+          color: #3b82f6;
+          font-size: 1.2rem;
+          font-weight: 800;
+          margin: 30px 0 15px 5px;
+          text-transform: capitalize;
+          border-left: 4px solid #3b82f6;
+          padding-left: 12px;
+          letter-spacing: 0.05em;
+        }
+        .month-group {
+          margin-bottom: 20px;
+        }
         .tournaments-view {
           padding: 20px;
           max-width: 800px;
