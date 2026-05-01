@@ -315,7 +315,12 @@ export default function CalendarView({
     };
 
     useEffect(() => {
-        const h = () => setContextMenu(null);
+        const h = (e) => {
+            if (e.target.closest('[data-context-menu]') || e.target.closest('[data-context-menu-trigger]')) {
+                return;
+            }
+            setContextMenu(null);
+        };
         window.addEventListener('click', h);
         return () => window.removeEventListener('click', h);
     }, []);
@@ -1084,6 +1089,7 @@ export default function CalendarView({
 
         return ReactDOM.createPortal(
             <div 
+                data-context-menu="true"
                 onClick={(e) => e.stopPropagation()}
                 style={{
                     position: 'fixed',
@@ -1290,6 +1296,7 @@ export default function CalendarView({
             >
                 {/* Context Menu Trigger Icon - High Visibility V2 */}
                 <div
+                    data-context-menu-trigger="true"
                     style={{
                         position: 'absolute', top: '50%', right: '10px', transform: 'translateY(-50%)',
                         color: '#000', background: 'white',
@@ -3267,6 +3274,7 @@ export default function CalendarView({
                                 onTouchEnd={handleTouchEnd}
                             >
                                 <div
+                                    data-context-menu-trigger="true"
                                     style={{
                                         position: 'absolute', top: '10px', right: '10px',
                                         color: '#000', background: 'white',

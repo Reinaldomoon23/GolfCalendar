@@ -144,7 +144,18 @@ export function useTournaments(user, preferences, handleUpdatePreferences, resul
         }
       });
     }
-    return merged;
+
+    const seen = new Set();
+    const uniqueMerged = [];
+    merged.forEach(t => {
+      const normalizeStr = (s) => s ? s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "").trim() : "";
+      const key = `${normalizeStr(t.name)}_${normalizeStr(t.dates)}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      uniqueMerged.push(t);
+    });
+
+    return uniqueMerged;
   }, [baseTournaments, customTournaments, subscribedTournaments, preferences, user?.username, results]);
 
   useEffect(() => {
