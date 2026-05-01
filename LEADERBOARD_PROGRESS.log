@@ -143,6 +143,12 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
     - Agregado onClick stopPropagation al wrapper del menú contextual para asegurar que el borrado funcione de inmediato sin cerrarse antes de ejecutarse.
     - Exclusión de torneos ocultos/borrados de las suscripciones en useTournaments.
 
+[COMPLETADO] PERSISTENCIA DE RUTA PARA SAFARI / IOS
+  Archivos modificados:
+    - src/App.jsx
+  Resumen:
+    - Guardado de la última ruta visitada en localStorage para recuperar automáticamente el torneo activo en Safari/iOS tras volver del modo segundo plano (background).
+
 ==========================================================================
   PRÓXIMO PASO: PASO 3.3 — Panel de Control de Administrador
 ==========================================================================

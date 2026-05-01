@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
 
 // Views
@@ -43,9 +43,24 @@ import { IS_MULTI, DEFAULT_PREFERENCES } from './config/app';
 
 function AppContent() {
   const location = useLocation();
+  const navigate = useNavigate();
 
+  // Guardar y restaurar la última ruta para Safari/iOS
+  useEffect(() => {
+    if (location.pathname && location.pathname !== '/' && !location.pathname.startsWith('/live') && !location.pathname.startsWith('/leaderboard')) {
+      localStorage.setItem('last_pwa_route', location.pathname);
+    }
+  }, [location.pathname]);
 
-  // ── PWA Service Worker (silent auto-update) ────────────────────────────
+  useEffect(() => {
+    const savedRoute = localStorage.getItem('last_pwa_route');
+    if (savedRoute && savedRoute !== location.pathname && savedRoute.includes('/event/')) {
+      const isRoot = location.pathname === '/' || location.pathname === '' || location.pathname.includes('Player_HCP') || location.pathname.includes('GolfTeam');
+      if (isRoot) {
+        navigate(savedRoute);
+      }
+    }
+  }, [location.pathname, navigate]);
   const { updateServiceWorker } = useRegisterSW({
     onRegistered(r) {
       if (!r) return;
