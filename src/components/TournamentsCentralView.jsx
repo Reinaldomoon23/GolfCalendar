@@ -162,7 +162,6 @@ export default function TournamentsCentralView({ user, tournaments, subscribedTo
                 return (
                   <div key={t.id} className="tournament-card card">
                     <div className="t-card-main">
-                      <div className="t-hashtag">{t.id}</div>
                       <h3>{t.name}</h3>
                       <div className="t-meta">
                         <span>{t.dates}</span>

@@ -9,6 +9,7 @@ import StatsView from './components/StatsView';
 import HandicapView from './components/HandicapView';
 import LoginViewFirebase from './components/LoginViewFirebase';
 import PublicScorecardView from './components/PublicScorecardView';
+import PublicLeaderboardView from './components/PublicLeaderboardView';
 import TeamLiveScorecard from './components/TeamLiveScorecard';
 import TournamentsCentralView from './components/TournamentsCentralView';
 import AdminDashboardView from './components/admin/AdminDashboardView';
@@ -413,13 +414,16 @@ function AppContent() {
   };
 
   // ── Routing guards ───────────────────────────────────────────────────────
-  const isLive = location.pathname.startsWith('/live/') || location.pathname.startsWith('/live-team/');
+  const isPublicRoute = location.pathname.startsWith('/live/') || 
+                       location.pathname.startsWith('/live-team/') || 
+                       location.pathname.startsWith('/leaderboard/');
 
-  if (isLive) {
+  if (isPublicRoute) {
     return (
       <Routes>
         <Route path="/live/:username/:id" element={<PublicScorecardView />} />
-        <Route path="/live-team/:id" element={<TeamLiveScorecard />} />
+        <Route path="/leaderboard/:id" element={<PublicLeaderboardView />} />
+        <Route path="/live-team/:teamId/:tournamentId" element={<TeamLiveScorecard />} />
       </Routes>
     );
   }
@@ -571,7 +575,17 @@ function AppContent() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function App() {
-  const basename = import.meta.env.BASE_URL.replace(/\/$/, '');
+  const envBase = import.meta.env.BASE_URL.replace(/\/$/, '');
+  let basename = envBase;
+  
+  // Dynamic override for multi-folder support
+  const path = window.location.pathname;
+  if (path.includes('/GolfTeam')) {
+    basename = '/GolfTeam';
+  } else if (path.includes('/Player_HCP')) {
+    basename = '/Player_HCP';
+  }
+  
   return (
     <BrowserRouter basename={basename}>
       <AppContent />

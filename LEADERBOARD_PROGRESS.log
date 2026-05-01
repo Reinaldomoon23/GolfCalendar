@@ -57,7 +57,94 @@ SESIÓN: 2026-04-26 | Modelo: Antigravity (Google DeepMind)
     Se puede hacer Join y Leave (Desapuntarse).
 
 ==========================================================================
- PRÓXIMO PASO: PASO 2.3 — Badge de participantes en lista de torneos
+SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
 ==========================================================================
-  Ver instrucciones en LEADERBOARD_ROADMAP.md → PASO 2.3
-  Resumen: Mostrar en las tarjetas del CalendarView (vista principal) un icono con el número de participantes apuntados a un torneo compartido.
+
+[COMPLETADO] CORRECCIÓN DE EMERGENCIA — Despliegue Quirúrgico
+  Archivos modificados: 
+    - deploy_ftp_root.cjs
+    - deploy_force_redirect.cjs
+  Resumen:
+    Se ha modificado el sistema de despliegue para evitar que la app de golf tome el control de todo el root de Hostinger.
+    - El build completo ahora se aloja solo en `/GolfTeam/`.
+    - Se ha implementado un `.htaccess` inteligente en la raíz que:
+      1. Detecta si el archivo/carpeta solicitado existe físicamente (permite otras webs).
+      2. Redirige SOLO rutas específicas de la app (/live, /stats, etc.) a Vercel.
+      3. Preserva el acceso a la API en Hostinger.
+
+[COMPLETADO] PASO 2.3 — Badge de participantes (Leaderboard)
+  Archivos modificados:
+    - src/services/tournaments.service.js
+    - src/components/CalendarView.jsx
+  Resumen:
+    Implementado contador atómico (Firestore increment) para participantes.
+    Añadido badge visual en la lista principal de torneos.
+
+==========================================================================
+ SESIÓN: 2026-04-29 | Modelo: Antigravity (Google DeepMind)
+==========================================================================
+
+[COMPLETADO] CORRECCIÓN DE INFRAESTRUCTURA — Subdirectorios y Base Relativa
+  Archivos modificados: 
+    - vite.config.js (base: './')
+    - deploy_ftp_root.cjs (remoteRoot: '/Player_HCP/')
+    - deploy_force_redirect.cjs
+  Resumen:
+    Se ha corregido el problema de la "pantalla en blanco" al usar base relativa.
+    La app ahora es compatible con despliegues en cualquier subcarpeta.
+    Se ha configurado reinaldomoon.top/Player_HCP/ como la ruta principal en Hostinger.
+
+[COMPLETADO] PASO 3.1 — Página pública de leaderboard (/leaderboard/:id)
+  Archivo creado: src/components/PublicLeaderboardView.jsx
+  Resumen: Creada vista pública con diseño premium, carga de metadatos del torneo y tabla de posiciones en tiempo real.
+  Corrección técnica: Configurada base absoluta (/Player_HCP/) para soportar rutas profundas.
+
+[COMPLETADO] PASO 3.2 — Botón "Compartir Clasificación"
+  Archivo modificado: src/components/CalendarView.jsx
+  Resumen: Añadido botón en la pestaña de clasificación que genera el link público dinámicamente y permite compartirlo por WhatsApp/Portapapeles.
+
+==========================================================================
+ SESIÓN: 2026-04-30 | Modelo: Antigravity (Google DeepMind)
+==========================================================================
+
+[COMPLETADO] FASE 3.1 & 3.2 — Clasificación Pública y Botón de Compartir
+  Archivos modificados: 
+    - src/components/PublicLeaderboardView.jsx (NUEVO)
+    - src/App.jsx (Routing)
+    - vite.config.js (Base absoluta /Player_HCP/)
+    - src/components/CalendarView.jsx (Botón Compartir)
+  Resumen:
+    Cualquier persona con el link puede ver la clasificación en vivo.
+    Los usuarios pueden compartir el link directamente desde la app.
+
+==========================================================================
+ SESIÓN: 2026-04-30 (Continuación) | Modelo: Antigravity
+==========================================================================
+
+[COMPLETADO] ESTANDARIZACIÓN DE NOMENCLATURA Y LIMPIEZA UI (FASE 2)
+  Archivos modificados: 
+    - src/components/TournamentsCentralView.jsx
+    - src/components/CalendarView.jsx
+  Resumen:
+    - Eliminados los badges de ID / Organizador que mostraban códigos técnicos (ej: "12") en todas las vistas de lista.
+    - La interfaz ahora es 100% limpia, centrada en el nombre del torneo y la información de juego.
+    - Se mantiene la arquitectura de IDs deterministas (slug+fecha) internamente para escalabilidad.
+
+==========================================================================
+ SESIÓN: 2026-05-01 (Continuación)
+==========================================================================
+
+[COMPLETADO] CORRECCIÓN DE DUPLICADOS Y BORRADO EN CALENDARIO
+  Archivos modificados:
+    - src/components/CalendarView.jsx
+    - src/hooks/useTournaments.js
+  Resumen:
+    - Ultra-normalización de la clave de deduplicación de torneos (Set en CalendarView).
+    - Agregado onClick stopPropagation al wrapper del menú contextual para asegurar que el borrado funcione de inmediato sin cerrarse antes de ejecutarse.
+    - Exclusión de torneos ocultos/borrados de las suscripciones en useTournaments.
+
+==========================================================================
+  PRÓXIMO PASO: PASO 3.3 — Panel de Control de Administrador
+==========================================================================
+  Siguiente: Crear una vista centralizada para ver todos los torneos activos en la comunidad y su participación.
+

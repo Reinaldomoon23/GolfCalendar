@@ -1,6 +1,6 @@
 [
     {
-        "id": "TORR0226",
+        "id": "torremirona-cup-infantil-alevi-benjami_1402202615022026",
         "name": "Torremirona Cup (Infantil/Aleví/Benjamí)",
         "dates": "14/02/2026 - 15/02/2026",
         "course": "Torremirona",
@@ -8,11 +8,17 @@
         "country": "España",
         "circuit": "FCG",
         "category": "Juvenil",
-        "qualifications": ["Grand Prix", "Valedera"],
-        "groups": ["club", "grand-prix"]
+        "qualifications": [
+            "Grand Prix",
+            "Valedera"
+        ],
+        "groups": [
+            "club",
+            "grand-prix"
+        ]
     },
     {
-        "id": 1,
+        "id": "orden-de-merito_18012026",
         "dates": "18/01/2026",
         "name": "ORDEN DE MERITO",
         "course": "Tour",
@@ -23,7 +29,7 @@
         ]
     },
     {
-        "id": 105,
+        "id": "infinitum-golf-lakes_25012026",
         "dates": "25/01/2026",
         "name": "Infinitum Golf Lakes",
         "course": "Infinitum Lakes",
@@ -34,7 +40,7 @@
         ]
     },
     {
-        "id": 2,
+        "id": "puntuable-zonal-i-rfeg_3101202601022026",
         "dates": "31/01/2026 - 01/02/2026",
         "name": "Puntuable Zonal I RFEG",
         "course": "Infinitum Lakes",
@@ -48,7 +54,7 @@
         "valedera": true
     },
     {
-        "id": 110,
+        "id": "puntuable-nacional-juvenil_0602202608022026",
         "dates": "06/02/2026 - 08/02/2026",
         "name": "Puntuable Nacional Juvenil",
         "course": "Lauro",
@@ -62,7 +68,7 @@
         "valedera": true
     },
     {
-        "id": 4,
+        "id": "torremirona-cup-infantil-alevi-benjami_1402202615022026",
         "dates": "14/02/2026 - 15/02/2026",
         "name": "Torremirona Cup (Infantil/Aleví/Benjamí)",
         "course": "Torremirona",
@@ -75,7 +81,7 @@
         "valedera": true
     },
     {
-        "id": 5,
+        "id": "orden-de-merito_22022026",
         "dates": "22/02/2026",
         "name": "ORDEN DE MERITO",
         "course": "Stadium",
@@ -86,7 +92,7 @@
         ]
     },
     {
-        "id": 6,
+        "id": "puntuable-zonal-ii-rfeg_2802202601032026",
         "dates": "28/02/2026 - 01/03/2026",
         "name": "Puntuable Zonal II RFEG",
         "course": "Vallromanes/La Roca",
@@ -100,7 +106,7 @@
         "valedera": true
     },
     {
-        "id": 7,
+        "id": "orden-de-merito_15032026",
         "dates": "15/03/2026",
         "name": "ORDEN DE MERITO",
         "course": "Tour",
@@ -111,7 +117,7 @@
         ]
     },
     {
-        "id": 8,
+        "id": "legacy-golf-infantil-alevi-benjami_29032026",
         "dates": "29/03/2026",
         "name": "Legacy Golf (Infantil/Aleví/Benjamí)",
         "course": "Vallromanes",
@@ -126,7 +132,7 @@
         "valedera": true
     },
     {
-        "id": 9,
+        "id": "legacy-golf-infantil-alevi_12042026",
         "dates": "12/04/2026",
         "name": "Legacy Golf (Infantil/Aleví)",
         "course": "Terramar",
@@ -142,7 +148,7 @@
         "valedera": true
     },
     {
-        "id": 10,
+        "id": "orden-de-merito_12042026",
         "dates": "12/04/2026",
         "name": "ORDEN DE MERITO",
         "course": "Stadium",
@@ -154,7 +160,7 @@
         ]
     },
     {
-        "id": 11,
+        "id": "xxv-junior-baby-cup_24052026",
         "dates": "24/05/2026",
         "name": "XXV Junior & Baby Cup",
         "course": "Sant Cugat",
@@ -167,7 +173,7 @@
         ]
     },
     {
-        "id": 12,
+        "id": "campeonato-de-espana-sub16-2026_0105202603052026",
         "dates": "01/05/2026 - 03/05/2026",
         "name": "Campeonato de España Sub16 2026",
         "course": "Infinitum Lakes",
@@ -179,7 +185,7 @@
         "valedera": true
     },
     {
-        "id": 13,
+        "id": "orden-de-merito_03052026",
         "dates": "03/05/2026",
         "name": "ORDEN DE MERITO",
         "course": "Tour",
@@ -191,7 +197,7 @@
         ]
     },
     {
-        "id": 14,
+        "id": "circuito-miguel-angel-jimenez-infantil_10052026",
         "dates": "10/05/2026",
         "name": "Circuito Miguel Angel Jimenez (Infantil)",
         "course": "Barcelona",
@@ -204,7 +210,7 @@
         "valedera": true
     },
     {
-        "id": 15,
+        "id": "campionat-de-catalunya-infantil-alevi-i-benjami_0606202607062026",
         "dates": "06/06/2026 - 07/06/2026",
         "name": "Campionat de Catalunya Infantil, Aleví i Benjamí",
         "course": "Golf Costa Brava",
@@ -216,7 +222,7 @@
         "valedera": true
     },
     {
-        "id": 16,
+        "id": "club-championship_3005202631052026",
         "dates": "30/05/2026 - 31/05/2026",
         "name": "CLUB CHAMPIONSHIP",
         "course": "Tour/Stadium",
@@ -227,7 +233,7 @@
         ]
     },
     {
-        "id": 17,
+        "id": "xxv-junior-baby-cup-infantil-alevi-benjami_07062026",
         "dates": "07/06/2026",
         "name": "XXV Junior & Baby Cup (Infantil/Aleví/Benjamí)",
         "course": "Llavaneras",
@@ -241,7 +247,7 @@
         "valedera": true
     },
     {
-        "id": 18,
+        "id": "orden-de-merito_14062026",
         "dates": "14/06/2026",
         "name": "ORDEN DE MERITO",
         "course": "Stadium",
@@ -252,7 +258,7 @@
         ]
     },
     {
-        "id": 19,
+        "id": "orden-de-merito_19072026",
         "dates": "19/07/2026",
         "name": "ORDEN DE MERITO",
         "course": "Stadium",
@@ -263,7 +269,7 @@
         ]
     },
     {
-        "id": 20,
+        "id": "orden-de-merito_23082026",
         "dates": "23/08/2026",
         "name": "ORDEN DE MERITO",
         "course": "Tour",
@@ -274,7 +280,7 @@
         ]
     },
     {
-        "id": 21,
+        "id": "orden-de-merito_06092026",
         "dates": "06/09/2026",
         "name": "ORDEN DE MERITO",
         "course": "Tour",
@@ -285,7 +291,7 @@
         ]
     },
     {
-        "id": 22,
+        "id": "campionat-de-catalunya-matchplay-sub-18-16-14-12-10-2026_1909202620092026",
         "dates": "19/09/2026 - 20/09/2026",
         "name": "Campionat de Catalunya Matchplay Sub-18/16/14/12/10 2026",
         "course": "Golf Costa Daurada",
@@ -297,7 +303,7 @@
         "valedera": true
     },
     {
-        "id": 23,
+        "id": "campionat-de-catalunya-sub-18-i-sub-16-wagr-2026_0210202604102026",
         "dates": "02/10/2026 - 04/10/2026",
         "name": "Campionat de Catalunya Sub-18 i Sub-16 (WAGR) 2026",
         "course": "Fontanals Golf Club",
@@ -310,7 +316,7 @@
         "valedera": true
     },
     {
-        "id": 24,
+        "id": "orden-de-merito_18102026",
         "dates": "18/10/2026",
         "name": "ORDEN DE MERITO",
         "course": "Tour",
@@ -321,7 +327,7 @@
         ]
     },
     {
-        "id": 25,
+        "id": "orden-de-merito_29112026",
         "dates": "29/11/2026",
         "name": "ORDEN DE MERITO",
         "course": "Stadium",
@@ -332,7 +338,7 @@
         ]
     },
     {
-        "id": 26,
+        "id": "orden-de-merito_13122026",
         "dates": "13/12/2026",
         "name": "ORDEN DE MERITO",
         "course": "Tour",
@@ -343,7 +349,7 @@
         ]
     },
     {
-        "id": 27,
+        "id": "campeonato-de-espana-infantil-alevin-y-benjamin-2026-memorial-juan-antonio-andreu_2606202628062026",
         "dates": "26/06/2026 - 28/06/2026",
         "name": "Campeonato de España Infantil, Alevín y Benjamín 2026 \"Memorial Juan Antonio Andreu\"",
         "course": "Real La Manga Club / La Serena Golf",
@@ -355,7 +361,7 @@
         "valedera": true
     },
     {
-        "id": 28,
+        "id": "campionat-de-catalunya-absolut-i-2a-wagr_1107202612072026",
         "dates": "11/07/2026 - 12/07/2026",
         "name": "Campionat de Catalunya Absolut i 2a (WAGR)",
         "course": "Peralada Golf",
@@ -368,7 +374,7 @@
         "valedera": true
     },
     {
-        "id": 103,
+        "id": "barcelona-junior-golf-open-by-img-academy_1209202613092026",
         "dates": "12/09/2026 - 13/09/2026",
         "name": "Barcelona Junior Golf Open by IMG Academy",
         "course": "Barcelona",
@@ -381,7 +387,7 @@
         "valedera": true
     },
     {
-        "id": 104,
+        "id": "xxv-junior-baby-cup_27092026",
         "dates": "27/09/2026",
         "name": "XXV Junior & Baby Cup",
         "course": "Club de Golf Costa Brava (Recorrido Verde)",

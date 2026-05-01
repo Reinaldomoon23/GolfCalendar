@@ -6,9 +6,10 @@ import { VitePWA } from 'vite-plugin-pwa'
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  const base = '/';
+  const base = '/GolfTeam/';
 
   return {
+    base: base,
     plugins: [
       react(),
       VitePWA({
@@ -58,7 +59,6 @@ export default defineConfig(({ mode }) => {
         }
       })
     ],
-    base: base,
     server: {
       proxy: {
         // Dynamic proxying might be tricky. Let's cover both cases or generic.

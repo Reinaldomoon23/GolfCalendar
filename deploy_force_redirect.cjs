@@ -22,21 +22,37 @@ const config = {
         // Write the super .htaccess for subfolder
         const htaccessSubfolder = `<IfModule mod_rewrite.c>
 RewriteEngine On
-RewriteBase /GolfTeam/
-RewriteCond %{REQUEST_URI} ^/GolfTeam/api [NC]
+RewriteBase /Player_HCP/
+RewriteCond %{REQUEST_URI} ^/Player_HCP/api [NC]
 RewriteRule ^.*$ - [L]
-RewriteCond %{REQUEST_URI} !^/GolfTeam/api [NC]
-RewriteRule ^(.*)$ https://golf-calendar-v3.vercel.app/$1 [R=301,L]
+RewriteCond %{REQUEST_URI} !^/Player_HCP/api [NC]
+RewriteRule ^(.*)$ /Player_HCP/index.html [L]
 </IfModule>`;
         
-        // Write the super .htaccess for root
+        // Write the super .htaccess for root - SURGICAL VERSION
         const htaccessRoot = `<IfModule mod_rewrite.c>
 RewriteEngine On
 RewriteBase /
-RewriteCond %{REQUEST_URI} ^/api [NC]
+
+# 1. No redirigir si el archivo o carpeta existe (Protege otras webs)
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^.*$ - [L]
-RewriteCond %{REQUEST_URI} !^/api [NC]
-RewriteRule ^(.*)$ https://golf-calendar-v3.vercel.app/$1 [R=301,L]
+
+# 2. Preservar la API
+RewriteCond %{REQUEST_URI} ^/api [NC,OR]
+RewriteCond %{REQUEST_URI} ^/Player_HCP/api [NC]
+RewriteRule ^.*$ - [L]
+
+# 3. Redirigir SOLO rutas de Golf a Player_HCP
+RewriteCond %{REQUEST_URI} ^/live/ [NC,OR]
+RewriteCond %{REQUEST_URI} ^/live-team/ [NC,OR]
+RewriteCond %{REQUEST_URI} ^/stats [NC,OR]
+RewriteCond %{REQUEST_URI} ^/handicap [NC,OR]
+RewriteCond %{REQUEST_URI} ^/tournaments [NC,OR]
+RewriteCond %{REQUEST_URI} ^/event/ [NC,OR]
+RewriteCond %{REQUEST_URI} ^/admin [NC]
+RewriteRule ^(.*)$ /Player_HCP/$1 [R=301,L]
 </IfModule>`;
 
         const indexContent = `<?php
@@ -45,13 +61,13 @@ header("Location: https://golf-calendar-v3.vercel.app/");
 exit;
 ?>`;
 
-        // Deploy to /GolfTeam/
+        // Deploy to /Player_HCP/
         fs.writeFileSync(path.join(__dirname, 'diverted_dist', '.htaccess'), htaccessSubfolder);
         fs.writeFileSync(path.join(__dirname, 'diverted_dist', 'index.php'), indexContent);
-        console.log("📤 Configurando redireccion en /GolfTeam/...");
+        console.log("📤 Configurando redireccion en /Player_HCP/...");
         await ftpDeploy.deploy({
             ...config,
-            remoteRoot: "/public_html/GolfTeam/",
+            remoteRoot: "/public_html/Player_HCP/",
             deleteRemote: true,
             exclude: ["api/**", "profiles/**", "*.json", "*.php"] // Preserve data and API
         });
@@ -63,7 +79,7 @@ exit;
             ...config,
             remoteRoot: "/public_html/",
             deleteRemote: true,
-            exclude: ["GolfTeam/**", "api/**", "profiles/**", "*.json", "phpinfo.php", "test_*.php"] // Don't wipe the subfolder we just updated!
+            exclude: ["Player_HCP/**", "api/**", "profiles/**", "*.json", "phpinfo.php", "test_*.php"] // Don't wipe the subfolder we just updated!
         });
 
         console.log("✅ Redirección masiva y limpieza completada.");

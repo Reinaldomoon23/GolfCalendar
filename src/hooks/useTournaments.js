@@ -114,15 +114,24 @@ export function useTournaments(user, preferences, handleUpdatePreferences, resul
   // ─── Merge ───────────────────────────────────────────────────────────────
   const tournaments = useMemo(() => {
     let merged = mergeTournaments(baseTournaments, customTournaments, preferences, user);
+    const hiddenIds = preferences?.hiddenIds || [];
     subscribedTournaments.forEach(st => {
-      const alreadyPresent = merged.some(t => String(t.id) === String(st.id));
+      if (hiddenIds.includes(st.id) || hiddenIds.includes(String(st.id))) return;
+      const alreadyPresent = merged.some(t => 
+        String(t.id) === String(st.id) ||
+        (t.name && st.name && t.name.toLowerCase() === st.name.toLowerCase() && t.dates === st.dates)
+      );
       if (!alreadyPresent) merged.push(st);
     });
     if (results) {
       Object.keys(results).forEach((resId) => {
-        const alreadyExists = merged.some(t => String(t.id) === String(resId));
+        const resData = results[resId];
+        if (!resData) return;
+        const alreadyExists = merged.some(t => 
+          String(t.id) === String(resId) ||
+          (t.name && resData.tournamentName && t.name.toLowerCase() === resData.tournamentName.toLowerCase() && t.dates === resData.tournamentDates)
+        );
         if (!alreadyExists && String(resId).length === 8) {
-          const resData = results[resId];
           merged.push({
             id: resId,
             name: resData.tournamentName || "Torneo Centralizado",
@@ -178,6 +187,10 @@ export function useTournaments(user, preferences, handleUpdatePreferences, resul
     } else {
       const newHidden = [...(preferences.hiddenIds || []), id];
       handleUpdatePreferences(null, newHidden);
+    }
+    // Also remove from subscribed_tournaments to completely remove any duplicate link
+    if (user && id) {
+      await leaveTournament(user, id);
     }
     if (results[id] && user) {
       await deleteResult(user, id);

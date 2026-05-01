@@ -338,9 +338,7 @@ export default function CalendarView({
     };
 
     const handleDeleteFromMenu = (t) => {
-        if (window.confirm(`¿Seguro que quieres borrar "${t.name}"?`)) {
-            if (onDeleteTournament) onDeleteTournament(t.id);
-        }
+        if (onDeleteTournament) onDeleteTournament(t.id);
         setContextMenu(null);
     };
 
@@ -842,7 +840,20 @@ export default function CalendarView({
             return (start <= nowTime && nowTime <= end);
         };
 
-        return tournaments.filter(t => {
+        const seen = new Set();
+        return tournaments
+            .slice()
+            .sort((a, b) => {
+                const hasResA = results && results[a.id] ? 1 : 0;
+                const hasResB = results && results[b.id] ? 1 : 0;
+                if (hasResA !== hasResB) return hasResB - hasResA;
+                return 0;
+            })
+            .filter(t => {
+                const normalizeStr = (s) => s ? s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "").trim() : "";
+                const key = `${normalizeStr(t.name)}_${normalizeStr(t.dates)}`;
+                if (seen.has(key)) return false;
+                seen.add(key);
             // Priority 0: Explicit Hidden Groups
             if (hiddenGroups && hiddenGroups.length > 0) {
                 const shouldHide = hiddenGroups.some(g => {
@@ -1072,19 +1083,22 @@ export default function CalendarView({
         }
 
         return ReactDOM.createPortal(
-            <div style={{
-                position: 'fixed',
-                top: Math.max(10, y + 5),
-                left: Math.max(10, x),
-                zIndex: 9999, // High z-index to be safe
-                background: 'white',
-                border: '1px solid #e2e8f0',
-                borderRadius: '12px',
-                boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
-                padding: '8px',
-                minWidth: `${menuWidth}px`,
-                animation: 'fadeIn 0.1s ease-out'
-            }}>
+            <div 
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                    position: 'fixed',
+                    top: Math.max(10, y + 5),
+                    left: Math.max(10, x),
+                    zIndex: 9999, // High z-index to be safe
+                    background: 'white',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '12px',
+                    boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
+                    padding: '8px',
+                    minWidth: `${menuWidth}px`,
+                    animation: 'fadeIn 0.1s ease-out'
+                }}
+            >
                 <button onClick={() => handleEditFromMenu(contextMenu.tournament)} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '10px', background: 'none', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.9rem', textAlign: 'left', color: '#333' }}>
                     <Edit size={16} /> Editar
                 </button>
@@ -1152,7 +1166,7 @@ export default function CalendarView({
             >
                 <div style={{ padding: '1rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.5rem' }}>
-                        <span className="badge" style={{ fontSize: '0.7rem', background: '#e2e8f0', color: '#475569' }}>{t.organizer || 'CLUB'}</span>
+                        <div />
                         <div style={{ display: 'flex', gap: '4px' }}>
                             {inProgress && (
                                 <span className="badge" style={{ background: '#22c55e', color: 'white', animation: 'pulse 2s infinite' }}>
@@ -2793,11 +2807,48 @@ export default function CalendarView({
                         </>
                     )}
                     {detailTab === 'leaderboard' && (
-                        <TournamentLeaderboard
-                            tournamentId={String(selectedTournament.id)}
-                            par={getTournamentPar(selectedTournament, results[selectedTournament.id], spanishCourses)}
-                            currentUsername={user?.username}
-                        />
+                        <>
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '15px' }}>
+                                <button
+                                    onClick={() => {
+                                        const base = window.location.origin + (import.meta.env.BASE_URL.replace(/\/$/, ''));
+                                        const shareLink = `${base}/leaderboard/${selectedTournament.id}`;
+                                        
+                                        if (navigator.share) {
+                                            navigator.share({
+                                                title: `Clasificación: ${selectedTournament.name}`,
+                                                text: `Sigue la clasificación en tiempo real del torneo ${selectedTournament.name} aquí:`,
+                                                url: shareLink
+                                            }).catch(console.error);
+                                        } else {
+                                            navigator.clipboard.writeText(shareLink);
+                                            alert('Enlace de clasificación copiado al portapapeles:\n' + shareLink);
+                                        }
+                                    }}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px',
+                                        padding: '8px 14px',
+                                        background: '#fffbeb',
+                                        border: '1px solid #f59e0b',
+                                        borderRadius: '30px',
+                                        color: '#b45309',
+                                        fontSize: '0.85rem',
+                                        fontWeight: '700',
+                                        cursor: 'pointer',
+                                        boxShadow: '0 2px 4px rgba(245, 158, 11, 0.1)'
+                                    }}
+                                >
+                                    <Share2 size={14} /> Compartir Clasificación Pública
+                                </button>
+                            </div>
+                            <TournamentLeaderboard
+                                tournamentId={String(selectedTournament.id)}
+                                par={getTournamentPar(selectedTournament, results[selectedTournament.id], spanishCourses)}
+                                currentUsername={user?.username}
+                            />
+                        </>
                     )}
                         </div>
                     ) : (
@@ -3288,6 +3339,12 @@ export default function CalendarView({
                                         <span className="badge" style={{ backgroundColor: '#f59e0b', color: 'white', display: 'inline-flex', alignItems: 'center' }}>
                                             <Share2 size={11} style={{ marginRight: '4px' }} />
                                             COMPARTIDO POR {t.sharedByName?.toUpperCase() || 'USUARIO'}
+                                        </span>
+                                    )}
+                                    {(t.isShared || isSharedTournamentId(t.id)) && t.subscriberCount > 0 && (
+                                        <span className="badge" style={{ backgroundColor: 'rgba(37, 99, 235, 0.1)', color: '#2563eb', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center' }}>
+                                            <Users size={11} style={{ marginRight: '4px' }} />
+                                            {t.subscriberCount} {t.subscriberCount === 1 ? 'PARTICIPANTE' : 'PARTICIPANTES'}
                                         </span>
                                     )}
                                 </div>

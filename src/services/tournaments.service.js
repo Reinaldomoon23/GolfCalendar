@@ -319,14 +319,17 @@ export async function joinTournament(user, tournament) {
   }, { merge: true });
 
   // Increment participant counter on the shared tournament doc (only if it's a shared one)
-  if (tournament.isShared) {
+  if (tournament.isShared || String(tournament.id).includes('_')) {
     try {
       const sharedRef = doc(db, 'shared_tournaments', String(tournament.id));
-      const snap = await getDoc(sharedRef);
-      if (snap.exists()) {
-        const current = snap.data().subscriberCount || 0;
-        await setDoc(sharedRef, { subscriberCount: current + 1 }, { merge: true });
-      }
+      await updateDoc(sharedRef, { 
+        subscriberCount: increment(1) 
+      }).catch(async (err) => {
+        // If doc doesn't exist (it's an official tournament with shared ID but not in shared_tournaments yet)
+        if (err.code === 'not-found') {
+          await setDoc(sharedRef, { ...tournament, subscriberCount: 1 }, { merge: true });
+        }
+      });
     } catch (e) {
       console.warn('[joinTournament] Could not update subscriberCount:', e.message);
     }
@@ -341,13 +344,11 @@ export async function leaveTournament(user, tournamentId) {
   // Check source before decrementing counter
   try {
     const snap = await getDoc(ref);
-    if (snap.exists() && snap.data().source === 'shared') {
+    if (snap.exists() && (snap.data().source === 'shared' || String(tournamentId).includes('_'))) {
       const sharedRef = doc(db, 'shared_tournaments', String(tournamentId));
-      const sharedSnap = await getDoc(sharedRef);
-      if (sharedSnap.exists()) {
-        const current = sharedSnap.data().subscriberCount || 1;
-        await setDoc(sharedRef, { subscriberCount: Math.max(0, current - 1) }, { merge: true });
-      }
+      await updateDoc(sharedRef, { 
+        subscriberCount: increment(-1) 
+      }).catch(() => {/* ignore if shared doc doesn't exist */});
     }
   } catch (e) {
     console.warn('[leaveTournament] Could not update subscriberCount:', e.message);
