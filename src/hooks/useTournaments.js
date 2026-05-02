@@ -113,8 +113,37 @@ export function useTournaments(user, preferences, handleUpdatePreferences, resul
 
   // ─── Merge ───────────────────────────────────────────────────────────────
   const tournaments = useMemo(() => {
-    let merged = mergeTournaments(baseTournaments, customTournaments, preferences, user);
-    const hiddenIds = preferences?.hiddenIds || [];
+    if (results) {
+      Object.keys(results).forEach((resId) => {
+        if (!isNaN(resId) || resId.length < 5) {
+          const resData = results[resId];
+          if (resData && resData.tournamentName && resData.tournamentDates) {
+            const generateSlug = (name, dates) => {
+              if (!name || !dates) return null;
+              const slug = name.toLowerCase()
+                  .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                  .replace(/[^a-z0-9]/g, "-")
+                  .replace(/-+/g, "-")
+                  .replace(/^-|-$/g, "");
+              const dateStr = dates.replace(/[^0-9]/g, "");
+              return `${slug}_${dateStr}`;
+            };
+            const newId = generateSlug(resData.tournamentName, resData.tournamentDates);
+            if (newId && !results[newId]) {
+              results[newId] = resData;
+            }
+          }
+        }
+      });
+    }
+
+    const cleanPreferences = { ...preferences };
+    if (results && cleanPreferences.hiddenIds) {
+      cleanPreferences.hiddenIds = cleanPreferences.hiddenIds.filter(id => !results[id] && !results[String(id)]);
+    }
+
+    let merged = mergeTournaments(baseTournaments, customTournaments, cleanPreferences, user);
+    const hiddenIds = cleanPreferences?.hiddenIds || [];
     subscribedTournaments.forEach(st => {
       if (hiddenIds.includes(st.id) || hiddenIds.includes(String(st.id))) return;
       const alreadyPresent = merged.some(t => 
