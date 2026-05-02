@@ -1,0 +1,12 @@
+Checking results subcollection for Nicole...
+Result ID: "1" -> tournamentName: "undefined", dates: "undefined"
+Result ID: "12" -> tournamentName: "Campeonato de España Sub16 2026", dates: "01/05/2026 - 03/05/2026"
+Result ID: "9" -> tournamentName: "Legacy Golf (Infantil/Aleví)", dates: "12/04/2026"
+Result ID: "FG43TF92" -> tournamentName: "Torremirona Cup (Infantil/Aleví/Benjamí)", dates: "22/02/2026"
+Result ID: "infinitum-golf-lakes_25012026" -> tournamentName: "undefined", dates: "undefined"
+Result ID: "junior-baby-cup-infantil-alevi-benjami_26042026" -> tournamentName: "Junior Baby Cup (Infantil/Aleví/Benjamí)", dates: "26/04/2026"
+Result ID: "junior-babycup-sustitucion-vuelta-valedera-infinitum_22022026" -> tournamentName: "Junior BabyCup (Vuelta Valedera Infinitum)", dates: "22/02/2026"
+Result ID: "mediterranean-golf-championship-wagr_0703202608032026" -> tournamentName: "Mediterranean Golf Championship (WAGR)", dates: "07/03/2026 - 08/03/2026"
+Result ID: "puntuable-zonal-i-rfeg_01022026" -> tournamentName: "undefined", dates: "undefined"
+Result ID: "puntuable-zonal-ii-rfeg_1804202619042026" -> tournamentName: "Puntuable Zonal II RFEG", dates: "18/04/2026 - 19/04/2026"
+Result ID: "torremirona-cup-infantil-alevi-benjami_1402202615022026" -> tournamentName: "undefined", dates: "undefined"

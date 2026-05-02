@@ -45,22 +45,12 @@ function AppContent() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Guardar y restaurar la última ruta para Safari/iOS
+  // Clear old saved route to prevent any residual redirection
   useEffect(() => {
-    if (location.pathname && location.pathname !== '/' && !location.pathname.startsWith('/live') && !location.pathname.startsWith('/leaderboard')) {
-      localStorage.setItem('last_pwa_route', location.pathname);
-    }
-  }, [location.pathname]);
+    localStorage.removeItem('last_pwa_route');
+  }, []);
 
-  useEffect(() => {
-    const savedRoute = localStorage.getItem('last_pwa_route');
-    if (savedRoute && savedRoute !== location.pathname && savedRoute.includes('/event/')) {
-      const isRoot = location.pathname === '/' || location.pathname === '' || location.pathname.includes('Player_HCP') || location.pathname.includes('GolfTeam');
-      if (isRoot) {
-        navigate(savedRoute);
-      }
-    }
-  }, [location.pathname, navigate]);
+
   const { updateServiceWorker } = useRegisterSW({
     onRegistered(r) {
       if (!r) return;
@@ -386,6 +376,34 @@ function AppContent() {
     };
   }, [user]);
 
+  // ── Mapeo de resultados para IDs antiguos ──
+  const mappedResults = useMemo(() => {
+    if (!results) return {};
+    const copy = { ...results };
+    Object.keys(results).forEach((resId) => {
+      if (!isNaN(resId) || resId.length < 5) {
+        const resData = results[resId];
+        if (resData && resData.tournamentName && resData.tournamentDates) {
+          const generateSlug = (name, dates) => {
+            if (!name || !dates) return null;
+            const slug = name.toLowerCase()
+                .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                .replace(/[^a-z0-9]/g, "-")
+                .replace(/-+/g, "-")
+                .replace(/^-|-$/g, "");
+            const dateStr = dates.replace(/[^0-9]/g, "");
+            return `${slug}_${dateStr}`;
+          };
+          const newId = generateSlug(resData.tournamentName, resData.tournamentDates);
+          if (newId && !copy[newId]) {
+            copy[newId] = resData;
+          }
+        }
+      }
+    });
+    return copy;
+  }, [results]);
+
   // ── Tournaments hook ─────────────────────────────────────────────────────
   const {
     baseTournaments,
@@ -402,7 +420,7 @@ function AppContent() {
     subscribedTournaments,
     subscribedIds,
     sharedTournaments,
-  } = useTournaments(user, preferences, handleUpdatePreferences, results);
+  } = useTournaments(user, preferences, handleUpdatePreferences, mappedResults);
 
   // ── Results handlers ─────────────────────────────────────────────────────
   const handleUpdateResults = async (newResults) => {
@@ -496,7 +514,7 @@ function AppContent() {
             <CalendarView
               viewMode="calendar"
               tournaments={filteredTournaments}
-              results={results}
+              results={mappedResults}
               activeGroups={isSpecialUser ? [] : preferences.groups}
               hiddenGroups={isSpecialUser ? ['merit'] : []}
               customThemes={preferences.themes}
@@ -521,7 +539,7 @@ function AppContent() {
             <CalendarView
               viewMode="calendar"
               tournaments={filteredTournaments}
-              results={results}
+              results={mappedResults}
               activeGroups={isSpecialUser ? [] : preferences.groups}
               hiddenGroups={isSpecialUser ? ['merit'] : []}
               customThemes={preferences.themes}
@@ -542,8 +560,8 @@ function AppContent() {
               allAvailableTournaments={[...(baseTournaments || []), ...(sharedTournaments || [])]}
             />
           } />
-          <Route path="/stats" element={<StatsView user={user} linkedUsers={linkedUsers} results={results} tournaments={tournaments} />} />
-          <Route path="/handicap" element={<HandicapView user={user} currentHandicap={handicap} history={history} results={results} tournaments={tournaments} />} />
+          <Route path="/stats" element={<StatsView user={user} linkedUsers={linkedUsers} results={mappedResults} tournaments={tournaments} />} />
+          <Route path="/handicap" element={<HandicapView user={user} currentHandicap={handicap} history={history} results={mappedResults} tournaments={tournaments} />} />
           <Route path="/tournaments" element={
             <TournamentsCentralView 
               user={user} 
