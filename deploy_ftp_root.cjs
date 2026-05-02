@@ -10,7 +10,7 @@ const config = {
     port: 21,
     localRoot: path.join(__dirname, "dist"),
     remoteRoot: "/public_html/GolfTeam/",
-    include: ["*", "**/*"],
+    include: ["*", "**/*", ".htaccess"],
     exclude: [
         "dist/**/*.map",
         ".git/**",
