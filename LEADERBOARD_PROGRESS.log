@@ -154,3 +154,21 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
 ==========================================================================
   Siguiente: Crear una vista centralizada para ver todos los torneos activos en la comunidad y su participación.
 
+
+==========================================================================
+ SESIÓN: 2026-05-03 | Modelo: Antigravity (Google DeepMind)
+==========================================================================
+
+[COMPLETADO] PASO 3.2/3.3 — Panel de Control de Administrador para Torneos Centralizados
+  Archivos modificados: 
+    - src/components/admin/TournamentsAdminPanel.jsx
+  Resumen:
+    - Se añadió un sistema de pestañas ("Oficiales RFEG/FCG" vs "Centralizados").
+    - Ahora el administrador puede ver la lista de torneos compartidos y cuánta gente hay apuntada en cada uno.
+    - Se añadió un formulario para "Crear Torneo Centralizado" directamente desde el panel (con ID determinista y `isCentral: true`).
+    - Se incluyó la funcionalidad de "Ver Participantes", que carga y ordena los resultados de la subcolección `participants` de cada torneo.
+
+==========================================================================
+  PRÓXIMO PASO: PASO 3.4 — Clasificaciones por ronda
+==========================================================================
+  Siguiente: Añadir filtros por ronda (D1, D2, Total) en el componente TournamentLeaderboard.jsx.
