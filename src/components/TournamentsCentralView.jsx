@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Search, Trophy, MapPin, Globe, Flag, Plus, CheckCircle } from 'lucide-react';
 import { isPast, parseDateHelper } from '../utils/dateHelpers';
 
-export default function TournamentsCentralView({ user, tournaments, subscribedTournaments = [], subscribedIds = [], onJoinTournament, onLeaveTournament }) {
+export default function TournamentsCentralView({ user, allTournaments = [], activeCalendarTournaments = [], subscribedTournaments = [], subscribedIds = [], onJoinTournament, onLeaveTournament }) {
   const [search, setSearch] = useState('');
   const [filterCountry, setFilterCountry] = useState('Todos');
   const [filterCircuit, setFilterCircuit] = useState('Todos');
@@ -10,14 +10,15 @@ export default function TournamentsCentralView({ user, tournaments, subscribedTo
   const [filterType, setFilterType] = useState('Todos');
 
   // Emergency Rescue for ID 12 (Sub16) - If it's missing from the database, we INJECT it
-  const finalTournaments = tournaments;
+  const finalTournaments = allTournaments;
 
   // Filter and Sort logic
   // Filter and Sort logic
   const filtered = useMemo(() => {
     return finalTournaments.filter(t => {
       // 1. Ocultar torneos pasados (Excepto si ya estamos inscritos)
-      const isJoined = (subscribedIds || []).some(id => String(id) === String(t.id));
+      const isJoined = (subscribedIds || []).some(id => String(id) === String(t.id)) || 
+                       (activeCalendarTournaments || []).some(act => String(act.id) === String(t.id));
       if (isPast(t.dates) && !isJoined) return false;
 
       // FUERZA BRUTA: El ID 12 (Sub16), ID 13 (OM) y ID 15 (Infantil Catalunya) TIENEN QUE VERSE SIEMPRE
@@ -158,7 +159,8 @@ export default function TournamentsCentralView({ user, tournaments, subscribedTo
             <div key={month} className="month-group">
               <h2 className="month-header">{month}</h2>
               {monthTournaments.map(t => {
-                const isJoined = (subscribedIds || []).some(id => String(id) === String(t.id));
+                const isJoined = (subscribedIds || []).some(id => String(id) === String(t.id)) || 
+                                 (activeCalendarTournaments || []).some(act => String(act.id) === String(t.id));
                 return (
                   <div key={t.id} className="tournament-card card">
                     <div className="t-card-main">

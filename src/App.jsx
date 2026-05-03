@@ -565,7 +565,8 @@ function AppContent() {
           <Route path="/tournaments" element={
             <TournamentsCentralView 
               user={user} 
-              tournaments={tournaments} 
+              allTournaments={[...(baseTournaments || []), ...(sharedTournaments || [])]}
+              activeCalendarTournaments={tournaments}
               subscribedTournaments={subscribedTournaments}
               subscribedIds={subscribedIds}
               onJoinTournament={handleJoinTournament} 

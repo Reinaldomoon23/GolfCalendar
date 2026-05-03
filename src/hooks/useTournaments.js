@@ -207,6 +207,14 @@ export function useTournaments(user, preferences, handleUpdatePreferences, resul
   const handleJoinTournament = async (tournament) => {
     if (!user) return;
     await joinTournament(user, tournament);
+    
+    if (preferences?.hiddenIds) {
+      const isHidden = preferences.hiddenIds.some(id => String(id) === String(tournament.id));
+      if (isHidden) {
+        const newHidden = preferences.hiddenIds.filter(id => String(id) !== String(tournament.id));
+        handleUpdatePreferences(null, newHidden);
+      }
+    }
   };
 
   const handleLeaveTournament = async (tournamentId) => {
