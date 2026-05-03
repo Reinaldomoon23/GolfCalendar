@@ -45,10 +45,18 @@ function AppContent() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Clear old saved route to prevent any residual redirection
   useEffect(() => {
-    localStorage.removeItem('last_pwa_route');
-  }, []);
+    // If iOS unloads the PWA and restarts it at the root URL, restore the scoring session
+    try {
+      const savedMobile = localStorage.getItem('golf_tracker_mobile_mode');
+      if (savedMobile && window.location.pathname === '/') {
+        const parsed = JSON.parse(savedMobile);
+        if (parsed.tournamentId) {
+          navigate(`/t/${parsed.tournamentId}`, { replace: true });
+        }
+      }
+    } catch(e) {}
+  }, [navigate]);
 
 
   const { updateServiceWorker } = useRegisterSW({

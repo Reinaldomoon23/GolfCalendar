@@ -174,7 +174,8 @@ export default function CalendarView({
                 holeIdx: mobileMode.holeIdx,
                 tournamentId: id
             }));
-        } else {
+        } else if (!mobileMode && id) {
+            // Only remove if they are explicitly on the tournament page and closed it
             localStorage.removeItem('golf_tracker_mobile_mode');
         }
     }, [mobileMode, id]);
