@@ -10,15 +10,25 @@ export default function TournamentsCentralView({ user, allTournaments = [], acti
   const [filterType, setFilterType] = useState('Todos');
 
   // Emergency Rescue for ID 12 (Sub16) - If it's missing from the database, we INJECT it
-  const finalTournaments = allTournaments;
+  const finalTournaments = useMemo(() => {
+    const seen = new Set();
+    const unique = [];
+    for (const t of allTournaments) {
+      if (!t || !t.id) continue;
+      const key = String(t.id);
+      if (!seen.has(key)) {
+        seen.add(key);
+        unique.push(t);
+      }
+    }
+    return unique;
+  }, [allTournaments]);
 
-  // Filter and Sort logic
   // Filter and Sort logic
   const filtered = useMemo(() => {
     return finalTournaments.filter(t => {
       // 1. Ocultar torneos pasados (Excepto si ya estamos inscritos)
-      const isJoined = (subscribedIds || []).some(id => String(id) === String(t.id)) || 
-                       (activeCalendarTournaments || []).some(act => String(act.id) === String(t.id));
+      const isJoined = (subscribedIds || []).some(id => String(id) === String(t.id));
       if (isPast(t.dates) && !isJoined) return false;
 
       // FUERZA BRUTA: El ID 12 (Sub16), ID 13 (OM) y ID 15 (Infantil Catalunya) TIENEN QUE VERSE SIEMPRE
@@ -159,8 +169,7 @@ export default function TournamentsCentralView({ user, allTournaments = [], acti
             <div key={month} className="month-group">
               <h2 className="month-header">{month}</h2>
               {monthTournaments.map(t => {
-                const isJoined = (subscribedIds || []).some(id => String(id) === String(t.id)) || 
-                                 (activeCalendarTournaments || []).some(act => String(act.id) === String(t.id));
+                const isJoined = (subscribedIds || []).some(id => String(id) === String(t.id));
                 return (
                   <div key={t.id} className="tournament-card card">
                     <div className="t-card-main">
