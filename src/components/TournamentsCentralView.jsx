@@ -14,8 +14,9 @@ export default function TournamentsCentralView({ user, allTournaments = [], acti
     const seen = new Set();
     const unique = [];
     for (const t of allTournaments) {
-      if (!t || !t.id) continue;
-      const key = String(t.id);
+      if (!t || !t.name) continue;
+      const normalizeStr = (s) => s ? s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "").trim() : "";
+      const key = `${normalizeStr(t.name)}_${normalizeStr(t.dates)}`;
       if (!seen.has(key)) {
         seen.add(key);
         unique.push(t);
