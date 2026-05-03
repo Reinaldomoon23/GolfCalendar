@@ -243,27 +243,28 @@ export default function TournamentsCentralView({ user, allTournaments = [], acti
           margin: 0 auto;
           margin-bottom: 80px;
         }
-        .header-content h1 { margin: 0; font-size: 2rem; color: #f8fafc; }
-        .header-content p { margin: 5px 0 0; color: #94a3b8; }
+        .header-content h1 { margin: 0; font-size: 2rem; color: var(--color-primary); }
+        .header-content p { margin: 5px 0 0; color: var(--color-text-muted); }
         .view-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-        .header-icon { color: #fcd34d; opacity: 0.8; }
+        .header-icon { color: var(--color-primary); opacity: 0.8; }
         
-        .filters-section { padding: 16px; margin-bottom: 20px; background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255,255,255,0.1); }
-        .search-bar { display: flex; align-items: center; gap: 10px; background: #0f172a; padding: 10px 15px; border-radius: 8px; margin-bottom: 15px; }
-        .search-bar input { background: transparent; border: none; color: white; width: 100%; outline: none; }
+        .filters-section { padding: 16px; margin-bottom: 20px; background: var(--color-surface); border: 1px solid var(--color-surface-soft); border-radius: 12px; }
+        .search-bar { display: flex; align-items: center; gap: 10px; background: var(--color-bg); padding: 10px 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid rgba(0,0,0,0.1); }
+        .search-bar input { background: transparent; border: none; color: var(--color-text-main); width: 100%; outline: none; }
+        .search-bar input::placeholder { color: var(--color-text-muted); }
         
         .filter-group { display: flex; gap: 10px; flex-wrap: wrap; }
         .filter-item { flex: 1; min-width: 120px; }
-        .filter-item label { display: flex; align-items: center; gap: 5px; font-size: 0.8rem; color: #94a3b8; margin-bottom: 5px; }
-        .filter-item select { width: 100%; padding: 8px; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 6px; }
+        .filter-item label { display: flex; align-items: center; gap: 5px; font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 5px; font-weight: 600; }
+        .filter-item select { width: 100%; padding: 8px; background: var(--color-surface); border: 1px solid rgba(0,0,0,0.1); color: var(--color-text-main); border-radius: 6px; }
         
-        .tournament-card { display: flex; justify-content: space-between; align-items: center; padding: 16px; margin-bottom: 12px; transition: transform 0.2s; }
-        .tournament-card:hover { transform: translateY(-2px); border-color: #3b82f6; }
-        .t-hashtag { font-family: monospace; font-size: 0.75rem; color: #3b82f6; background: rgba(59, 130, 246, 0.1); padding: 2px 6px; border-radius: 4px; display: inline-block; margin-bottom: 4px; }
-        .t-card-main h3 { margin: 0 0 5px; font-size: 1.1rem; }
-        .t-meta { font-size: 0.85rem; color: #94a3b8; display: flex; gap: 8px; margin-bottom: 10px; }
+        .tournament-card { display: flex; justify-content: space-between; align-items: center; padding: 16px; margin-bottom: 12px; transition: transform 0.2s; border: 1px solid rgba(0,0,0,0.05); }
+        .tournament-card:hover { transform: translateY(-2px); border-color: var(--color-primary); }
+        .t-hashtag { font-family: monospace; font-size: 0.75rem; color: var(--color-primary); background: rgba(0,0,0,0.05); padding: 2px 6px; border-radius: 4px; display: inline-block; margin-bottom: 4px; }
+        .t-card-main h3 { margin: 0 0 5px; font-size: 1.1rem; color: var(--color-text-main); }
+        .t-meta { font-size: 0.85rem; color: var(--color-text-muted); display: flex; gap: 8px; margin-bottom: 10px; }
         .t-tags { display: flex; gap: 6px; flex-wrap: wrap; }
-        .tag { font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; background: #334155; color: #cbd5e1; }
+        .tag { font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; background: var(--color-surface-soft); color: var(--color-text-muted); }
         .tag.country { border: 1px solid #059669; color: #34d399; }
         .tag.circuit { border: 1px solid #7c3aed; color: #a78bfa; }
         
