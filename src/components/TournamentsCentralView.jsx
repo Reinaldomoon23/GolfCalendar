@@ -171,10 +171,15 @@ export default function TournamentsCentralView({ user, allTournaments = [], acti
               <h2 className="month-header">{month}</h2>
               {monthTournaments.map(t => {
                 const isJoined = (subscribedIds || []).some(id => String(id) === String(t.id));
+                const isOfficial = !t.isShared && !t.custom;
+                
                 return (
-                  <div key={t.id} className="tournament-card card">
+                  <div key={t.id} className={`tournament-card card ${isOfficial ? 'official' : ''}`}>
                     <div className="t-card-main">
-                      <h3>{t.name}</h3>
+                      <h3>
+                        {t.name}
+                        {isOfficial && <span className="badge-official">OFICIAL</span>}
+                      </h3>
                       <div className="t-meta">
                         <span>{t.dates}</span>
                         <span>•</span>
@@ -261,6 +266,10 @@ export default function TournamentsCentralView({ user, allTournaments = [], acti
         .tag { font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; background: #334155; color: #cbd5e1; }
         .tag.country { border: 1px solid #059669; color: #34d399; }
         .tag.circuit { border: 1px solid #7c3aed; color: #a78bfa; }
+        
+        .tournament-card.official { border-left: 4px solid #ef4444; }
+        .tournament-card.official h3 { color: #ef4444; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+        .badge-official { font-size: 0.65rem; background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.5); padding: 2px 6px; border-radius: 4px; letter-spacing: 0.05em; font-weight: 700; }
         
         .t-card-actions { margin-left: 20px; }
         .btn-success { background: #059669; color: white; border: none; padding: 8px 16px; border-radius: 8px; display: flex; align-items: center; gap: 5px; }
