@@ -99,6 +99,38 @@ const MobileScorecardEditor = ({
         setIsFirstKey(true);
     }, [activeField]);
 
+    // Keep screen awake while in live scoring mode
+    useEffect(() => {
+        let wakeLock = null;
+
+        const requestWakeLock = async () => {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                }
+            } catch (err) {
+                console.warn('Wake Lock request failed:', err.message);
+            }
+        };
+
+        requestWakeLock();
+
+        const handleVisibilityChange = () => {
+            if (wakeLock !== null && document.visibilityState === 'visible') {
+                requestWakeLock();
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            if (wakeLock !== null) {
+                wakeLock.release().catch(() => {});
+            }
+        };
+    }, []);
+
     if (!card) return null;
 
     const strokes = (card.strokes || [])[holeIdx] || '';
