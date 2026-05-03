@@ -52,7 +52,7 @@ function AppContent() {
       if (savedMobile && window.location.pathname === '/') {
         const parsed = JSON.parse(savedMobile);
         if (parsed.tournamentId) {
-          navigate(`/t/${parsed.tournamentId}`, { replace: true });
+          navigate(`/event/${parsed.tournamentId}`, { replace: true });
         }
       }
     } catch(e) {}
