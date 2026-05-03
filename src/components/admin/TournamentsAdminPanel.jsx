@@ -146,7 +146,15 @@ function TournamentsAdminPanel() {
 
   const startEditTournament = (tournament) => {
     setEditingTournament(tournament);
-    setFormData({ ...tournament });
+    setFormData({ 
+      ...tournament,
+      course: tournament.course || tournament.location || '',
+      par: tournament.par || 72,
+      category: tournament.category || 'General',
+      circuit: tournament.circuit || 'Nacional',
+      country: tournament.country || 'ESP',
+      organization: tournament.organization || tournament.organizer || 'RFEG'
+    });
   };
 
   const resetForm = () => {
@@ -677,33 +685,86 @@ function TournamentsAdminPanel() {
                 />
               </div>
 
-              <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem', fontWeight: '500' }}>
-                  Ubicación
-                </label>
-                <input
-                  type="text"
-                  value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  style={{ width: '100%', padding: '0.75rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}
-                />
+              <div style={{ display: 'grid', gridTemplateColumns: '3fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem', fontWeight: '500' }}>
+                    Campo (Ubicación)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.course || formData.location || ''}
+                    onChange={(e) => setFormData({ ...formData, course: e.target.value, location: e.target.value })}
+                    style={{ width: '100%', padding: '0.75rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem', fontWeight: '500' }}>
+                    Par del campo
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.par || 72}
+                    onChange={(e) => setFormData({ ...formData, par: parseInt(e.target.value) || 72 })}
+                    style={{ width: '100%', padding: '0.75rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem', fontWeight: '500' }}>
+                    Organización
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.organization}
+                    onChange={(e) => setFormData({ ...formData, organization: e.target.value, organizer: e.target.value })}
+                    placeholder="Ej. RFEG, FCG, Club..."
+                    style={{ width: '100%', padding: '0.75rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem', fontWeight: '500' }}>
+                    Circuito
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.circuit || ''}
+                    onChange={(e) => setFormData({ ...formData, circuit: e.target.value })}
+                    placeholder="Ej. Nacional, Regional..."
+                    style={{ width: '100%', padding: '0.75rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem', fontWeight: '500' }}>
+                    País
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.country || 'ESP'}
+                    onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                    style={{ width: '100%', padding: '0.75rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}
+                  />
+                </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem', fontWeight: '500' }}>
-                    Organización
+                    Categoría
                   </label>
                   <select
-                    value={formData.organization}
-                    onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
+                    value={formData.category || 'General'}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                     style={{ width: '100%', padding: '0.75rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}
                   >
-                    <option value="RFEG">RFEG</option>
-                    <option value="FCG">FCG</option>
-                    <option value="club">Club</option>
-                    <option value="juvenil">Juvenil</option>
-                    <option value="adultos">Adultos</option>
+                    <option value="General">General</option>
+                    <option value="Infantil">Infantil</option>
+                    <option value="Cadete">Cadete</option>
+                    <option value="Boy/Girl">Boy/Girl</option>
+                    <option value="Absoluto">Absoluto</option>
                   </select>
                 </div>
 
