@@ -1,7 +1,7 @@
 {
   "name": "roundtracker",
   "private": true,
-  "version": "3.0.1",
+  "version": "3.0.2",
   "type": "module",
   "description": "RoundTracker - Professional golf tournament and handicap tracking app",
   "author": "Reinaldo Moon",
