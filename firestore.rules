@@ -19,7 +19,10 @@ service cloud.firestore {
 
     // Check if user is accessing their own document
     function isOwner(uid) {
-      return isAuthenticated() && request.auth.uid == uid;
+      return isAuthenticated() && (
+        request.auth.uid == uid || 
+        (userDocExists(uid) && getUserProfile(uid).uid == request.auth.uid)
+      );
     }
 
     // Get user's profile data
@@ -29,9 +32,11 @@ service cloud.firestore {
 
     // Check if authenticated user is an admin
     function isAdmin() {
-      return isAuthenticated() &&
-             userDocExists(request.auth.uid) &&
-             getUserProfile(request.auth.uid).role == 'admin';
+      return isAuthenticated() && (
+        (userDocExists(request.auth.uid) && getUserProfile(request.auth.uid).role == 'admin') ||
+        request.auth.token.email == 'jordi@23lunes.studio' ||
+        request.auth.token.email == 'misterpotatolightyear@gmail.com'
+      );
     }
 
     // Check if user is a manager of a specific username
@@ -130,8 +135,8 @@ service cloud.firestore {
       }
 
       match /subscribed_tournaments/{tournamentId} {
-        // Read: Owner only (private subscription list)
-        allow read: if isAdmin() || canAccessUser(userId);
+        // Read: Anyone (public)
+        allow read: if true;
 
         // Write: Owner, manager, or admin
         allow write: if isAdmin() || canAccessUser(userId);
