@@ -172,3 +172,28 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
   PRÓXIMO PASO: PASO 3.4 — Clasificaciones por ronda
 ==========================================================================
   Siguiente: Añadir filtros por ronda (D1, D2, Total) en el componente TournamentLeaderboard.jsx.
+
+==========================================================================
+ SESIÓN: 2026-05-04 | Modelo: Antigravity (Google DeepMind)
+==========================================================================
+
+[COMPLETADO] MEJORAS DE ESTABILIDAD Y PWA (MOBILE)
+  Archivos modificados: 
+    - src/App.jsx
+    - src/components/CalendarView.jsx
+    - src/components/MobileScorecardEditor.jsx
+  Resumen:
+    - Corrección de la pérdida de estado en la tarjeta de puntuación (PWA iOS) al cambiar de app, redirigiendo a la ruta `/event/:id` automáticamente al volver a cargar.
+    - Integración de Screen Wake Lock API (`navigator.wakeLock`) para mantener la pantalla encendida automáticamente mientras se tiene abierta la ventana de anotación en el campo.
+
+[COMPLETADO] CORRECCIÓN DE PARSEO DE HÁNDICAP RFEG
+  Archivos modificados:
+    - api/get_handicap.js
+  Resumen:
+    - Solucionado el fallo donde el scraper ignoraba el primer dígito del hándicap si el texto del PDF de la RFEG venía comprimido sin espacios (ej. convirtiendo 11.4 a 1.4).
+    - Se ha implementado un nuevo sistema robusto basado en separar por bloques de fecha y extraer el último número decimal absoluto.
+
+==========================================================================
+  PRÓXIMO PASO: PASO 3.4 — Clasificaciones por ronda
+==========================================================================
+  Siguiente: Añadir filtros por ronda (D1, D2, Total) en el componente TournamentLeaderboard.jsx.
