@@ -59,25 +59,34 @@ export default async function handler(req, res) {
         searchBlock = text.slice(0, endIdx);
       }
 
-      // Regex to match row: date (dd/mm/yyyy), tournament string, Vc/Vs/Par, and new Handicap
-      // pdf-parse often glues Vc/Vs/Par and the Handicap together without spaces. Handicap is always 1 decimal (`\.\d`).
-      const historyRegex = /(\d{2}\/\d{2}\/\d{4})([\s\S]*?)(\d+\.\d+)\/(\d+)\/(\d+)\s*([+-]?\d+\.\d)/g;
-      let matchHistory;
-
-      while ((matchHistory = historyRegex.exec(searchBlock)) !== null) {
-        const rawDate = matchHistory[1];
-        const between = matchHistory[2].trim();
-        const smhHcp = parseFloat(matchHistory[6]);
-
+      // Split by date
+      const rows = searchBlock.split(/(?=\d{2}\/\d{2}\/\d{4})/);
+      
+      for (const row of rows) {
+        const dateMatch = row.match(/^(\d{2}\/\d{2}\/\d{4})/);
+        if (!dateMatch) continue;
+        
+        const rawDate = dateMatch[1];
         const parts = rawDate.split('/');
         const isoDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
-
-        let tournName = between.replace(/\s+/g, ' ').trim();
-        const nmMatch = tournName.match(/^(.*?)\s+\d+\s+/);
-        if (nmMatch && nmMatch[1]) {
-          tournName = nmMatch[1].trim();
+        
+        // Extract all decimals from the row
+        const decimals = row.match(/[+-]?\d{1,2}\.\d/g);
+        if (!decimals || decimals.length === 0) continue;
+        
+        // The last decimal on the row is always the new handicap
+        const smhHcp = parseFloat(decimals[decimals.length - 1]);
+        
+        let tournName = row.substring(10).replace(/\s+/g, ' ').trim();
+        // Remove the Vc/Vs/Par and everything after it to clean the name
+        const vcIndex = tournName.search(/\d+(?:\.\d+)?\/\d+(?:\.\d+)?\/\d{2,3}/);
+        if (vcIndex !== -1) {
+          tournName = tournName.substring(0, vcIndex).trim();
         } else {
-          tournName = tournName.substring(0, 60);
+          // Fallback if Vc/Vs/Par is missing
+          const nmMatch = tournName.match(/^(.*?)\s+\d+\s+/);
+          if (nmMatch && nmMatch[1]) tournName = nmMatch[1].trim();
+          else tournName = tournName.substring(0, 60);
         }
 
         history.push({
