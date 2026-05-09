@@ -238,6 +238,15 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
   Resumen:
     - Sustituido el botón nativo por una acción secundaria tipo chip, coherente con la estética de badges y acciones de la central.
 
+[COMPLETADO] MANTENIMIENTO — Unificación de inscripciones y roster público
+  Archivos modificados:
+    - src/services/tournaments.service.js
+    - src/components/TournamentsCentralView.jsx
+  Resumen:
+    - Las inscripciones a torneos oficiales también se reflejan en `tournaments/{id}/participants/{username}`.
+    - La central ahora lee conteo y nombres desde esa subcolección pública, eliminando la inconsistencia entre el badge de inscritas y el detalle de "Ver quién".
+    - Al desapuntarse, también se elimina el documento público de participante para evitar rosters fantasma.
+
 ==========================================================================
   PRÓXIMO PASO: HARDENING — Sustituir alert()/window.confirm()
 ==========================================================================

@@ -6,7 +6,7 @@
  */
 
 import { db } from '../firebase';
-import { collection, doc, onSnapshot, setDoc, deleteDoc, serverTimestamp, query, getDoc, updateDoc, increment } from 'firebase/firestore';
+import { collection, doc, onSnapshot, setDoc, deleteDoc, serverTimestamp, query, getDoc, updateDoc, increment, getDocs } from 'firebase/firestore';
 import { getUserSubcollectionRef, getUserSubdocRef } from '../utils/userProfiles';
 import { getYear } from '../utils/dateHelpers';
 import { joinTournamentAsParticipant } from './leaderboard.service';
@@ -313,11 +313,15 @@ export async function joinTournament(user, tournament) {
     valedera: tournament.valedera || false,
   }, { merge: true });
 
-  // Increment participant counter on the shared tournament doc (only if it's a shared one)
-  if (tournament.isShared || String(tournament.id).includes('_')) {
-    try {
-      await joinTournamentAsParticipant(user, tournament.id, tournament);
+  // Mirror every join into the public participants subcollection so the
+  // roster and counts have a single source of truth for both official and
+  // community tournaments.
+  try {
+    await joinTournamentAsParticipant(user, tournament.id, tournament);
 
+    // Shared/community tournaments also keep an aggregate counter on their
+    // source doc for legacy UI surfaces.
+    if (tournament.isShared || String(tournament.id).includes('_')) {
       const sharedRef = doc(db, 'shared_tournaments', String(tournament.id));
       await updateDoc(sharedRef, { 
         subscriberCount: increment(1) 
@@ -327,9 +331,9 @@ export async function joinTournament(user, tournament) {
           await setDoc(sharedRef, { ...tournament, subscriberCount: 1 }, { merge: true });
         }
       });
-    } catch (e) {
-      console.warn('[joinTournament] Could not update subscriberCount:', e.message);
     }
+  } catch (e) {
+    console.warn('[joinTournament] Could not register participant:', e.message);
   }
 }
 
@@ -337,6 +341,7 @@ export async function leaveTournament(user, tournamentId) {
   if (!user || !tournamentId) throw new Error('User and tournamentId required');
 
   const ref = getUserSubdocRef(db, user, 'subscribed_tournaments', String(tournamentId));
+  const participantRef = doc(db, 'tournaments', String(tournamentId), 'participants', String(user.username));
   
   // Check source before decrementing counter
   try {
@@ -349,6 +354,12 @@ export async function leaveTournament(user, tournamentId) {
     }
   } catch (e) {
     console.warn('[leaveTournament] Could not update subscriberCount:', e.message);
+  }
+
+  try {
+    await deleteDoc(participantRef);
+  } catch (e) {
+    console.warn('[leaveTournament] Could not remove participant doc:', e.message);
   }
 
   await deleteDoc(ref);
@@ -439,4 +450,39 @@ export async function fetchParticipantCounts(tournamentIds) {
     })
   );
   return counts;
+}
+
+/**
+ * Fetches participant names and counts from /tournaments/{id}/participants.
+ * This is the shared roster used by both official and community tournaments.
+ *
+ * @param {(string|number)[]} tournamentIds
+ * @returns {Promise<Record<string, { count: number, names: string[] }>>}
+ */
+export async function fetchTournamentParticipantMeta(tournamentIds) {
+  if (!tournamentIds?.length) return {};
+
+  const meta = {};
+  await Promise.all(
+    tournamentIds.map(async (id) => {
+      const key = String(id);
+      try {
+        const snap = await getDocs(collection(db, 'tournaments', key, 'participants'));
+        meta[key] = {
+          count: snap.size,
+          names: snap.docs
+            .map((participantDoc) => {
+              const data = participantDoc.data();
+              return data.fullName || data.full_name || data.username || participantDoc.id;
+            })
+            .filter(Boolean)
+            .sort((a, b) => String(a).localeCompare(String(b), 'es')),
+        };
+      } catch {
+        meta[key] = { count: 0, names: [] };
+      }
+    })
+  );
+
+  return meta;
 }

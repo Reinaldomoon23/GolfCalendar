@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Search, Trophy, MapPin, Globe, Flag, Plus, CheckCircle } from 'lucide-react';
 import { isPast, parseDateHelper } from '../utils/dateHelpers';
+import { fetchTournamentParticipantMeta } from '../services/tournaments.service';
 
 function isBlockedTournament(tournament) {
   const normalizedName = String(tournament?.name || '')
@@ -21,6 +22,7 @@ export default function TournamentsCentralView({ user, allTournaments = [], acti
   const [filterCircuit, setFilterCircuit] = useState('Todos');
   const [filterCategory, setFilterCategory] = useState('Todos');
   const [filterType, setFilterType] = useState('Todos');
+  const [participantMeta, setParticipantMeta] = useState({});
 
   // Emergency Rescue for ID 12 (Sub16) - If it's missing from the database, we INJECT it
   const finalTournaments = useMemo(() => {
@@ -38,6 +40,28 @@ export default function TournamentsCentralView({ user, allTournaments = [], acti
     }
     return unique;
   }, [allTournaments]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadParticipantMeta = async () => {
+      const ids = finalTournaments.map((t) => t?.id).filter(Boolean);
+      if (!ids.length) {
+        if (!cancelled) setParticipantMeta({});
+        return;
+      }
+
+      const nextMeta = await fetchTournamentParticipantMeta(ids);
+      if (!cancelled) {
+        setParticipantMeta(nextMeta);
+      }
+    };
+
+    loadParticipantMeta();
+    return () => {
+      cancelled = true;
+    };
+  }, [finalTournaments, subscribedIds]);
 
   // Filter and Sort logic
   const filtered = useMemo(() => {
@@ -185,6 +209,7 @@ export default function TournamentsCentralView({ user, allTournaments = [], acti
               {monthTournaments.map(t => {
                 const isJoined = (subscribedIds || []).some(id => String(id) === String(t.id));
                 const isOfficial = !t.isShared && !t.custom;
+                const roster = participantMeta[String(t.id)] || { count: 0, names: [] };
                 
                 return (
                   <div key={t.id} className={`tournament-card card ${isOfficial ? 'official' : ''}`}>
@@ -202,14 +227,14 @@ export default function TournamentsCentralView({ user, allTournaments = [], acti
                       <div className="t-participants-info">
                         <CheckCircle size={14} className="participants-icon" />
                         <span className="participants-count">
-                          {(t.participantsCount || 0) + (isJoined && !(t.participantsNames || []).includes(user?.full_name) ? 1 : 0)} jugadoras inscritas
+                          {roster.count} jugadoras inscritas
                         </span>
                         {user?.role === 'admin' && (
                           <button 
                             className="btn-inline-chip"
                             onClick={(e) => {
                               e.stopPropagation();
-                              alert(`Jugadoras inscritas en ${t.name}:\n${t.participantsNames?.join(', ') || 'Nadie todavía'}`);
+                              alert(`Jugadoras inscritas en ${t.name}:\n${roster.names.join(', ') || 'Nadie todavía'}`);
                             }}
                           >
                             Ver quién
