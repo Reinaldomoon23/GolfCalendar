@@ -6,9 +6,10 @@
  */
 
 import { db } from '../firebase';
-import { collection, doc, onSnapshot, setDoc, deleteDoc, addDoc, serverTimestamp, query, where, getDocs, getDoc, writeBatch } from 'firebase/firestore';
+import { collection, doc, onSnapshot, setDoc, deleteDoc, serverTimestamp, query, getDoc, updateDoc, increment } from 'firebase/firestore';
 import { getUserSubcollectionRef, getUserSubdocRef } from '../utils/userProfiles';
 import { getYear } from '../utils/dateHelpers';
+import { joinTournamentAsParticipant } from './leaderboard.service';
 
 /**
  * Generates a deterministic unique ID for a tournament based on its name and dates.
@@ -230,7 +231,6 @@ export function mergeTournaments(baseTournaments, customTournaments, preferences
 
   // 2. Separate shared from custom in the input array to check for cross-duplicates
   const fromCommunity = customTournaments.filter(t => t.isShared || String(t.id).includes('_')); // Detective logic for slug-based IDs
-  const localCustom = customTournaments.filter(t => !fromCommunity.includes(t));
 
   // 3. MASTER SYNC LOGIC:
   // For any tournament the user has "Added" (custom list), if it exists in the 
@@ -254,11 +254,6 @@ export function mergeTournaments(baseTournaments, customTournaments, preferences
     }
     return ct;
   });
-
-  // 4. Final Merge: Only show community ones if NOT already in my selection
-  const filteredCommunity = fromCommunity.filter(st => 
-    !syncedCustomTournaments.some(lc => String(lc.id) === String(st.id))
-  );
 
   return [...filtered, ...syncedCustomTournaments];
 }
@@ -321,6 +316,8 @@ export async function joinTournament(user, tournament) {
   // Increment participant counter on the shared tournament doc (only if it's a shared one)
   if (tournament.isShared || String(tournament.id).includes('_')) {
     try {
+      await joinTournamentAsParticipant(user, tournament.id, tournament);
+
       const sharedRef = doc(db, 'shared_tournaments', String(tournament.id));
       await updateDoc(sharedRef, { 
         subscriberCount: increment(1) 

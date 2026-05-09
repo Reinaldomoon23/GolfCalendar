@@ -174,6 +174,34 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
   Siguiente: Añadir filtros por ronda (D1, D2, Total) en el componente TournamentLeaderboard.jsx.
 
 ==========================================================================
+ SESIÓN: 2026-05-09 | Modelo: Codex GPT-5
+==========================================================================
+
+[COMPLETADO] ESTABILIZACIÓN — Leaderboard en vivo centralizado
+  Archivos modificados:
+    - src/App.jsx
+    - src/services/tournaments.service.js
+    - src/components/PublicLeaderboardView.jsx
+    - src/components/TournamentLeaderboard.jsx
+  Resumen:
+    - El flujo real de guardado en App.jsx ahora sincroniza los resultados de torneos centralizados con `/tournaments/{id}/participants`.
+    - Al apuntarse a un torneo compartido, la jugadora se registra como participante pendiente antes de tener score.
+    - La vista pública `/leaderboard/:id` lee la misma fuente centralizada que la pestaña interna, eliminando la dependencia incorrecta de `tournament_results`.
+    - Corregidos imports de Firestore necesarios para los contadores de suscripción.
+
+[COMPLETADO] PASO 3.4 — Clasificaciones por ronda
+  Archivo modificado:
+    - src/components/TournamentLeaderboard.jsx
+  Resumen:
+    - Añadido selector Total/R1/R2/... en la clasificación interna.
+    - La tabla se reordena en tiempo real según la ronda seleccionada o el total acumulado.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Sustituir alert()/window.confirm()
+==========================================================================
+  Siguiente: Reemplazar confirmaciones y avisos nativos por UI silenciosa o componentes inline, respetando la regla del proyecto.
+
+==========================================================================
  SESIÓN: 2026-05-04 | Modelo: Antigravity (Google DeepMind)
 ==========================================================================
 

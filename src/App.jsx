@@ -35,6 +35,7 @@ import { useTournaments } from './hooks/useTournaments';
 // Services
 import { uploadProfilePhoto, updateUserProfile, recoverLegacyProfile } from './services/profile.service';
 import { subscribeToPreferences, subscribeToResults, saveResult, saveAllResults, deleteResult, savePreferences } from './services/results.service';
+import { updateParticipantScore, isSharedTournamentId } from './services/leaderboard.service';
 
 // Config
 import { IS_MULTI, DEFAULT_PREFERENCES } from './config/app';
@@ -442,6 +443,11 @@ function AppContent() {
     if (!user) return;
     setResults(prev => ({ ...prev, [id]: data }));
     await saveResult(user, id, data);
+    if (isSharedTournamentId(id)) {
+      updateParticipantScore(user, id, data).catch((err) => {
+        console.warn('[leaderboard] Could not update participant score:', err);
+      });
+    }
   };
 
   const handleDeleteResult = async (id) => {

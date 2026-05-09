@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Trophy, Users, ExternalLink, Calendar, MapPin, ChevronLeft } from 'lucide-react';
 import { db } from '../firebase';
-import { collection, onSnapshot, query, where, doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
+import { subscribeToLeaderboard } from '../services/leaderboard.service';
+import ProfileImage from './ProfileImage';
 
 export default function PublicLeaderboardView() {
     const { id } = useParams();
@@ -34,34 +36,8 @@ export default function PublicLeaderboardView() {
             }
         };
 
-        // 2. Subscribe to Participants' Results
-        // We look for results that have this tournament ID
-        // In this system, results are stored per user: /users/{uid}/results/{tournamentId}
-        // BUT, for the leaderboard, we rely on the central collection 'tournament_results' if it exists,
-        // or we query across all users (expensive).
-        // REFINEMENT: Following the roadmap, we should use a query that finds all results for this ID.
-        // For now, we assume results are indexed by tournamentId in a shared way or we use the 'tournament_results' collection.
-        
-        // According to leaderboard.service.js logic used elsewhere:
-        const q = query(collection(db, 'tournament_results'), where('tournamentId', '==', id));
-        
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const results = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-            
-            // Sort by score (asc)
-            const sorted = results.sort((a, b) => {
-                const scoreA = a.total || 999;
-                const scoreB = b.total || 999;
-                return scoreA - scoreB;
-            });
-            
-            setParticipants(sorted);
-            setLoading(false);
-        }, (error) => {
-            console.error("Leaderboard subscription error:", error);
+        const unsubscribe = subscribeToLeaderboard(id, (data) => {
+            setParticipants(data);
             setLoading(false);
         });
 
@@ -143,17 +119,17 @@ export default function PublicLeaderboardView() {
                     padding: '1rem 1.5rem', 
                     background: '#1e293b', 
                     color: 'white', 
-                    display: 'grid', 
-                    gridTemplateColumns: '40px 1fr 60px 60px',
+                    display: 'grid',
+                    gridTemplateColumns: '44px 1fr 72px 72px',
                     fontWeight: 'bold',
                     fontSize: '0.85rem',
                     textTransform: 'uppercase',
                     letterSpacing: '0.05em'
                 }}>
                     <span>Pos</span>
-                    <span>Jugador</span>
-                    <span style={{ textAlign: 'center' }}>HCP</span>
-                    <span style={{ textAlign: 'center' }}>Score</span>
+                    <span>Jugadora</span>
+                    <span style={{ textAlign: 'center' }}>Total</span>
+                    <span style={{ textAlign: 'center' }}>vs Par</span>
                 </div>
 
                 {participants.length === 0 ? (
@@ -164,15 +140,17 @@ export default function PublicLeaderboardView() {
                 ) : (
                     participants.map((p, idx) => {
                         const isTop3 = idx < 3;
-                        const score = p.total || 0;
-                        const par = tournament?.par || 72;
-                        const relative = score - par;
-                        const relativeStr = relative > 0 ? `+${relative}` : (relative === 0 ? 'E' : relative);
+                        const score = p.total || null;
+                        const relative = p.vspar;
+                        const relativeStr = relative === null || relative === undefined
+                            ? '-'
+                            : relative > 0 ? `+${relative}` : (relative === 0 ? 'E' : relative);
+                        const updatedAt = p.updatedAt?.toDate ? p.updatedAt.toDate() : (p.updatedAt ? new Date(p.updatedAt) : null);
 
                         return (
                             <div key={p.id} style={{ 
                                 display: 'grid', 
-                                gridTemplateColumns: '40px 1fr 60px 60px',
+                                gridTemplateColumns: '44px 1fr 72px 72px',
                                 padding: '1.2rem 1.5rem',
                                 borderBottom: '1px solid #f1f5f9',
                                 alignItems: 'center',
@@ -188,23 +166,23 @@ export default function PublicLeaderboardView() {
                                 }}>
                                     {idx + 1}
                                 </span>
-                                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                    <span style={{ fontWeight: '600', color: '#334155' }}>
-                                        {p.displayName || p.username}
-                                    </span>
-                                    <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
-                                        Actualizado: {new Date(p.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                    </span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                                    <ProfileImage username={p.username} size={32} style={{ borderRadius: '50%', flexShrink: 0 }} />
+                                    <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                                        <span style={{ fontWeight: '600', color: '#334155', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                            {p.fullName || p.username}
+                                        </span>
+                                        <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                                            {updatedAt ? `Actualizado: ${updatedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Pendiente de jugar'}
+                                        </span>
+                                    </div>
                                 </div>
-                                <span style={{ textAlign: 'center', color: '#64748b', fontWeight: '500' }}>
-                                    {p.handicap || '-'}
+                                <span style={{ textAlign: 'center', color: '#64748b', fontWeight: '700' }}>
+                                    {score || '-'}
                                 </span>
                                 <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column' }}>
-                                    <span style={{ fontWeight: '800', color: relative <= 0 ? '#10b981' : '#ef4444' }}>
+                                    <span style={{ fontWeight: '800', color: relative === null || relative === undefined ? '#94a3b8' : (relative <= 0 ? '#10b981' : '#ef4444') }}>
                                         {relativeStr}
-                                    </span>
-                                    <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
-                                        ({score})
                                     </span>
                                 </div>
                             </div>

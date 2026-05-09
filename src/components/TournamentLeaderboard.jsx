@@ -16,10 +16,10 @@ import ProfileImage from './ProfileImage';
 export default function TournamentLeaderboard({ tournamentId, par = 72, currentUsername }) {
     const [participants, setParticipants] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [viewMode, setViewMode] = useState('total');
 
     useEffect(() => {
         if (!tournamentId) return;
-        setLoading(true);
 
         const unsub = subscribeToLeaderboard(tournamentId, (data) => {
             setParticipants(data);
@@ -42,8 +42,35 @@ export default function TournamentLeaderboard({ tournamentId, par = 72, currentU
         return '#ef4444'; // Over par → red
     };
 
-    const withScores = participants.filter(p => p.hasScore);
-    const withoutScores = participants.filter(p => !p.hasScore);
+    const maxRounds = Math.max(
+        0,
+        ...participants.map((p) => Array.isArray(p.rounds) ? p.rounds.length : 0)
+    );
+    const roundTabs = Array.from({ length: maxRounds }, (_, idx) => idx);
+
+    const getDisplayScore = (participant) => {
+        if (viewMode === 'total') return participant.total || null;
+        const roundIdx = Number(viewMode);
+        return Array.isArray(participant.rounds) ? Number(participant.rounds[roundIdx]) || null : null;
+    };
+
+    const getDisplayVsPar = (participant) => {
+        if (viewMode === 'total') return participant.vspar;
+        const score = getDisplayScore(participant);
+        return score ? score - par : null;
+    };
+
+    const sortedParticipants = [...participants].sort((a, b) => {
+        const scoreA = getDisplayScore(a);
+        const scoreB = getDisplayScore(b);
+        if (scoreA && !scoreB) return -1;
+        if (!scoreA && scoreB) return 1;
+        if (!scoreA && !scoreB) return 0;
+        return scoreA - scoreB;
+    });
+
+    const withScores = sortedParticipants.filter(p => getDisplayScore(p));
+    const withoutScores = sortedParticipants.filter(p => !getDisplayScore(p));
 
     if (loading) {
         return (
@@ -89,22 +116,63 @@ export default function TournamentLeaderboard({ tournamentId, par = 72, currentU
             {/* Header Stats */}
             <div style={{
                 display: 'flex', gap: '12px', marginBottom: '4px',
-                flexWrap: 'wrap'
+                flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between'
             }}>
-                <div style={{
-                    display: 'flex', alignItems: 'center', gap: '6px',
-                    fontSize: '0.8rem', color: '#64748b', fontWeight: '600'
-                }}>
-                    <Users size={14} color="#3b82f6" />
-                    <span>{participants.length} participantes</span>
-                </div>
-                {withScores.length > 0 && (
+                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                     <div style={{
                         display: 'flex', alignItems: 'center', gap: '6px',
                         fontSize: '0.8rem', color: '#64748b', fontWeight: '600'
                     }}>
-                        <TrendingUp size={14} color="#10b981" />
-                        <span>{withScores.length} con resultado</span>
+                        <Users size={14} color="#3b82f6" />
+                        <span>{participants.length} participantes</span>
+                    </div>
+                    {withScores.length > 0 && (
+                        <div style={{
+                            display: 'flex', alignItems: 'center', gap: '6px',
+                            fontSize: '0.8rem', color: '#64748b', fontWeight: '600'
+                        }}>
+                            <TrendingUp size={14} color="#10b981" />
+                            <span>{withScores.length} con resultado</span>
+                        </div>
+                    )}
+                </div>
+                {roundTabs.length > 1 && (
+                    <div style={{ display: 'flex', gap: '4px', background: '#f1f5f9', padding: '3px', borderRadius: '10px' }}>
+                        <button
+                            type="button"
+                            onClick={() => setViewMode('total')}
+                            style={{
+                                border: 'none',
+                                borderRadius: '8px',
+                                padding: '5px 10px',
+                                fontSize: '0.75rem',
+                                fontWeight: '800',
+                                cursor: 'pointer',
+                                color: viewMode === 'total' ? 'white' : '#64748b',
+                                background: viewMode === 'total' ? 'var(--color-primary)' : 'transparent'
+                            }}
+                        >
+                            Total
+                        </button>
+                        {roundTabs.map((roundIdx) => (
+                            <button
+                                key={roundIdx}
+                                type="button"
+                                onClick={() => setViewMode(String(roundIdx))}
+                                style={{
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    padding: '5px 10px',
+                                    fontSize: '0.75rem',
+                                    fontWeight: '800',
+                                    cursor: 'pointer',
+                                    color: viewMode === String(roundIdx) ? 'white' : '#64748b',
+                                    background: viewMode === String(roundIdx) ? 'var(--color-primary)' : 'transparent'
+                                }}
+                            >
+                                R{roundIdx + 1}
+                            </button>
+                        ))}
                     </div>
                 )}
             </div>
@@ -133,7 +201,7 @@ export default function TournamentLeaderboard({ tournamentId, par = 72, currentU
                     <span style={{ textAlign: 'center' }}>Pos</span>
                     <span>Jugadora</span>
                     <span style={{ textAlign: 'center' }}>Rondas</span>
-                    <span style={{ textAlign: 'center' }}>Total</span>
+                    <span style={{ textAlign: 'center' }}>{viewMode === 'total' ? 'Total' : `R${Number(viewMode) + 1}`}</span>
                     <span style={{ textAlign: 'center' }}>vs Par</span>
                 </div>
 
@@ -141,7 +209,8 @@ export default function TournamentLeaderboard({ tournamentId, par = 72, currentU
                 {withScores.map((p, idx) => {
                     const isCurrentUser = p.username === currentUsername;
                     const isFirst = idx === 0;
-                    const vspar = p.vspar;
+                    const score = getDisplayScore(p);
+                    const vspar = getDisplayVsPar(p);
 
                     return (
                         <div
@@ -211,7 +280,7 @@ export default function TournamentLeaderboard({ tournamentId, par = 72, currentU
                                 textAlign: 'center', fontSize: '0.95rem',
                                 fontWeight: '700', color: '#1e293b'
                             }}>
-                                {p.total || '-'}
+                                {score || '-'}
                             </div>
 
                             {/* vs Par */}
