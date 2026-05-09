@@ -199,6 +199,23 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
 ==========================================================================
   PRÓXIMO PASO: HARDENING — Sustituir alert()/window.confirm()
 ==========================================================================
+
+==========================================================================
+ SESIÓN: 2026-05-09 | Modelo: Codex GPT-5 (Continuación)
+==========================================================================
+
+[COMPLETADO] MANTENIMIENTO — Corrección de extracción y reparación de histórico de hándicap
+  Archivos modificados:
+    - api/get_handicap.js
+    - src/services/handicap.service.js
+  Resumen:
+    - Endurecido el parser del PDF de RFEG para dejar de extraer el último decimal arbitrario de cada fila.
+    - La sincronización de handicap_history en Firestore ahora repara entradas existentes si cambia el valor detectado para una fecha.
+    - Corregido en producción el dato contaminado de Nicole del 2026-05-03 (15.7 → 5.7) y desplegada la app pública.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Sustituir alert()/window.confirm()
+==========================================================================
   Siguiente: Reemplazar confirmaciones y avisos nativos por UI silenciosa o componentes inline, respetando la regla del proyecto.
 
 ==========================================================================

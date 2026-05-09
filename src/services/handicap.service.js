@@ -165,35 +165,70 @@ export async function syncHistoricalDataToFirestore(user, fetchedHistory) {
   try {
     const historyRef = collection(db, `users/${docId}/handicap_history`);
     
-    // Get existing dates
+    // Index existing entries by date so we can both insert and repair wrong values.
     const snapshot = await getDocs(query(historyRef));
-    const existingDates = new Set();
+    const existingByDate = new Map();
     snapshot.forEach(d => {
-      if (d.data().date) existingDates.add(d.data().date);
+      const data = d.data();
+      if (data?.date) {
+        existingByDate.set(data.date, {
+          id: d.id,
+          ...data,
+        });
+      }
     });
 
     const batch = writeBatch(db);
     let addedCount = 0;
+    let updatedCount = 0;
 
     fetchedHistory.forEach(entry => {
-      if (entry.date && !existingDates.has(entry.date)) {
+      if (!entry.date) {
+        return;
+      }
+
+      const normalizedHandicap = parseFloat(entry.handicap);
+      const existingEntry = existingByDate.get(entry.date);
+
+      if (!existingEntry) {
         const newDocRef = doc(historyRef); // auto ID
         batch.set(newDocRef, {
           date: entry.date,
-          handicap: parseFloat(entry.handicap) || null,
+          handicap: Number.isNaN(normalizedHandicap) ? null : normalizedHandicap,
           source: entry.source || 'rfeg_pdf',
           tournament: entry.tournament || null,
           tournament_id: null,
           createdAt: new Date().toISOString(),
         });
         addedCount++;
-        existingDates.add(entry.date);
+        return;
+      }
+
+      const existingHandicap = parseFloat(existingEntry.handicap);
+      const handicapChanged = (
+        (Number.isNaN(existingHandicap) && !Number.isNaN(normalizedHandicap)) ||
+        (!Number.isNaN(existingHandicap) && !Number.isNaN(normalizedHandicap) && existingHandicap !== normalizedHandicap)
+      );
+      const tournamentChanged = (existingEntry.tournament || null) !== (entry.tournament || null);
+      const sourceChanged = (existingEntry.source || null) !== (entry.source || 'rfeg_pdf');
+
+      if (handicapChanged || tournamentChanged || sourceChanged) {
+        batch.set(doc(historyRef, existingEntry.id), {
+          ...existingEntry,
+          date: entry.date,
+          handicap: Number.isNaN(normalizedHandicap) ? null : normalizedHandicap,
+          source: entry.source || 'rfeg_pdf',
+          tournament: entry.tournament || null,
+          tournament_id: existingEntry.tournament_id || null,
+          updatedAt: new Date().toISOString(),
+        }, { merge: true });
+        updatedCount++;
       }
     });
 
-    if (addedCount > 0) {
+    if (addedCount > 0 || updatedCount > 0) {
       await batch.commit();
-      console.log(`[handicap-history] Synced ${addedCount} new historical entries to Firestore.`);
+      console.log(`[handicap-history] Synced ${addedCount} new and repaired ${updatedCount} historical entries in Firestore.`);
     }
   } catch (err) {
     if (err?.code !== 'permission-denied') {

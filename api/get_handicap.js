@@ -1,5 +1,85 @@
 import pdfParse from 'pdf-parse';
 
+function extractCurrentHandicap(text) {
+  const regex = /NUEVO\s+H[AÁ]NDICAP\s*:\s*([+-]?\d+(?:\.\d+)?)/i;
+  const match = text.match(regex);
+  return match?.[1] || null;
+}
+
+function extractTournamentName(rawBetween) {
+  const normalized = String(rawBetween || '').replace(/\s+/g, ' ').trim();
+  if (!normalized) return '';
+
+  const match = normalized.match(/^(.*?)\s+\d+\s+/u);
+  if (match?.[1]) {
+    return match[1].trim();
+  }
+
+  return normalized.substring(0, 60).trim();
+}
+
+function extractHistoryFromPdfText(text) {
+  const headerMarker = 'Vc/Vs/PAR';
+  const endCandidates = [
+    '2.  Para cada resultado',
+    '2. Para cada resultado',
+    '2.  Para cada',
+    '2. Para cada',
+  ];
+
+  let searchText = text;
+  const headerPos = text.indexOf(headerMarker);
+  let startPos = headerPos;
+
+  if (headerPos !== -1) {
+    const nextNewline = text.indexOf('\n', headerPos);
+    if (nextNewline !== -1) {
+      startPos = nextNewline + 1;
+    }
+  }
+
+  let endPos = -1;
+  for (const marker of endCandidates) {
+    const candidatePos = text.indexOf(marker);
+    if (candidatePos !== -1) {
+      endPos = candidatePos;
+      break;
+    }
+  }
+
+  if (startPos !== -1 && endPos !== -1 && endPos > startPos) {
+    searchText = text.slice(startPos, endPos);
+  } else if (endPos !== -1) {
+    searchText = text.slice(0, endPos);
+  }
+
+  const rowPattern = /(\d{2}\/\d{2}\/\d{4})(.*?)(\d+\.\d+)\/(\d+)\/(\d+)\s+([+-]?\d+\.\d+)/gsu;
+  const history = [];
+
+  for (const match of searchText.matchAll(rowPattern)) {
+    const rawDate = match[1];
+    const between = match[2];
+    const handicapValue = Number.parseFloat(match[6]);
+
+    if (!rawDate || Number.isNaN(handicapValue)) {
+      continue;
+    }
+
+    const [day, month, year] = rawDate.split('/');
+    const isoDate = `${year}-${month}-${day}`;
+
+    history.push({
+      date: isoDate,
+      handicap: handicapValue,
+      source: 'rfeg_pdf',
+      tournament: extractTournamentName(between),
+    });
+  }
+
+  history.sort((a, b) => a.date.localeCompare(b.date));
+  return history;
+}
+
 export default async function handler(req, res) {
   // CORS setup
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -37,68 +117,11 @@ export default async function handler(req, res) {
     const data = await pdfParse(pdfBuffer);
     const text = data.text;
 
-    // Search for "NUEVO HÁNDICAP : X.X"
-    const regex = /NUEVO\s+H[AÁ]NDICAP\s*:\s*([\d\.]+)/i;
-    const match = text.match(regex);
-    let newHandicap = null;
-    if (match && match[1]) {
-      newHandicap = match[1];
-    }
+    const newHandicap = extractCurrentHandicap(text);
 
-    // Extract history
-    const history = [];
+    let history = [];
     try {
-      const startIdx = text.indexOf('Vc/Vs/PAR');
-      let endIdx = text.indexOf('2.  Para cada');
-      if (endIdx === -1) endIdx = text.indexOf('2. Para cada');
-      
-      let searchBlock = text;
-      if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
-        searchBlock = text.slice(startIdx, endIdx);
-      } else if (endIdx !== -1) {
-        searchBlock = text.slice(0, endIdx);
-      }
-
-      // Split by date
-      const rows = searchBlock.split(/(?=\d{2}\/\d{2}\/\d{4})/);
-      
-      for (const row of rows) {
-        const dateMatch = row.match(/^(\d{2}\/\d{2}\/\d{4})/);
-        if (!dateMatch) continue;
-        
-        const rawDate = dateMatch[1];
-        const parts = rawDate.split('/');
-        const isoDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
-        
-        // Extract all decimals from the row
-        const decimals = row.match(/[+-]?\d{1,2}\.\d/g);
-        if (!decimals || decimals.length === 0) continue;
-        
-        // The last decimal on the row is always the new handicap
-        const smhHcp = parseFloat(decimals[decimals.length - 1]);
-        
-        let tournName = row.substring(10).replace(/\s+/g, ' ').trim();
-        // Remove the Vc/Vs/Par and everything after it to clean the name
-        const vcIndex = tournName.search(/\d+(?:\.\d+)?\/\d+(?:\.\d+)?\/\d{2,3}/);
-        if (vcIndex !== -1) {
-          tournName = tournName.substring(0, vcIndex).trim();
-        } else {
-          // Fallback if Vc/Vs/Par is missing
-          const nmMatch = tournName.match(/^(.*?)\s+\d+\s+/);
-          if (nmMatch && nmMatch[1]) tournName = nmMatch[1].trim();
-          else tournName = tournName.substring(0, 60);
-        }
-
-        history.push({
-          date: isoDate,
-          handicap: smhHcp,
-          source: 'rfeg_pdf',
-          tournament: tournName
-        });
-      }
-      
-      // Sort oldest to newest
-      history.sort((a, b) => a.date.localeCompare(b.date));
+      history = extractHistoryFromPdfText(text);
     } catch (parseError) {
       console.error('Error parsing history:', parseError);
     }
