@@ -210,18 +210,6 @@
         "valedera": true
     },
     {
-        "id": "campionat-de-catalunya-infantil-alevi-i-benjami_0606202607062026",
-        "dates": "06/06/2026 - 07/06/2026",
-        "name": "Campionat de Catalunya Infantil, Aleví i Benjamí",
-        "course": "Golf Costa Brava",
-        "organizer": "FCG",
-        "type": "regional_championship",
-        "groups": [
-            "valedero"
-        ],
-        "valedera": true
-    },
-    {
         "id": "club-championship_3005202631052026",
         "dates": "30/05/2026 - 31/05/2026",
         "name": "CLUB CHAMPIONSHIP",
