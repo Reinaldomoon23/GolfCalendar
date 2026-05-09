@@ -2,6 +2,19 @@ import React, { useState, useMemo } from 'react';
 import { Search, Trophy, MapPin, Globe, Flag, Plus, CheckCircle } from 'lucide-react';
 import { isPast, parseDateHelper } from '../utils/dateHelpers';
 
+function isBlockedTournament(tournament) {
+  const normalizedName = String(tournament?.name || '')
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  const normalizedDates = String(tournament?.dates || '').trim();
+
+  return (
+    normalizedName === 'campionat de catalunya infantil, alevi i benjami' &&
+    normalizedDates === '06/06/2026 - 07/06/2026'
+  );
+}
+
 export default function TournamentsCentralView({ user, allTournaments = [], activeCalendarTournaments = [], subscribedTournaments = [], subscribedIds = [], onJoinTournament, onLeaveTournament }) {
   const [search, setSearch] = useState('');
   const [filterCountry, setFilterCountry] = useState('Todos');
@@ -15,6 +28,7 @@ export default function TournamentsCentralView({ user, allTournaments = [], acti
     const unique = [];
     for (const t of allTournaments) {
       if (!t || !t.name) continue;
+      if (isBlockedTournament(t)) continue;
       const normalizeStr = (s) => s ? s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "").trim() : "";
       const key = `${normalizeStr(t.name)}_${normalizeStr(t.dates)}`;
       if (!seen.has(key)) {

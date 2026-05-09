@@ -220,6 +220,12 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
     - Eliminado del catálogo 2026 el torneo oficial inexistente "Campionat de Catalunya Infantil, Aleví i Benjamí".
     - Promocionados Nicole y Jordi como administradores en Firestore para gestionar torneos comunitarios desde el panel admin.
 
+[COMPLETADO] MANTENIMIENTO — Bloqueo explícito de torneo fantasma en central
+  Archivos modificados:
+    - src/components/TournamentsCentralView.jsx
+  Resumen:
+    - Añadido filtro defensivo para ocultar el torneo fantasma "Campionat de Catalunya Infantil, Aleví i Benjamí" del 06/06/2026 - 07/06/2026 aunque reaparezca por caché o datasets heredados.
+
 ==========================================================================
   PRÓXIMO PASO: HARDENING — Sustituir alert()/window.confirm()
 ==========================================================================
