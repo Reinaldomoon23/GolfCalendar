@@ -232,6 +232,12 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
   Resumen:
     - Eliminada la excepción que mantenía visibles los torneos ya pasados cuando la usuaria estaba inscrita.
 
+[COMPLETADO] MANTENIMIENTO — Ajuste visual de la acción "Ver quién"
+  Archivos modificados:
+    - src/components/TournamentsCentralView.jsx
+  Resumen:
+    - Sustituido el botón nativo por una acción secundaria tipo chip, coherente con la estética de badges y acciones de la central.
+
 ==========================================================================
   PRÓXIMO PASO: HARDENING — Sustituir alert()/window.confirm()
 ==========================================================================

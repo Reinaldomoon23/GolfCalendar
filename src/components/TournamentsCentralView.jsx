@@ -206,13 +206,13 @@ export default function TournamentsCentralView({ user, allTournaments = [], acti
                         </span>
                         {user?.role === 'admin' && (
                           <button 
-                            className="btn-text-only" 
+                            className="btn-inline-chip"
                             onClick={(e) => {
                               e.stopPropagation();
                               alert(`Jugadoras inscritas en ${t.name}:\n${t.participantsNames?.join(', ') || 'Nadie todavía'}`);
                             }}
                           >
-                            (Ver quién)
+                            Ver quién
                           </button>
                         )}
                       </div>
@@ -255,6 +255,25 @@ export default function TournamentsCentralView({ user, allTournaments = [], acti
           max-width: 800px;
           margin: 0 auto;
           margin-bottom: 80px;
+        }
+        .btn-inline-chip {
+          appearance: none;
+          border: 1px solid rgba(59, 130, 246, 0.22);
+          background: rgba(59, 130, 246, 0.08);
+          color: #2563eb;
+          border-radius: 999px;
+          padding: 0.28rem 0.72rem;
+          margin-left: 0.65rem;
+          font-size: 0.78rem;
+          font-weight: 700;
+          line-height: 1;
+          cursor: pointer;
+          transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+        }
+        .btn-inline-chip:hover {
+          background: rgba(59, 130, 246, 0.14);
+          border-color: rgba(59, 130, 246, 0.32);
+          transform: translateY(-1px);
         }
         .header-content h1 { margin: 0; font-size: 2rem; color: var(--color-primary); }
         .header-content p { margin: 5px 0 0; color: var(--color-text-muted); }
