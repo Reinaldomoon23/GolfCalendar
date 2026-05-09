@@ -42,9 +42,8 @@ export default function TournamentsCentralView({ user, allTournaments = [], acti
   // Filter and Sort logic
   const filtered = useMemo(() => {
     return finalTournaments.filter(t => {
-      // 1. Ocultar torneos pasados (Excepto si ya estamos inscritos)
-      const isJoined = (subscribedIds || []).some(id => String(id) === String(t.id));
-      if (isPast(t.dates) && !isJoined) return false;
+      // 1. Ocultar siempre los torneos pasados en la central
+      if (isPast(t.dates)) return false;
 
       // FUERZA BRUTA: El ID 12 (Sub16), ID 13 (OM) y ID 15 (Infantil Catalunya) TIENEN QUE VERSE SIEMPRE
       const immortalIds = [12, 13, 15, '12', '13', '15'];
@@ -83,7 +82,7 @@ export default function TournamentsCentralView({ user, allTournaments = [], acti
       if (!startB) return -1;
       return startA.getTime() - startB.getTime();
     });
-  }, [finalTournaments, search, filterCountry, filterCircuit, filterCategory, filterType, subscribedIds]);
+  }, [finalTournaments, search, filterCountry, filterCircuit, filterCategory, filterType]);
 
   // Extract unique options for filters
   const countries = ['Todos', ...new Set(finalTournaments.map(t => t.country).filter(Boolean))];

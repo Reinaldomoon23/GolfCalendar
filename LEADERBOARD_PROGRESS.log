@@ -226,6 +226,12 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
   Resumen:
     - Añadido filtro defensivo para ocultar el torneo fantasma "Campionat de Catalunya Infantil, Aleví i Benjamí" del 06/06/2026 - 07/06/2026 aunque reaparezca por caché o datasets heredados.
 
+[COMPLETADO] MANTENIMIENTO — Ocultar torneos pasados en la central
+  Archivos modificados:
+    - src/components/TournamentsCentralView.jsx
+  Resumen:
+    - Eliminada la excepción que mantenía visibles los torneos ya pasados cuando la usuaria estaba inscrita.
+
 ==========================================================================
   PRÓXIMO PASO: HARDENING — Sustituir alert()/window.confirm()
 ==========================================================================
