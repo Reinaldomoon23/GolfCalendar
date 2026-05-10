@@ -413,7 +413,14 @@ function AppContent() {
     return copy;
   }, [results]);
 
-  // ── Tournaments hook ─────────────────────────────────────────────────────
+  // ── Routing guards ───────────────────────────────────────────────────────
+  const isPublicRoute = location.pathname.startsWith('/live/') || 
+                       location.pathname.startsWith('/live-team/') || 
+                       location.pathname.startsWith('/leaderboard/');
+
+  const tournamentsState = useTournaments(user, preferences, handleUpdatePreferences, mappedResults, {
+    disabled: isPublicRoute,
+  });
   const {
     baseTournaments,
     tournaments,
@@ -429,7 +436,7 @@ function AppContent() {
     subscribedTournaments,
     subscribedIds,
     sharedTournaments,
-  } = useTournaments(user, preferences, handleUpdatePreferences, mappedResults);
+  } = tournamentsState;
 
   // ── Results handlers ─────────────────────────────────────────────────────
   const handleUpdateResults = async (newResults) => {
@@ -459,11 +466,6 @@ function AppContent() {
       console.error('[results] Error deleting result:', err);
     }
   };
-
-  // ── Routing guards ───────────────────────────────────────────────────────
-  const isPublicRoute = location.pathname.startsWith('/live/') || 
-                       location.pathname.startsWith('/live-team/') || 
-                       location.pathname.startsWith('/leaderboard/');
 
   if (isPublicRoute) {
     return (

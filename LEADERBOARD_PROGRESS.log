@@ -218,6 +218,43 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
     - src/data/seasons/tournaments_2026.json
   Resumen:
     - Eliminado del catálogo 2026 el torneo oficial inexistente "Campionat de Catalunya Infantil, Aleví i Benjamí".
+
+[COMPLETADO] MANTENIMIENTO — Migración de códigos de torneos futuros a ID canónico v2
+  Archivos modificados:
+    - src/utils/tournamentIds.js
+    - src/services/tournaments.service.js
+    - src/hooks/useTournaments.js
+    - src/components/PublicScorecardView.jsx
+    - src/components/TeamLiveScorecard.jsx
+    - src/components/CalendarView.jsx
+    - src/components/admin/TournamentsAdminPanel.jsx
+    - src/data/seasons/tournaments_2026.json
+    - src/data/tournaments.json
+    - scratch/migrate_future_tournament_ids.mjs
+  Resumen:
+    - A partir del 11/05/2026 los torneos usan un ID v2 más robusto: fecha inicio/fin + organizador + campo + slug + hash corto.
+    - Añadido mapa explícito de migración old→new y resolución canónica para mantener compatibilidad con enlaces y referencias legacy.
+    - Migrados en Firestore 16 torneos oficiales futuros, 4 participant rosters, 1 resultado legacy, 14 custom_tournaments, 4 subscribed_tournaments y 8 documentos de preferencias.
+    - Verificado que los docs antiguos críticos (ej. tournament 15 y subscribed/result asociados) ya no existen y que sus equivalentes canónicos sí.
+    - Detectado aparte que `shared_tournaments` devuelve `permission-denied` desde cliente autenticado en scripts; la migración principal se ha hecho saltando esa colección porque la app ya puede resolver esos torneos desde `tournaments`.
+
+[COMPLETADO] HOTFIX — Recuperación de modo vivo público tras migración de IDs
+  Archivos modificados:
+    - src/App.jsx
+    - src/hooks/useTournaments.js
+    - src/components/PublicScorecardView.jsx
+    - src/components/TeamLiveScorecard.jsx
+    - src/services/tournaments.service.js
+  Resumen:
+    - Las rutas públicas (`/live`, `/live-team`, `/leaderboard`) ya no montan listeners privados de `shared_tournaments`, evitando `permission-denied` innecesarios.
+    - La vista pública ahora espera a resolver el UID del usuario y también busca el torneo en `subscribed_tournaments`, no solo en `custom_tournaments` u oficiales.
+    - Corregido el parámetro de ruta de `live-team` (`tournamentId`) y blindado el render cuando una ronda todavía no tiene `scorecard`.
+    - Verificación real con navegador automatizado en producción: `/live/nicole/15` y `/live-team/demo/15?players=nicole,ona` cargan sin `Torneo no encontrado` ni errores de consola.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Revisar acceso cliente a shared_tournaments
+==========================================================================
+  Siguiente: Aclarar por qué `shared_tournaments` falla con `permission-denied` en scripts autenticados y, en paralelo, seguir sustituyendo `alert()/window.confirm()` por UI silenciosa.
     - Promocionados Nicole y Jordi como administradores en Firestore para gestionar torneos comunitarios desde el panel admin.
 
 [COMPLETADO] MANTENIMIENTO — Bloqueo explícito de torneo fantasma en central

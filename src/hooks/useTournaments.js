@@ -21,8 +21,10 @@ import {
   mergeTournaments,
   filterBySeason,
   getAvailableSeasons,
+  resolveCanonicalTournamentId,
 } from '../services/tournaments.service';
 import { deleteResult } from '../services/results.service';
+import { buildLegacyTournamentId } from '../utils/tournamentIds';
 
 const SEASONS_DATA = {
   '2026': () => import('../data/seasons/tournaments_2026.json').then(m => m.default),
@@ -32,7 +34,8 @@ const SEASONS_DATA = {
 /**
  * @param {object|null} user - Active user profile
  */
-export function useTournaments(user, preferences, handleUpdatePreferences, results) {
+export function useTournaments(user, preferences, handleUpdatePreferences, results, options = {}) {
+  const isDisabled = options?.disabled === true;
   const [baseTournaments, setBaseTournaments] = useState([]);
   const [customTournaments, setCustomTournaments] = useState([]);
   const [sharedTournaments, setSharedTournaments] = useState([]); 
@@ -44,6 +47,10 @@ export function useTournaments(user, preferences, handleUpdatePreferences, resul
 
   // ─── Load base data based on season ───────────────────────────────────────
   useEffect(() => {
+    if (isDisabled) {
+      setBaseTournaments([]);
+      return;
+    }
     const loadSeason = async () => {
       try {
         const loader = SEASONS_DATA[currentSeason];
@@ -59,10 +66,11 @@ export function useTournaments(user, preferences, handleUpdatePreferences, resul
       }
     };
     loadSeason();
-  }, [currentSeason]);
+  }, [currentSeason, isDisabled]);
 
   // ─── Subscribe to official tournaments (Live overrides) ───────────────────
   useEffect(() => {
+    if (isDisabled) return;
     const unsub = subscribeToOfficialTournaments((liveTournaments) => {
       setBaseTournaments(prev => {
         const merged = [...prev];
@@ -75,60 +83,55 @@ export function useTournaments(user, preferences, handleUpdatePreferences, resul
       });
     });
     return () => unsub();
-  }, []);
+  }, [isDisabled]);
 
   // ─── Subscribe to user's custom tournaments ───────────────────────────────
   useEffect(() => {
+    if (isDisabled) return;
     if (!user?.username) return;
     const unsub = subscribeToCustomTournaments(user, setCustomTournaments);
     return () => unsub();
-  }, [user?.username]);
+  }, [user?.username, isDisabled]);
 
   // ─── Normalization (Migration) ─────────────────────────────────────────────
   useEffect(() => {
+    if (isDisabled) return;
     if (user && customTournaments.length > 0 && results && !hasNormalized.current) {
       hasNormalized.current = true;
       normalizeUserTournaments(user, customTournaments, results);
     }
-  }, [user?.username, customTournaments.length, !!results]);
+  }, [user?.username, customTournaments.length, !!results, isDisabled]);
 
   // ─── Subscribe to shared community tournaments ────────────────────────────
   useEffect(() => {
+    if (isDisabled) return;
     const unsub = subscribeToSharedTournaments((shared) => {
       const othersShared = shared.filter(t => t.sharedBy !== user?.username && t.sharedBy !== user?.uid);
       setSharedTournaments(othersShared);
     });
     return () => unsub();
-  }, [user?.username]);
+  }, [user?.username, user?.uid, isDisabled]);
 
   // ─── Subscribe to tournaments the user has joined ─────────────────────────
   useEffect(() => {
+    if (isDisabled) return;
     if (!user?.username) return;
     const unsub = subscribeToSubscribedTournaments(user, (data, rawIds) => {
       setSubscribedTournaments(data);
       if (rawIds) setSubscribedIds(rawIds);
     });
     return () => unsub();
-  }, [user?.username]);
+  }, [user?.username, isDisabled]);
 
   // ─── Merge ───────────────────────────────────────────────────────────────
   const tournaments = useMemo(() => {
+    if (isDisabled) return [];
     if (results) {
       Object.keys(results).forEach((resId) => {
         if (!isNaN(resId) || resId.length < 5) {
           const resData = results[resId];
           if (resData && resData.tournamentName && resData.tournamentDates) {
-            const generateSlug = (name, dates) => {
-              if (!name || !dates) return null;
-              const slug = name.toLowerCase()
-                  .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-                  .replace(/[^a-z0-9]/g, "-")
-                  .replace(/-+/g, "-")
-                  .replace(/^-|-$/g, "");
-              const dateStr = dates.replace(/[^0-9]/g, "");
-              return `${slug}_${dateStr}`;
-            };
-            const newId = generateSlug(resData.tournamentName, resData.tournamentDates);
+            const newId = buildLegacyTournamentId(resData.tournamentName, resData.tournamentDates);
             if (newId && !results[newId]) {
               results[newId] = resData;
             }
@@ -185,11 +188,15 @@ export function useTournaments(user, preferences, handleUpdatePreferences, resul
     });
 
     return uniqueMerged;
-  }, [baseTournaments, customTournaments, subscribedTournaments, preferences, user?.username, results]);
+  }, [baseTournaments, customTournaments, subscribedTournaments, preferences, user?.username, results, isDisabled]);
 
   useEffect(() => {
+    if (isDisabled) {
+      setAvailableSeasons(['2026', '2025']);
+      return;
+    }
     setAvailableSeasons(getAvailableSeasons(tournaments));
-  }, [tournaments.length]);
+  }, [tournaments.length, isDisabled]);
 
   const filteredTournaments = useMemo(
     () => filterBySeason(tournaments, currentSeason),
@@ -209,9 +216,9 @@ export function useTournaments(user, preferences, handleUpdatePreferences, resul
     await joinTournament(user, tournament);
     
     if (preferences?.hiddenIds) {
-      const isHidden = preferences.hiddenIds.some(id => String(id) === String(tournament.id));
+        const isHidden = preferences.hiddenIds.some(id => String(id) === String(tournament.id));
       if (isHidden) {
-        const newHidden = preferences.hiddenIds.filter(id => String(id) !== String(tournament.id));
+      const newHidden = preferences.hiddenIds.filter(id => String(id) !== String(tournament.id));
         handleUpdatePreferences(null, newHidden);
       }
     }
@@ -228,20 +235,23 @@ export function useTournaments(user, preferences, handleUpdatePreferences, resul
   };
 
   const handleDeleteTournament = async (id) => {
-    const customTournament = customTournaments.find((t) => String(t.id) === String(id));
+    const customTournament = customTournaments.find((t) =>
+      String(t.id) === String(id) || String(t.id) === String(canonicalId)
+    );
+    const canonicalId = resolveCanonicalTournamentId(id);
     if (customTournament) {
-      if (user) await deleteCustomTournament(user, id);
+      if (user) await deleteCustomTournament(user, canonicalId);
       // DO NOT hide official tournaments if we just deleted a custom one with the same ID
     } else {
-      const newHidden = [...(preferences.hiddenIds || []), id];
+      const newHidden = [...(preferences.hiddenIds || []), canonicalId];
       handleUpdatePreferences(null, newHidden);
     }
     // Also remove from subscribed_tournaments to completely remove any duplicate link
-    if (user && id) {
-      await leaveTournament(user, id);
+    if (user && canonicalId) {
+      await leaveTournament(user, canonicalId);
     }
-    if (results[id] && user) {
-      await deleteResult(user, id);
+    if ((results[id] || results[canonicalId]) && user) {
+      await deleteResult(user, canonicalId);
     }
   };
 

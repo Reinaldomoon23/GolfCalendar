@@ -27,7 +27,6 @@ function TournamentsAdminPanel() {
     category: 'Juvenil',
     type: 'strokeplay',
     details: '',
-    details: '',
     official: true
   });
 
@@ -182,7 +181,7 @@ function TournamentsAdminPanel() {
     }
     setLoading(true);
     try {
-      const detId = generateTournamentDeterministicId(centralizedFormData.name, centralizedFormData.dates);
+      const detId = generateTournamentDeterministicId(centralizedFormData);
       const data = {
         ...centralizedFormData,
         id: detId,

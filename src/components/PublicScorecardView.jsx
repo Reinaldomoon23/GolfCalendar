@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
-import { doc, getDoc, getDocs, collection, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, getDocs, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { ChevronLeft, Flag, Info, MapPin, Wind, Thermometer, CloudRain, Cloud, Sun } from 'lucide-react';
 import ProfileImage from './ProfileImage';
@@ -11,10 +11,15 @@ import {
     getUserSubdocRef
 } from '../utils/userProfiles';
 import tournamentsData from '../data/tournaments.json';
-import { generateTournamentDeterministicId } from '../services/tournaments.service';
+import {
+    generateTournamentDeterministicId,
+    resolveCanonicalTournamentId,
+    getTournamentIdCandidates
+} from '../services/tournaments.service';
 
 export default function PublicScorecardView() {
     const { username, id: eventId } = useParams();
+    const canonicalEventId = resolveCanonicalTournamentId(eventId);
     const location = useLocation();
     const searchParams = new URLSearchParams(location.search);
     const queryRIdx = searchParams.get('r');
@@ -193,30 +198,46 @@ export default function PublicScorecardView() {
     // (e.g. the user may have edited an official tournament - the custom version takes priority)
     useEffect(() => {
         const fetchTournament = async () => {
+            if (!profileReady) return;
             setError(null);
             let foundTournament = null;
-
-            // For custom tournaments, we NEED the real user UID to find the doc.
-            // Wait for profile fetch to complete (success OR failure) before trying.
-            const isCustomId = String(eventId).startsWith('custom_');
-            if (isCustomId && !profileReady) {
-                return; // will re-run once profileReady is true
-            }
             
             try {
-                // 1. User's custom overrides (highest priority) - catch permission errors
-                const customRef = getUserSubdocRef(db, userProfile || username, 'custom_tournaments', eventId);
-                const customSnap = await getDoc(customRef);
-                if (customSnap.exists()) {
-                    foundTournament = { id: customSnap.id, ...customSnap.data() };
+                // 1. User's custom overrides (highest priority)
+                for (const candidateId of getTournamentIdCandidates(canonicalEventId)) {
+                    const customRef = getUserSubdocRef(db, userProfile || username, 'custom_tournaments', candidateId);
+                    const customSnap = await getDoc(customRef);
+                    if (customSnap.exists()) {
+                        foundTournament = { id: customSnap.id, ...customSnap.data() };
+                        break;
+                    }
                 }
-            } catch (err) { 
+            } catch { 
                 /* ignore, likely permission error for guest */ 
             }
 
             if (!foundTournament) {
-                // 2. Local official JSON
-                const localOfficial = tournamentsData.find((t) => String(t.id) === String(eventId));
+                try {
+                    // 2. User's subscribed official/shared snapshot
+                    for (const candidateId of getTournamentIdCandidates(canonicalEventId)) {
+                        const subscribedRef = getUserSubdocRef(db, userProfile || username, 'subscribed_tournaments', candidateId);
+                        const subscribedSnap = await getDoc(subscribedRef);
+                        if (subscribedSnap.exists()) {
+                            foundTournament = {
+                                id: candidateId,
+                                ...subscribedSnap.data(),
+                            };
+                            break;
+                        }
+                    }
+                } catch {
+                    /* ignore, likely permission error for guest */
+                }
+            }
+
+            if (!foundTournament) {
+                // 3. Local official JSON
+                const localOfficial = tournamentsData.find((t) => String(t.id) === String(canonicalEventId));
                 if (localOfficial) {
                     foundTournament = localOfficial;
                 }
@@ -224,8 +245,8 @@ export default function PublicScorecardView() {
 
             if (!foundTournament) {
                 try {
-                    // 3. Firebase official tournaments collection
-                    const docRef = doc(db, 'tournaments', eventId);
+                    // 4. Firebase official tournaments collection
+                    const docRef = doc(db, 'tournaments', canonicalEventId);
                     const docSnap = await getDoc(docRef);
                     if (docSnap.exists()) {
                         foundTournament = { id: docSnap.id, ...docSnap.data() };
@@ -240,7 +261,7 @@ export default function PublicScorecardView() {
                 setError(null);
             } else {
                 // Last ditch effort: matches numeric ID even if string comparison failed
-                const numericId = parseInt(eventId);
+                const numericId = parseInt(canonicalEventId);
                 if (!isNaN(numericId)) {
                     const altMatch = tournamentsData.find(t => t.id === numericId);
                     if (altMatch) {
@@ -253,12 +274,12 @@ export default function PublicScorecardView() {
             }
         };
         fetchTournament();
-    }, [eventId, profileDocId, username, userProfile, profileReady]);
+    }, [canonicalEventId, profileDocId, username, userProfile, profileReady]);
 
     useEffect(() => {
         if (!profileReady) return;
 
-        let effectiveId = eventId;
+        const effectiveId = canonicalEventId;
         const resultRef = getUserSubdocRef(db, userProfile || username, 'results', effectiveId);
         
         const unsubscribe = onSnapshot(resultRef, (docSnap) => {
@@ -324,7 +345,7 @@ export default function PublicScorecardView() {
                     setError(null);
                     setTournament(prev => ({
                         ...prev,
-                        id: eventId,
+                        id: canonicalEventId,
                         name: data.tournamentName,
                         course: data.tournamentCourse || prev?.course || '',
                         dates: data.tournamentDates || prev?.dates || '',
@@ -344,10 +365,10 @@ export default function PublicScorecardView() {
                 }
             } else {
                 // FALLBACK LOGIC: If no results for legacy ID, try deterministic ID
-                const isLegacyId = !isNaN(parseInt(eventId)) && String(eventId).length < 10;
+                const isLegacyId = String(canonicalEventId) !== String(eventId);
                 if (isLegacyId && tournament) {
-                    const detId = generateTournamentDeterministicId(tournament.name, tournament.dates);
-                    if (detId !== eventId) {
+                    const detId = generateTournamentDeterministicId(tournament);
+                    if (detId !== canonicalEventId) {
                         const fallbackRef = getUserSubdocRef(db, userProfile || username, 'results', detId);
                         getDoc(fallbackRef).then(fallbackSnap => {
                             if (fallbackSnap.exists()) {
@@ -370,7 +391,7 @@ export default function PublicScorecardView() {
         });
 
         return () => unsubscribe();
-    }, [profileDocId, username, eventId, profileReady, tournament?.id]);
+    }, [profileDocId, username, canonicalEventId, eventId, profileReady, tournament?.id]);
 
     // ── Listen to other team members results for the same tournament ───────
     useEffect(() => {
@@ -398,20 +419,20 @@ export default function PublicScorecardView() {
             };
 
             // Join the primary listener
-            unsubs.push(setupListener(eventId));
+            unsubs.push(setupListener(canonicalEventId));
 
             // If eventId is legacy (numeric), try also the deterministic ID if we have tournament info
-            const isLegacyId = !isNaN(parseInt(eventId)) && String(eventId).length < 10;
+            const isLegacyId = String(canonicalEventId) !== String(eventId);
             if (isLegacyId && tournament) {
-                const detId = generateTournamentDeterministicId(tournament.name, tournament.dates);
-                if (detId !== eventId) {
+                const detId = generateTournamentDeterministicId(tournament);
+                if (detId !== canonicalEventId) {
                     unsubs.push(setupListener(detId));
                 }
             }
         });
 
         return () => unsubs.forEach(u => u());
-    }, [eventId, profileReady]);
+    }, [canonicalEventId, eventId, profileReady, tournament]);
 
     // Synchronize selected tab with detected round if not set
     useEffect(() => {
@@ -435,7 +456,7 @@ export default function PublicScorecardView() {
     };
 
     tournamentInfo = tournament || (result?.tournamentName ? {
-        id: eventId,
+        id: canonicalEventId,
         name: result.tournamentName,
         course: result.tournamentCourse || '',
         dates: result.tournamentDates || '',

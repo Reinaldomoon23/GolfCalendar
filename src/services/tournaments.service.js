@@ -10,22 +10,13 @@ import { collection, doc, onSnapshot, setDoc, deleteDoc, serverTimestamp, query,
 import { getUserSubcollectionRef, getUserSubdocRef } from '../utils/userProfiles';
 import { getYear } from '../utils/dateHelpers';
 import { joinTournamentAsParticipant } from './leaderboard.service';
+import {
+  generateTournamentDeterministicId,
+  resolveCanonicalTournamentId,
+  getTournamentIdCandidates,
+} from '../utils/tournamentIds';
 
-/**
- * Generates a deterministic unique ID for a tournament based on its name and dates.
- * This ensures that identical tournaments created by different users share the same ID.
- */
-export function generateTournamentDeterministicId(name, dates) {
-  if (!name || !dates) return 'temp_' + Date.now();
-  const slug = name.toLowerCase()
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Remove accents
-    .replace(/[^a-z0-9]/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '');
-  // Take only digits from date (e.g. "31/01/2026 - 02/02/2026" -> "3101202602022026")
-  const dateStr = dates.replace(/[^0-9]/g, '');
-  return `${slug}_${dateStr}`;
-}
+export { generateTournamentDeterministicId, resolveCanonicalTournamentId, getTournamentIdCandidates };
 
 // ─── Official Tournaments ─────────────────────────────────────────────────────
 
@@ -36,7 +27,11 @@ export function generateTournamentDeterministicId(name, dates) {
  */
 export function subscribeToOfficialTournaments(onUpdate) {
   const unsubscribe = onSnapshot(collection(db, 'tournaments'), (snapshot) => {
-    const tourneys = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    const tourneys = snapshot.docs.map((doc) => ({
+      id: resolveCanonicalTournamentId(doc.id),
+      ...doc.data(),
+      legacyIds: getTournamentIdCandidates(doc.id).filter((candidateId) => candidateId !== resolveCanonicalTournamentId(doc.id)),
+    }));
     if (tourneys.length > 0) {
       console.log('[tournaments] Loaded official tournaments:', tourneys.length);
       onUpdate(tourneys);
@@ -58,12 +53,20 @@ export function subscribeToSharedTournaments(onUpdate) {
   
   const unsubscribe = onSnapshot(q, (snapshot) => {
     const shared = snapshot.docs.map((doc) => ({ 
-      id: doc.id, 
+      id: resolveCanonicalTournamentId(doc.id), 
       ...doc.data(),
       isShared: true,
       groups: Array.from(new Set([...(doc.data().groups || []), 'comunidad']))
     }));
     onUpdate(shared);
+  }, (error) => {
+    if (error?.code === 'permission-denied') {
+      console.warn('[tournaments] Shared tournaments unavailable for current session');
+      onUpdate([]);
+      return;
+    }
+
+    console.error('[tournaments] Shared tournaments listener failed:', error);
   });
 
   return unsubscribe;
@@ -77,7 +80,9 @@ export function subscribeToSharedTournaments(onUpdate) {
 export async function publishTournament(user, tournament) {
   if (!user || !tournament) throw new Error('User and tournament data required');
 
-  const deterministicId = generateTournamentDeterministicId(tournament.name, tournament.dates);
+  const deterministicId = resolveCanonicalTournamentId(
+    tournament.id || generateTournamentDeterministicId(tournament)
+  );
   
   const sharedData = {
     ...tournament,
@@ -106,7 +111,10 @@ export function subscribeToCustomTournaments(user, onUpdate) {
   const ref = getUserSubcollectionRef(db, user, 'custom_tournaments');
 
   const unsubscribe = onSnapshot(ref, (snapshot) => {
-    const customs = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    const customs = snapshot.docs.map((doc) => ({
+      id: resolveCanonicalTournamentId(doc.id),
+      ...doc.data(),
+    }));
     onUpdate(customs);
   });
 
@@ -125,7 +133,9 @@ export async function addCustomTournament(user, tournament) {
   if (!user || !tournament?.name) throw new Error('User and tournament name are required');
   
   // Always use deterministic ID for custom tournaments to unify them across users
-  const deterministicId = generateTournamentDeterministicId(tournament.name, tournament.dates);
+  const deterministicId = resolveCanonicalTournamentId(
+    tournament.id || generateTournamentDeterministicId(tournament)
+  );
   const tournamentWithId = { ...tournament, id: deterministicId };
   
   await setDoc(getUserSubdocRef(db, user, 'custom_tournaments', deterministicId), tournamentWithId);
@@ -171,7 +181,9 @@ export async function normalizeUserTournaments(user, customTournaments, resultsM
   const { saveResult, deleteResult } = await import('./results.service');
 
   for (const t of customTournaments) {
-    const detId = generateTournamentDeterministicId(t.name, t.dates);
+    const detId = resolveCanonicalTournamentId(
+      t.id || generateTournamentDeterministicId(t)
+    );
     
     // If current ID is already correct or it's an official ID (not custom), skip
     if (t.id === detId) continue;
@@ -299,36 +311,41 @@ export function getAvailableSeasons(tournaments, baseYear = '2026') {
 export async function joinTournament(user, tournament) {
   if (!user || !tournament?.id) throw new Error('User and tournament required');
 
-  const ref = getUserSubdocRef(db, user, 'subscribed_tournaments', String(tournament.id));
+  const canonicalId = resolveCanonicalTournamentId(tournament.id);
+  const canonicalTournament = {
+    ...tournament,
+    id: canonicalId,
+  };
+  const ref = getUserSubdocRef(db, user, 'subscribed_tournaments', canonicalId);
   await setDoc(ref, {
-    tournamentId: String(tournament.id),
+    tournamentId: canonicalId,
     joinedAt: serverTimestamp(),
-    source: tournament.isShared ? 'shared' : 'official',
+    source: canonicalTournament.isShared ? 'shared' : 'official',
     // Always cache a full snapshot so we can show it even if resolution fails
-    name: tournament.name,
-    dates: tournament.dates,
-    course: tournament.course,
-    type: tournament.type || 'official',
-    groups: tournament.groups || [],
-    valedera: tournament.valedera || false,
+    name: canonicalTournament.name,
+    dates: canonicalTournament.dates,
+    course: canonicalTournament.course,
+    type: canonicalTournament.type || 'official',
+    groups: canonicalTournament.groups || [],
+    valedera: canonicalTournament.valedera || false,
   }, { merge: true });
 
   // Mirror every join into the public participants subcollection so the
   // roster and counts have a single source of truth for both official and
   // community tournaments.
   try {
-    await joinTournamentAsParticipant(user, tournament.id, tournament);
+    await joinTournamentAsParticipant(user, canonicalId, canonicalTournament);
 
     // Shared/community tournaments also keep an aggregate counter on their
     // source doc for legacy UI surfaces.
-    if (tournament.isShared || String(tournament.id).includes('_')) {
-      const sharedRef = doc(db, 'shared_tournaments', String(tournament.id));
+    if (canonicalTournament.isShared || String(canonicalId).includes('_')) {
+      const sharedRef = doc(db, 'shared_tournaments', canonicalId);
       await updateDoc(sharedRef, { 
         subscriberCount: increment(1) 
       }).catch(async (err) => {
         // If doc doesn't exist (it's an official tournament with shared ID but not in shared_tournaments yet)
         if (err.code === 'not-found') {
-          await setDoc(sharedRef, { ...tournament, subscriberCount: 1 }, { merge: true });
+          await setDoc(sharedRef, { ...canonicalTournament, subscriberCount: 1 }, { merge: true });
         }
       });
     }
@@ -340,14 +357,15 @@ export async function joinTournament(user, tournament) {
 export async function leaveTournament(user, tournamentId) {
   if (!user || !tournamentId) throw new Error('User and tournamentId required');
 
-  const ref = getUserSubdocRef(db, user, 'subscribed_tournaments', String(tournamentId));
-  const participantRef = doc(db, 'tournaments', String(tournamentId), 'participants', String(user.username));
+  const canonicalId = resolveCanonicalTournamentId(tournamentId);
+  const ref = getUserSubdocRef(db, user, 'subscribed_tournaments', canonicalId);
+  const participantRef = doc(db, 'tournaments', canonicalId, 'participants', String(user.username));
   
   // Check source before decrementing counter
   try {
     const snap = await getDoc(ref);
-    if (snap.exists() && (snap.data().source === 'shared' || String(tournamentId).includes('_'))) {
-      const sharedRef = doc(db, 'shared_tournaments', String(tournamentId));
+    if (snap.exists() && (snap.data().source === 'shared' || String(canonicalId).includes('_'))) {
+      const sharedRef = doc(db, 'shared_tournaments', canonicalId);
       await updateDoc(sharedRef, { 
         subscriberCount: increment(-1) 
       }).catch(() => {/* ignore if shared doc doesn't exist */});
@@ -373,41 +391,45 @@ export function subscribeToSubscribedTournaments(user, onUpdate) {
   const unsub = onSnapshot(ref, async (snapshot) => {
     if (snapshot.empty) { onUpdate([], []); return; }
 
-    const rawIds = snapshot.docs.map(d => d.data().tournamentId).filter(Boolean);
+    const rawIds = snapshot.docs
+      .map((d) => resolveCanonicalTournamentId(d.data().tournamentId))
+      .filter(Boolean);
     const cachedDocs = snapshot.docs.map(d => d.data());
 
     // Build full tournament objects from the cached snapshot first (instant),
     // then try to resolve from Firestore for live data
     const resolved = await Promise.all(
       cachedDocs.map(async (cached) => {
-        const tid = cached.tournamentId;
+        const tid = resolveCanonicalTournamentId(cached.tournamentId);
         if (!tid) return null;
 
-        // 1. Try shared_tournaments (community)
-        try {
-          const sourceSnap = await getDoc(doc(db, 'shared_tournaments', tid));
-          if (sourceSnap.exists()) {
-            return {
-              id: sourceSnap.id,
-              ...sourceSnap.data(),
-              isShared: true,
-              isSubscribed: true,
-              groups: Array.from(new Set([...(sourceSnap.data().groups || []), 'comunidad'])),
-            };
-          }
-        } catch { /* continue */ }
+        for (const candidateId of getTournamentIdCandidates({ id: tid, name: cached.name, dates: cached.dates, course: cached.course, type: cached.type })) {
+          // 1. Try shared_tournaments (community)
+          try {
+            const sourceSnap = await getDoc(doc(db, 'shared_tournaments', candidateId));
+            if (sourceSnap.exists()) {
+              return {
+                id: sourceSnap.id,
+                ...sourceSnap.data(),
+                isShared: true,
+                isSubscribed: true,
+                groups: Array.from(new Set([...(sourceSnap.data().groups || []), 'comunidad'])),
+              };
+            }
+          } catch { /* continue */ }
 
-        // 2. Try official tournaments collection
-        try {
-          const officialSnap = await getDoc(doc(db, 'tournaments', tid));
-          if (officialSnap.exists()) {
-            return {
-              id: officialSnap.id,
-              ...officialSnap.data(),
-              isSubscribed: true,
-            };
-          }
-        } catch { /* continue */ }
+          // 2. Try official tournaments collection
+          try {
+            const officialSnap = await getDoc(doc(db, 'tournaments', candidateId));
+            if (officialSnap.exists()) {
+              return {
+                id: officialSnap.id,
+                ...officialSnap.data(),
+                isSubscribed: true,
+              };
+            }
+          } catch { /* continue */ }
+        }
 
         // 3. Fall back to cached snapshot stored at join time
         if (cached.name && cached.dates) {
@@ -442,10 +464,11 @@ export async function fetchParticipantCounts(tournamentIds) {
   await Promise.all(
     tournamentIds.map(async (id) => {
       try {
-        const snap = await getDoc(doc(db, 'shared_tournaments', id));
-        counts[id] = snap.exists() ? (snap.data().subscriberCount || 0) : 0;
+        const canonicalId = resolveCanonicalTournamentId(id);
+        const snap = await getDoc(doc(db, 'shared_tournaments', canonicalId));
+        counts[canonicalId] = snap.exists() ? (snap.data().subscriberCount || 0) : 0;
       } catch {
-        counts[id] = 0;
+        counts[String(id)] = 0;
       }
     })
   );
@@ -465,7 +488,7 @@ export async function fetchTournamentParticipantMeta(tournamentIds) {
   const meta = {};
   await Promise.all(
     tournamentIds.map(async (id) => {
-      const key = String(id);
+      const key = resolveCanonicalTournamentId(id);
       try {
         const snap = await getDocs(collection(db, 'tournaments', key, 'participants'));
         meta[key] = {

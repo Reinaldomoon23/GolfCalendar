@@ -517,7 +517,7 @@ export default function CalendarView({
 
 
         // CHECK FOR DUPLICATES BEFORE SAVING
-        const detId = generateTournamentDeterministicId(t.name, t.dates);
+        const detId = generateTournamentDeterministicId(t);
         const existing = allAvailableTournaments.find(at => at.id === detId || (at.name === t.name && at.dates === t.dates));
 
         if (existing && !existing.custom) {

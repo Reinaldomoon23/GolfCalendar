@@ -10,10 +10,14 @@ import {
     getUserSubdocRef
 } from '../utils/userProfiles';
 import tournamentsData from '../data/tournaments.json';
-import { generateTournamentDeterministicId } from '../services/tournaments.service';
+import {
+    resolveCanonicalTournamentId,
+    getTournamentIdCandidates
+} from '../services/tournaments.service';
 
 export default function TeamLiveScorecard() {
-    const { id: eventId } = useParams();
+    const { tournamentId: eventId } = useParams();
+    const canonicalEventId = resolveCanonicalTournamentId(eventId);
     const location = useLocation();
     const searchParams = new URLSearchParams(location.search);
     const playersStr = searchParams.get('players');
@@ -23,7 +27,6 @@ export default function TeamLiveScorecard() {
     const [profiles, setProfiles] = useState({});
     const [tournament, setTournament] = useState(null);
     const [results, setResults] = useState({});
-    const [error, setError] = useState(null);
     const [selectedRound, setSelectedRound] = useState(null);
 
     const CORE_PLAYERS = ['nicole', 'txell', 'ona', 'maria', 'sofia', 'adriana', 'mariaros', 'jordi'];
@@ -60,37 +63,40 @@ export default function TeamLiveScorecard() {
             
             try {
                 // Try custom first for that player
-                const customRef = getUserSubdocRef(db, mainPlayerProfile || mainPlayer, 'custom_tournaments', eventId);
-                const customSnap = await getDoc(customRef);
-                if (customSnap.exists()) {
-                    foundTournament = { id: customSnap.id, ...customSnap.data() };
+                for (const candidateId of getTournamentIdCandidates(canonicalEventId)) {
+                    const customRef = getUserSubdocRef(db, mainPlayerProfile || mainPlayer, 'custom_tournaments', candidateId);
+                    const customSnap = await getDoc(customRef);
+                    if (customSnap.exists()) {
+                        foundTournament = { id: customSnap.id, ...customSnap.data() };
+                        break;
+                    }
                 }
-            } catch (err) {
+            } catch {
                 /* ignore permission errors */
             }
 
             if (!foundTournament) {
                 try {
                     // Try official
-                    const offRef = doc(db, 'tournaments', eventId);
+                    const offRef = doc(db, 'tournaments', canonicalEventId);
                     const offSnap = await getDoc(offRef);
                     if (offSnap.exists()) {
                         foundTournament = { id: offSnap.id, ...offSnap.data() };
                     }
-                } catch (err) {
+                } catch {
                     /* ignore permission errors */
                 }
             }
 
             if (!foundTournament) {
                 // Fallback basic
-                foundTournament = { id: eventId, name: 'Torneo en Seguimiento' };
+                foundTournament = { id: canonicalEventId, name: 'Torneo en Seguimiento' };
             }
             
             setTournament(foundTournament);
         };
         fetchTournament();
-    }, [eventId, playersStr, profiles]);
+    }, [canonicalEventId, playersStr, profiles]);
 
     // Setup Realtime listeners for all requested players
     useEffect(() => {
@@ -105,8 +111,6 @@ export default function TeamLiveScorecard() {
             
             const unsub = onSnapshot(resultsRef, (snap) => {
                 const tournamentNameClean = (tournament?.name || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
-                const targetKey = tournamentNameClean.substring(0, 10); // Use a prefix to avoid empty match
-                
                 let bestMatch = null;
                 
                 snap.docs.forEach(doc => {
@@ -115,7 +119,7 @@ export default function TeamLiveScorecard() {
                     const dId = doc.id;
                     
                     // Match by ID
-                    if (dId === eventId) {
+                    if (dId === canonicalEventId || dId === eventId) {
                         bestMatch = { id: dId, ...data };
                         return;
                     }
@@ -152,7 +156,7 @@ export default function TeamLiveScorecard() {
         });
 
         return () => unsubscribes.forEach(u => u());
-    }, [eventId, playersStr, profiles, tournament?.name, tournamentsData?.length]);
+    }, [canonicalEventId, eventId, playersStr, profiles, tournament?.name, tournamentsData?.length]);
 
     const getScoreColor = (strokes, par) => {
         if (!strokes || !par) return 'transparent';
@@ -555,9 +559,10 @@ export default function TeamLiveScorecard() {
                                                         </div>
                                                     </div>
                                                 )}
-                                                {displayRounds.map((rIdx) => {
+                                        {displayRounds.map((rIdx) => {
                                             const roundStr = parseInt(rIdx);
                                             const card = activeResult?.scorecards?.[rIdx];
+                                            if (!card) return null;
 
                                             let playedStrokes = 0;
                                             let playedPar = 0;
