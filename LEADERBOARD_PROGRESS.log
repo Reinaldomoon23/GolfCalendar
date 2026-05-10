@@ -192,6 +192,19 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
 ==========================================================================
   Siguiente: Reemplazar confirmaciones y avisos nativos por UI silenciosa o componentes inline, respetando la regla del proyecto.
 
+[COMPLETADO] HOTFIX — Icono PWA de notificaciones en modo vivo
+  Archivos modificados:
+    - src/components/PublicScorecardView.jsx
+    - deploy_ftp_root.cjs
+  Resumen:
+    - Las notificaciones del modo vivo ya usan `import.meta.env.BASE_URL` para resolver el icono bajo `/GolfTeam/`.
+    - El deploy también sube `pwa-192x192.png` y `pwa-512x512.png` al root para cubrir navegadores con bundles antiguos cacheados que aún soliciten `/pwa-192x192.png`.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Firestore shared_tournaments y transporte live
+==========================================================================
+  Siguiente: Revisar si conviene forzar long polling de Firestore solo si los errores de QUIC afectan realmente a la recepción de datos en vivo.
+
 ==========================================================================
  SESIÓN: 2026-05-09 | Modelo: Codex GPT-5
 ==========================================================================

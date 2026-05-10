@@ -72,12 +72,21 @@ RewriteRule ^(.*)$ /GolfTeam/$1 [R=301,L]
             console.log("🛠️ Incluyendo Service Worker Kill Switch...");
         }
 
+        // Keep notification icons available at the domain root for users with
+        // an older cached bundle that still requests /pwa-192x192.png.
+        for (const iconName of ["pwa-192x192.png", "pwa-512x512.png"]) {
+            const iconPath = path.join(__dirname, "public", iconName);
+            if (fs.existsSync(iconPath)) {
+                fs.copyFileSync(iconPath, path.join(tempDir, iconName));
+            }
+        }
+
         console.log("📤 Subiendo .htaccess quirúrgico y Kill Switch a la Raíz (/)...");
         await ftpDeploy.deploy({
             ...config,
             localRoot: tempDir,
             remoteRoot: "/public_html/",
-            include: [".htaccess", "sw.js"],
+            include: [".htaccess", "sw.js", "pwa-192x192.png", "pwa-512x512.png"],
             deleteRemote: false // NUNCA borrar el root
         });
 
@@ -91,4 +100,3 @@ RewriteRule ^(.*)$ /GolfTeam/$1 [R=301,L]
         console.log("❌ Error en el despliegue:", err);
     }
 })();
-

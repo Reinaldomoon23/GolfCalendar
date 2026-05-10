@@ -20,6 +20,7 @@ import {
 export default function PublicScorecardView() {
     const { username, id: eventId } = useParams();
     const canonicalEventId = resolveCanonicalTournamentId(eventId);
+    const notificationIconUrl = `${import.meta.env.BASE_URL}pwa-192x192.png`;
     const location = useLocation();
     const searchParams = new URLSearchParams(location.search);
     const queryRIdx = searchParams.get('r');
@@ -338,7 +339,7 @@ export default function PublicScorecardView() {
                                 // Browser notification if permitted
                                 if ('Notification' in window && Notification.permission === 'granted') {
                                     new Notification(`${emoji} ${label} — Hoyo ${holeNum}`, {
-                                        body: msg, icon: '/pwa-192x192.png'
+                                        body: msg, icon: notificationIconUrl
                                     });
                                 }
                             }
