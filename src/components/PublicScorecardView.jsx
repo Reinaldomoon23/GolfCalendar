@@ -237,9 +237,15 @@ export default function PublicScorecardView() {
 
             if (!foundTournament) {
                 // 3. Local official JSON
-                const localOfficial = tournamentsData.find((t) => String(t.id) === String(canonicalEventId));
+                const localOfficial = tournamentsData.find((t) =>
+                    getTournamentIdCandidates(t).includes(String(canonicalEventId))
+                    || getTournamentIdCandidates(t).includes(String(eventId))
+                );
                 if (localOfficial) {
-                    foundTournament = localOfficial;
+                    foundTournament = {
+                        ...localOfficial,
+                        id: canonicalEventId,
+                    };
                 }
             }
 

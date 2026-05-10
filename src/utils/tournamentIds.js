@@ -49,6 +49,13 @@ function coerceTournamentInput(inputOrName, maybeDates, maybeMeta = {}) {
     return inputOrName;
   }
 
+  if (maybeDates == null && (typeof inputOrName === 'string' || typeof inputOrName === 'number')) {
+    return {
+      ...maybeMeta,
+      id: inputOrName,
+    };
+  }
+
   return {
     ...maybeMeta,
     name: inputOrName,

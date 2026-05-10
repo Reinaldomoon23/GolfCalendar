@@ -174,6 +174,25 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
   Siguiente: Añadir filtros por ronda (D1, D2, Total) en el componente TournamentLeaderboard.jsx.
 
 ==========================================================================
+ SESIÓN: 2026-05-10 | Modelo: Codex GPT-5
+==========================================================================
+
+[COMPLETADO] HOTFIX — Enlaces legacy del modo vivo para torneos locales
+  Archivos modificados:
+    - src/utils/tournamentIds.js
+    - src/components/PublicScorecardView.jsx
+    - src/components/TeamLiveScorecard.jsx
+  Resumen:
+    - `getTournamentIdCandidates()` ahora trata strings/números sin fecha como IDs explícitos y devuelve candidatos canónicos/legacy.
+    - Las vistas públicas `/live` y `/live-team` ya reconocen torneos locales aunque `src/data/tournaments.json` use ID numérico y el enlace use el ID determinista legacy.
+    - Verificado en local y producción limpia sin service worker: `/live/ona/circuito-miguel-angel-jimenez-infantil_10052026?r=0` carga el torneo correcto.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Sustituir alert()/window.confirm()
+==========================================================================
+  Siguiente: Reemplazar confirmaciones y avisos nativos por UI silenciosa o componentes inline, respetando la regla del proyecto.
+
+==========================================================================
  SESIÓN: 2026-05-09 | Modelo: Codex GPT-5
 ==========================================================================
 

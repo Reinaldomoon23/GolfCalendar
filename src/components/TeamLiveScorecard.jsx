@@ -89,6 +89,20 @@ export default function TeamLiveScorecard() {
             }
 
             if (!foundTournament) {
+                const localOfficial = tournamentsData.find((t) =>
+                    getTournamentIdCandidates(t).includes(String(canonicalEventId))
+                    || getTournamentIdCandidates(t).includes(String(eventId))
+                );
+
+                if (localOfficial) {
+                    foundTournament = {
+                        ...localOfficial,
+                        id: canonicalEventId,
+                    };
+                }
+            }
+
+            if (!foundTournament) {
                 // Fallback basic
                 foundTournament = { id: canonicalEventId, name: 'Torneo en Seguimiento' };
             }
