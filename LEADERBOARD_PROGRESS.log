@@ -186,6 +186,14 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
 ==========================================================================
   Siguiente: Cuando el modo vivo detecte resultados del mismo torneo, considerar escribir/normalizar esos participantes en `tournaments/{id}/participants` desde un proceso autenticado/admin para reducir lecturas públicas.
 
+[COMPLETADO] UX — Filas clicables en clasificación del modo vivo
+  Archivos modificados:
+    - src/components/PublicScorecardView.jsx
+  Resumen:
+    - Cada fila de la clasificación pública enlaza al detalle `/live/{username}/{tournamentId}` de esa jugadora.
+    - Se conserva el mismo torneo y el parámetro de ronda `r` cuando existe.
+    - Verificado en preview: click en Nicole desde Catalunya Infantil navega a `/live/nicole/{Catalunya Infantil ID}`.
+
 [COMPLETADO] HOTFIX — Clasificación conjunta dentro del modo vivo
   Archivos modificados:
     - src/components/PublicScorecardView.jsx

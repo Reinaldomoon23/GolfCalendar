@@ -1548,17 +1548,24 @@ export default function PublicScorecardView() {
                                     ? '#94a3b8'
                                     : relative <= 0 ? '#10b981' : '#ef4444';
                                 const isCurrent = participant.username === username;
+                                const detailSearch = queryRIdx !== null ? `?r=${encodeURIComponent(queryRIdx)}` : '';
+                                const detailUrl = `/live/${participant.username}/${eventId || canonicalEventId}${detailSearch}`;
 
                                 return (
-                                    <div
+                                    <Link
                                         key={participant.id || participant.username}
+                                        to={detailUrl}
                                         style={{
                                             display: 'grid',
                                             gridTemplateColumns: '44px minmax(0, 1fr) 72px 72px',
                                             alignItems: 'center',
                                             borderBottom: '1px solid #334155',
-                                            background: isCurrent ? '#1e3a8a44' : 'transparent'
+                                            background: isCurrent ? '#1e3a8a44' : 'transparent',
+                                            color: 'inherit',
+                                            textDecoration: 'none',
+                                            cursor: 'pointer'
                                         }}
+                                        title={`Ver resultado de ${participant.fullName || participant.username}`}
                                     >
                                         <div style={{
                                             padding: '14px 10px',
@@ -1602,7 +1609,7 @@ export default function PublicScorecardView() {
                                         <div style={{ padding: '14px 10px', textAlign: 'right', fontWeight: '900', color: relativeColor }}>
                                             {relativeStr}
                                         </div>
-                                    </div>
+                                    </Link>
                                 );
                             })
                         )}
