@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
-import { doc, getDoc, getDocs, onSnapshot } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { ChevronLeft, Flag, Info, MapPin, Wind, Thermometer, CloudRain, Cloud, Sun } from 'lucide-react';
 import ProfileImage from './ProfileImage';
@@ -17,6 +17,123 @@ import {
     getTournamentIdCandidates
 } from '../services/tournaments.service';
 import { subscribeToLeaderboard } from '../services/leaderboard.service';
+
+function normalizeTournamentText(value) {
+    return String(value || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim();
+}
+
+function resultMatchesTournament(resultId, resultData, candidateIds, tournamentMeta) {
+    if (candidateIds.includes(String(resultId))) return true;
+
+    const resultName = normalizeTournamentText(resultData?.tournamentName || resultData?.name);
+    const targetName = normalizeTournamentText(tournamentMeta?.name);
+    if (!resultName || !targetName || resultName !== targetName) return false;
+
+    const resultDates = normalizeTournamentText(resultData?.tournamentDates || resultData?.dates);
+    const targetDates = normalizeTournamentText(tournamentMeta?.dates);
+    if (resultDates && targetDates && resultDates !== targetDates) return false;
+
+    const resultCourse = normalizeTournamentText(resultData?.tournamentCourse || resultData?.course);
+    const targetCourse = normalizeTournamentText(tournamentMeta?.course);
+    if (resultCourse && targetCourse && resultCourse !== targetCourse) return false;
+
+    return true;
+}
+
+function summarizeResultForLeaderboard(profile, resultData, fallbackUsername) {
+    const username = profile?.username || fallbackUsername;
+    const fullName = profile?.full_name || resultData?.full_name || username;
+    const photoUrl = profile?.photo_url || resultData?.photo_url || null;
+    const rounds = [];
+    let total = 0;
+    let totalPar = 0;
+
+    if (resultData?.scorecards) {
+        Object.keys(resultData.scorecards)
+            .sort((a, b) => Number(a) - Number(b))
+            .forEach((roundKey) => {
+                const card = resultData.scorecards[roundKey];
+                let roundScore = 0;
+                let roundPar = 0;
+
+                for (let i = 0; i < 18; i += 1) {
+                    const stroke = parseInt(card?.strokes?.[i], 10);
+                    if (!Number.isFinite(stroke) || stroke <= 0) continue;
+
+                    const holePar = parseInt(card?.pars?.[i], 10);
+                    roundScore += stroke;
+                    roundPar += Number.isFinite(holePar) && holePar > 0 ? holePar : 4;
+                }
+
+                if (roundScore > 0) {
+                    rounds.push(roundScore);
+                    total += roundScore;
+                    totalPar += roundPar;
+                }
+            });
+    }
+
+    if (rounds.length === 0 && Array.isArray(resultData?.rounds)) {
+        resultData.rounds.forEach((roundScore) => {
+            const score = Number(roundScore);
+            if (!Number.isFinite(score) || score <= 0) return;
+            rounds.push(score);
+            total += score;
+        });
+        const par = Number(resultData?.tournamentPar || resultData?.par || 72);
+        totalPar = par * rounds.length;
+    }
+
+    return {
+        id: username,
+        username,
+        fullName,
+        photo_url: photoUrl,
+        total: total > 0 ? total : null,
+        roundsPlayed: rounds.length,
+        vspar: total > 0 ? total - totalPar : null,
+        rounds,
+        hasScore: total > 0,
+        updatedAt: resultData?.updatedAt || resultData?.savedAt || null,
+    };
+}
+
+function mergeParticipants(primaryParticipants, discoveredParticipants) {
+    const byUsername = new Map();
+
+    [...primaryParticipants, ...discoveredParticipants].forEach((participant) => {
+        const username = participant?.username || participant?.id;
+        if (!username) return;
+
+        const previous = byUsername.get(username);
+        if (!previous || (!previous.hasScore && participant.hasScore)) {
+            byUsername.set(username, { ...previous, ...participant, username });
+            return;
+        }
+
+        byUsername.set(username, {
+            ...participant,
+            ...previous,
+            total: previous.total || participant.total || null,
+            roundsPlayed: previous.roundsPlayed || participant.roundsPlayed || 0,
+            vspar: previous.vspar ?? participant.vspar ?? null,
+            hasScore: Boolean(previous.hasScore || participant.hasScore),
+            photo_url: previous.photo_url || participant.photo_url || null,
+        });
+    });
+
+    return Array.from(byUsername.values()).sort((a, b) => {
+        if (a.hasScore && !b.hasScore) return -1;
+        if (!a.hasScore && b.hasScore) return 1;
+        if (!a.hasScore && !b.hasScore) return String(a.fullName || a.username).localeCompare(String(b.fullName || b.username));
+        return (a.total || 999) - (b.total || 999);
+    });
+}
 
 export default function PublicScorecardView() {
     const { username, id: eventId } = useParams();
@@ -42,6 +159,7 @@ export default function PublicScorecardView() {
     const [activeViewTab, setActiveViewTab] = useState('leaderboard'); // 'scorecard' | 'leaderboard'
     const [leaderboardParticipants, setLeaderboardParticipants] = useState([]);
     const [leaderboardLoading, setLeaderboardLoading] = useState(true);
+    const [discoveredParticipants, setDiscoveredParticipants] = useState([]);
 
     const i18n = {
         es: {
@@ -415,6 +533,91 @@ export default function PublicScorecardView() {
         return () => unsubscribe();
     }, [canonicalEventId]);
 
+    useEffect(() => {
+        const tournamentMeta = {
+            name: result?.tournamentName || tournament?.name || '',
+            dates: result?.tournamentDates || tournament?.dates || '',
+            course: result?.tournamentCourse || tournament?.course || '',
+        };
+        const candidateIds = Array.from(new Set([
+            String(canonicalEventId),
+            String(eventId),
+            ...getTournamentIdCandidates(canonicalEventId),
+            ...getTournamentIdCandidates(eventId),
+        ].filter(Boolean)));
+
+        if (!candidateIds.length && !tournamentMeta.name) {
+            setDiscoveredParticipants([]);
+            return undefined;
+        }
+
+        let cancelled = false;
+        const unsubs = [];
+        const byUsername = new Map();
+
+        const publish = () => {
+            if (!cancelled) setDiscoveredParticipants(Array.from(byUsername.values()));
+        };
+
+        const start = async () => {
+            try {
+                const usersSnap = await getDocs(collection(db, 'users'));
+                if (cancelled) return;
+
+                usersSnap.docs.forEach((userDoc) => {
+                    const profile = { docId: userDoc.id, ...userDoc.data() };
+                    const playerUsername = profile.username || userDoc.id;
+                    const resultsRef = collection(db, 'users', userDoc.id, 'results');
+
+                    const unsubscribe = onSnapshot(resultsRef, (snapshot) => {
+                        let bestMatch = null;
+
+                        snapshot.docs.forEach((resultDoc) => {
+                            const resultData = resultDoc.data();
+                            if (!resultMatchesTournament(resultDoc.id, resultData, candidateIds, tournamentMeta)) return;
+
+                            const participant = summarizeResultForLeaderboard(profile, resultData, playerUsername);
+                            if (!bestMatch || (participant.total || 0) > (bestMatch.total || 0)) {
+                                bestMatch = participant;
+                            }
+                        });
+
+                        if (bestMatch) {
+                            byUsername.set(playerUsername, bestMatch);
+                        } else {
+                            byUsername.delete(playerUsername);
+                        }
+
+                        publish();
+                    }, (err) => {
+                        console.warn('[live leaderboard] Could not read user results:', playerUsername, err.code || err.message);
+                    });
+
+                    unsubs.push(unsubscribe);
+                });
+            } catch (err) {
+                console.warn('[live leaderboard] Could not discover active players:', err.code || err.message);
+                publish();
+            }
+        };
+
+        start();
+
+        return () => {
+            cancelled = true;
+            unsubs.forEach((unsubscribe) => unsubscribe());
+        };
+    }, [
+        canonicalEventId,
+        eventId,
+        result?.tournamentName,
+        result?.tournamentDates,
+        result?.tournamentCourse,
+        tournament?.name,
+        tournament?.dates,
+        tournament?.course,
+    ]);
+
     // Synchronize selected tab with detected round if not set
     useEffect(() => {
         if (activeRoundTab === null && foundActiveRIdx !== null) {
@@ -571,6 +774,7 @@ export default function PublicScorecardView() {
         if (diff === 2) return '#ef4444'; // Doble bogey (rojo)
         return '#000000'; // Triple bogey o peor (negro)
     };
+    const displayedLeaderboardParticipants = mergeParticipants(leaderboardParticipants, discoveredParticipants);
     // Once tournamentInfo is available, render immediately.
     // This ensures users always see the scorecard structure right away.
     if (!tournamentInfo && !error) {
@@ -1329,13 +1533,13 @@ export default function PublicScorecardView() {
                             <div style={{ padding: '36px 14px', textAlign: 'center', color: '#94a3b8', fontWeight: '700' }}>
                                 Cargando clasificación conjunta...
                             </div>
-                        ) : leaderboardParticipants.length === 0 ? (
+                        ) : displayedLeaderboardParticipants.length === 0 ? (
                             <div style={{ padding: '36px 14px', textAlign: 'center', color: '#94a3b8' }}>
                                 <div style={{ fontWeight: '800', color: '#e2e8f0', marginBottom: '6px' }}>Sin jugadoras apuntadas todavía</div>
                                 <div style={{ fontSize: '0.8rem' }}>Cuando alguien se apunte o guarde resultado, aparecerá aquí.</div>
                             </div>
                         ) : (
-                            leaderboardParticipants.map((participant, idx) => {
+                            displayedLeaderboardParticipants.map((participant, idx) => {
                                 const relative = participant.vspar;
                                 const relativeStr = relative === null || relative === undefined
                                     ? '-'

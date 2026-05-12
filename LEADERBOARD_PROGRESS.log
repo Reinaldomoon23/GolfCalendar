@@ -173,6 +173,19 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
 ==========================================================================
   Siguiente: Añadir filtros por ronda (D1, D2, Total) en el componente TournamentLeaderboard.jsx.
 
+[COMPLETADO] HOTFIX — Auto-detección de jugadoras en vivo por mismo torneo
+  Archivos modificados:
+    - src/components/PublicScorecardView.jsx
+  Resumen:
+    - La pestaña "CLASIFICACIÓN" del modo vivo combina el roster público con resultados públicos encontrados automáticamente en `users/*/results`.
+    - El match se hace por ID canónico/legacy y, si hace falta, por nombre + fecha + campo del torneo.
+    - Verificado en preview: `/live/ona/circuito-miguel-angel-jimenez-infantil_10052026?r=0` muestra Ona y Nicole con sus scores.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Persistir auto-descubrimiento en participants
+==========================================================================
+  Siguiente: Cuando el modo vivo detecte resultados del mismo torneo, considerar escribir/normalizar esos participantes en `tournaments/{id}/participants` desde un proceso autenticado/admin para reducir lecturas públicas.
+
 [COMPLETADO] HOTFIX — Clasificación conjunta dentro del modo vivo
   Archivos modificados:
     - src/components/PublicScorecardView.jsx
