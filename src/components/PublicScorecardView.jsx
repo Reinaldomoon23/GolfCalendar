@@ -1619,19 +1619,33 @@ export default function PublicScorecardView() {
                                             {idx + 1}
                                         </div>
                                         <div style={{ padding: '12px 10px', minWidth: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                            <ProfileImage
-                                                photoPath={participant.photo_url}
-                                                displayName={participant.fullName || participant.username}
-                                                alt={participant.fullName || participant.username}
-                                                style={{
-                                                    width: '34px',
-                                                    height: '34px',
-                                                    borderRadius: '50%',
-                                                    objectFit: 'cover',
-                                                    border: isCurrent ? '2px solid #3b82f6' : '1px solid #334155',
-                                                    flexShrink: 0
-                                                }}
-                                            />
+                                            {participant.photo_url ? (
+                                                <ProfileImage
+                                                    photoPath={participant.photo_url}
+                                                    displayName={participant.fullName || participant.username}
+                                                    alt={participant.fullName || participant.username}
+                                                    style={{
+                                                        width: '34px',
+                                                        height: '34px',
+                                                        borderRadius: '50%',
+                                                        objectFit: 'cover',
+                                                        border: isCurrent ? '2px solid #3b82f6' : '1px solid #334155',
+                                                        flexShrink: 0
+                                                    }}
+                                                />
+                                            ) : (
+                                                <div
+                                                    aria-hidden="true"
+                                                    style={{
+                                                        width: '34px',
+                                                        height: '34px',
+                                                        borderRadius: '50%',
+                                                        border: '1px solid #334155',
+                                                        background: '#0f172a',
+                                                        flexShrink: 0
+                                                    }}
+                                                />
+                                            )}
                                             <div style={{ minWidth: 0 }}>
                                                 <div style={{
                                                     fontWeight: '800',

@@ -202,6 +202,7 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
     - La clasificación pública ahora enriquece cada participante leyendo su perfil público por username para resolver `photo_url`.
     - Las futuras escrituras de `participants` guardan también `photo_url`.
     - Verificado en preview: la vista solicita fotos desde Cloudflare para Ona, Nicole y Txell; Maria Ros cae a avatar porque su perfil `mariaros` no expone `photo_url`.
+    - Ajuste posterior: si una jugadora no tiene `photo_url`, no se solicita avatar generado; se muestra un placeholder neutro.
 
 [COMPLETADO] HOTFIX — Clasificación conjunta dentro del modo vivo
   Archivos modificados:
