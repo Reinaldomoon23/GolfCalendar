@@ -160,6 +160,7 @@ export default function PublicScorecardView() {
     const [leaderboardParticipants, setLeaderboardParticipants] = useState([]);
     const [leaderboardLoading, setLeaderboardLoading] = useState(true);
     const [discoveredParticipants, setDiscoveredParticipants] = useState([]);
+    const [leaderboardProfiles, setLeaderboardProfiles] = useState({});
 
     const i18n = {
         es: {
@@ -618,6 +619,41 @@ export default function PublicScorecardView() {
         tournament?.course,
     ]);
 
+    useEffect(() => {
+        const usernames = Array.from(new Set(
+            [...leaderboardParticipants, ...discoveredParticipants]
+                .map((participant) => participant?.username || participant?.id)
+                .filter(Boolean)
+        )).filter((participantUsername) => !leaderboardProfiles[participantUsername]);
+
+        if (usernames.length === 0) return undefined;
+
+        let cancelled = false;
+
+        Promise.all(usernames.map(async (participantUsername) => {
+            const profile = await fetchUserProfileByUsername(db, participantUsername);
+            return [participantUsername, profile];
+        })).then((entries) => {
+            if (cancelled) return;
+
+            setLeaderboardProfiles((previousProfiles) => {
+                const nextProfiles = { ...previousProfiles };
+                entries.forEach(([participantUsername, profile]) => {
+                    if (profile) {
+                        nextProfiles[participantUsername] = profile;
+                    }
+                });
+                return nextProfiles;
+            });
+        }).catch((err) => {
+            console.warn('[live leaderboard] Could not enrich participant profiles:', err.code || err.message);
+        });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [leaderboardParticipants, discoveredParticipants, leaderboardProfiles]);
+
     // Synchronize selected tab with detected round if not set
     useEffect(() => {
         if (activeRoundTab === null && foundActiveRIdx !== null) {
@@ -774,7 +810,15 @@ export default function PublicScorecardView() {
         if (diff === 2) return '#ef4444'; // Doble bogey (rojo)
         return '#000000'; // Triple bogey o peor (negro)
     };
-    const displayedLeaderboardParticipants = mergeParticipants(leaderboardParticipants, discoveredParticipants);
+    const displayedLeaderboardParticipants = mergeParticipants(leaderboardParticipants, discoveredParticipants)
+        .map((participant) => {
+            const profile = leaderboardProfiles[participant.username] || {};
+            return {
+                ...participant,
+                fullName: participant.fullName || profile.full_name || profile.username || participant.username,
+                photo_url: participant.photo_url || profile.photo_url || null,
+            };
+        });
     // Once tournamentInfo is available, render immediately.
     // This ensures users always see the scorecard structure right away.
     if (!tournamentInfo && !error) {

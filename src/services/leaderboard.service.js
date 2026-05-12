@@ -57,6 +57,7 @@ export async function joinTournamentAsParticipant(user, tournamentId, tournament
     {
       username: user.username,
       fullName: user.full_name || user.username,
+      photo_url: user.photo_url || null,
       joinedAt: serverTimestamp(),
       hasScore: false,
       tournamentName: tournamentMeta.name || null,
@@ -100,6 +101,7 @@ export async function updateParticipantScore(user, tournamentId, resultData) {
   await setDoc(participantRef, {
     username: user.username,
     fullName: user.full_name || user.username,
+    photo_url: user.photo_url || null,
     total: total > 0 ? total : null,
     roundsPlayed,
     vspar,
