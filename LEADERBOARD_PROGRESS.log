@@ -174,6 +174,26 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
   Siguiente: Añadir filtros por ronda (D1, D2, Total) en el componente TournamentLeaderboard.jsx.
 
 ==========================================================================
+ SESIÓN: 2026-05-12 | Modelo: Codex GPT-5
+==========================================================================
+
+[COMPLETADO] DATOS — Unificación Catalunya Infantil para jugadoras comunes
+  Archivos modificados:
+    - scratch/unify_catalunya_infantil_participants.mjs
+  Firestore actualizado:
+    - users/{mariaros,nicole,ona,txell}/subscribed_tournaments/{Catalunya Infantil ID}
+    - tournaments/{Catalunya Infantil ID}/participants/{mariaros,nicole,ona,txell}
+  Resumen:
+    - Maria Ros, Nicole, Ona y Txell apuntan ahora al mismo ID canónico del `Campionat de Catalunya Infantil`.
+    - El roster público de clasificación contiene las cuatro jugadoras.
+    - Ona ya tenía un resultado privado bajo ese ID; todavía no hay scores públicos porque no hay golpes/rounds completos guardados.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Backfill automático de participantes con score
+==========================================================================
+  Siguiente: Generalizar el backfill para que cualquier resultado existente bajo un ID canónico actualice `tournaments/{id}/participants/{username}` sin depender de acciones manuales.
+
+==========================================================================
  SESIÓN: 2026-05-10 | Modelo: Codex GPT-5
 ==========================================================================
 
