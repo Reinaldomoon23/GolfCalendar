@@ -4,46 +4,72 @@ import { Trophy, Users, ExternalLink, Calendar, MapPin, ChevronLeft } from 'luci
 import { db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { subscribeToLeaderboard } from '../services/leaderboard.service';
+import { getTournamentIdCandidates, resolveCanonicalTournamentId } from '../services/tournaments.service';
+import tournamentsData from '../data/tournaments.json';
 import ProfileImage from './ProfileImage';
 
 export default function PublicLeaderboardView() {
     const { id } = useParams();
+    const canonicalId = resolveCanonicalTournamentId(id);
     const navigate = useNavigate();
     const [tournament, setTournament] = useState(null);
     const [participants, setParticipants] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (!id) return;
+        if (!canonicalId) return;
 
         // 1. Fetch Tournament Metadata
         const fetchTournament = async () => {
-            try {
-                const docRef = doc(db, 'shared_tournaments', id);
-                const snap = await getDoc(docRef);
-                if (snap.exists()) {
-                    setTournament({ id: snap.id, ...snap.data() });
-                } else {
-                    // Try official tournaments as fallback
-                    const offRef = doc(db, 'tournaments', id);
-                    const offSnap = await getDoc(offRef);
-                    if (offSnap.exists()) {
-                        setTournament({ id: offSnap.id, ...offSnap.data() });
+            let foundTournament = null;
+            const candidates = getTournamentIdCandidates(canonicalId);
+
+            for (const candidateId of candidates) {
+                try {
+                    const snap = await getDoc(doc(db, 'shared_tournaments', candidateId));
+                    if (snap.exists()) {
+                        foundTournament = { id: snap.id, ...snap.data() };
+                        break;
                     }
+                } catch (err) {
+                    console.warn('[PublicLeaderboard] shared_tournaments unavailable:', err.code || err.message);
                 }
-            } catch (err) {
-                console.error("Error fetching tournament:", err);
+
+                try {
+                    const offSnap = await getDoc(doc(db, 'tournaments', candidateId));
+                    if (offSnap.exists()) {
+                        foundTournament = { id: offSnap.id, ...offSnap.data() };
+                        break;
+                    }
+                } catch (err) {
+                    console.warn('[PublicLeaderboard] tournaments unavailable:', err.code || err.message);
+                }
             }
+
+            if (!foundTournament) {
+                const localTournament = tournamentsData.find((t) =>
+                    getTournamentIdCandidates(t).some((candidateId) => candidates.includes(candidateId))
+                );
+
+                if (localTournament) {
+                    foundTournament = {
+                        ...localTournament,
+                        id: canonicalId,
+                    };
+                }
+            }
+
+            setTournament(foundTournament);
         };
 
-        const unsubscribe = subscribeToLeaderboard(id, (data) => {
+        const unsubscribe = subscribeToLeaderboard(canonicalId, (data) => {
             setParticipants(data);
             setLoading(false);
         });
 
         fetchTournament();
         return () => unsubscribe();
-    }, [id]);
+    }, [canonicalId]);
 
     if (loading) {
         return (
@@ -157,7 +183,7 @@ export default function PublicLeaderboardView() {
                                 transition: 'background 0.2s',
                                 cursor: 'pointer'
                             }}
-                            onClick={() => navigate(`/live/${p.username}/${id}`)}
+                            onClick={() => navigate(`/live/${p.username}/${canonicalId}`)}
                             >
                                 <span style={{ 
                                     fontWeight: '800', 

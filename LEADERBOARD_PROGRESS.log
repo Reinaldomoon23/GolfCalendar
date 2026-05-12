@@ -193,6 +193,18 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
 ==========================================================================
   Siguiente: Generalizar el backfill para que cualquier resultado existente bajo un ID canónico actualice `tournaments/{id}/participants/{username}` sin depender de acciones manuales.
 
+[COMPLETADO] HOTFIX — Metadata pública para leaderboard conjunto
+  Archivos modificados:
+    - src/components/PublicLeaderboardView.jsx
+  Resumen:
+    - La página pública `/leaderboard/:id` ahora resuelve IDs canónicos y usa el catálogo local como fallback si Firestore bloquea metadatos.
+    - Verificado en preview: el Catalunya Infantil muestra Maria Ros, Nicole, Ona y Txell en una clasificación común.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Backfill automático de participantes con score
+==========================================================================
+  Siguiente: Generalizar el backfill para que cualquier resultado existente bajo un ID canónico actualice `tournaments/{id}/participants/{username}` sin depender de acciones manuales.
+
 ==========================================================================
  SESIÓN: 2026-05-10 | Modelo: Codex GPT-5
 ==========================================================================
