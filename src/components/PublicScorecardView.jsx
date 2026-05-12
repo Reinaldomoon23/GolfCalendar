@@ -16,6 +16,7 @@ import {
     resolveCanonicalTournamentId,
     getTournamentIdCandidates
 } from '../services/tournaments.service';
+import { subscribeToLeaderboard } from '../services/leaderboard.service';
 
 export default function PublicScorecardView() {
     const { username, id: eventId } = useParams();
@@ -38,11 +39,9 @@ export default function PublicScorecardView() {
     const prevScoresRef = useRef({});
     const [profileReady, setProfileReady] = useState(false);
     const [activeRoundTab, setActiveRoundTab] = useState(null);
-    const [activeViewTab, setActiveViewTab] = useState('scorecard'); // 'scorecard' | 'leaderboard'
-    const [teamResults, setTeamResults] = useState({});
-    const [teamProfiles, setTeamProfiles] = useState({});
-
-    const CORE_PLAYERS = ['nicole', 'txell', 'ona', 'maria', 'sofia', 'adriana', 'mariaros', 'jordi'];
+    const [activeViewTab, setActiveViewTab] = useState('leaderboard'); // 'scorecard' | 'leaderboard'
+    const [leaderboardParticipants, setLeaderboardParticipants] = useState([]);
+    const [leaderboardLoading, setLeaderboardLoading] = useState(true);
 
     const i18n = {
         es: {
@@ -400,46 +399,21 @@ export default function PublicScorecardView() {
         return () => unsubscribe();
     }, [profileDocId, username, canonicalEventId, eventId, profileReady, tournament?.id]);
 
-    // ── Listen to other team members results for the same tournament ───────
+    // ── Public shared leaderboard for the same tournament ─────────────────
     useEffect(() => {
-        if (!profileReady) return;
-        
-        const unsubs = [];
-        
-        CORE_PLAYERS.forEach(pUsername => {
-            if (pUsername === username) return;
-            
-            if (!teamProfiles[pUsername]) {
-                fetchUserProfileByUsername(db, pUsername).then(prof => {
-                    if (prof) setTeamProfiles(prev => ({ ...prev, [pUsername]: prof }));
-                });
-            }
+        if (!canonicalEventId) {
+            setLeaderboardLoading(false);
+            return undefined;
+        }
 
-            // Function to setup a listener for a specific ID
-            const setupListener = (idToUse) => {
-                const resRef = getUserSubdocRef(db, pUsername, 'results', idToUse);
-                return onSnapshot(resRef, (snap) => {
-                    if (snap.exists()) {
-                        setTeamResults(prev => ({ ...prev, [pUsername]: snap.data() }));
-                    }
-                });
-            };
-
-            // Join the primary listener
-            unsubs.push(setupListener(canonicalEventId));
-
-            // If eventId is legacy (numeric), try also the deterministic ID if we have tournament info
-            const isLegacyId = String(canonicalEventId) !== String(eventId);
-            if (isLegacyId && tournament) {
-                const detId = generateTournamentDeterministicId(tournament);
-                if (detId !== canonicalEventId) {
-                    unsubs.push(setupListener(detId));
-                }
-            }
+        setLeaderboardLoading(true);
+        const unsubscribe = subscribeToLeaderboard(canonicalEventId, (participants) => {
+            setLeaderboardParticipants(participants);
+            setLeaderboardLoading(false);
         });
 
-        return () => unsubs.forEach(u => u());
-    }, [canonicalEventId, eventId, profileReady, tournament]);
+        return () => unsubscribe();
+    }, [canonicalEventId]);
 
     // Synchronize selected tab with detected round if not set
     useEffect(() => {
@@ -1335,66 +1309,99 @@ export default function PublicScorecardView() {
                 /* ── LEADERBOARD VIEW ── */
                 <div style={{ padding: '0.8rem', animation: 'fadeIn 0.3s ease' }}>
                     <div style={{ background: '#1e293b', borderRadius: '12px', overflow: 'hidden', border: '1px solid #334155', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.5)' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
-                            <thead>
-                                <tr style={{ background: '#0f172a', color: '#94a3b8', textTransform: 'uppercase', fontSize: '0.65rem', letterSpacing: '0.1em' }}>
-                                    <th style={{ padding: '14px 10px' }}>POS</th>
-                                    <th style={{ padding: '14px 10px' }}>JUGADOR</th>
-                                    <th style={{ padding: '14px 10px', textAlign: 'center' }}>HOYO</th>
-                                    <th style={{ padding: '14px 10px', textAlign: 'right' }}>SCORE</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {(() => {
-                                    const allItems = [];
-                                    if (result) allItems.push({ username: username, data: result, profile: userProfile });
-                                    Object.keys(teamResults).forEach(u => {
-                                        allItems.push({ username: u, data: teamResults[u], profile: teamProfiles[u] });
-                                    });
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: '44px minmax(0, 1fr) 72px 72px',
+                            background: '#0f172a',
+                            color: '#94a3b8',
+                            textTransform: 'uppercase',
+                            fontSize: '0.65rem',
+                            letterSpacing: '0.1em',
+                            fontWeight: '800'
+                        }}>
+                            <div style={{ padding: '14px 10px' }}>POS</div>
+                            <div style={{ padding: '14px 10px' }}>JUGADORA</div>
+                            <div style={{ padding: '14px 10px', textAlign: 'center' }}>TOTAL</div>
+                            <div style={{ padding: '14px 10px', textAlign: 'right' }}>VS PAR</div>
+                        </div>
 
-                                    const processed = allItems.map(item => {
-                                        let totalStrokes = 0;
-                                        let totalPar = 0;
-                                        let lastHole = 0;
-                                        if (item.data.scorecards) {
-                                            Object.values(item.data.scorecards).forEach(card => {
-                                                if (!card.strokes) return;
-                                                for(let i=0; i<18; i++) {
-                                                    const s = parseInt(card.strokes[i]);
-                                                    const p = parseInt(card.pars?.[i]) || 4;
-                                                    if (s > 0) {
-                                                        totalStrokes += s;
-                                                        totalPar += p;
-                                                        lastHole = i + 1;
-                                                    }
-                                                }
-                                            });
-                                        }
-                                        const diff = totalStrokes - totalPar;
-                                        const isPlaying = totalStrokes > 0;
-                                        return { ...item, diff, lastHole, sortKey: isPlaying ? diff : 999 };
-                                    }).sort((a, b) => a.sortKey - b.sortKey);
+                        {leaderboardLoading ? (
+                            <div style={{ padding: '36px 14px', textAlign: 'center', color: '#94a3b8', fontWeight: '700' }}>
+                                Cargando clasificación conjunta...
+                            </div>
+                        ) : leaderboardParticipants.length === 0 ? (
+                            <div style={{ padding: '36px 14px', textAlign: 'center', color: '#94a3b8' }}>
+                                <div style={{ fontWeight: '800', color: '#e2e8f0', marginBottom: '6px' }}>Sin jugadoras apuntadas todavía</div>
+                                <div style={{ fontSize: '0.8rem' }}>Cuando alguien se apunte o guarde resultado, aparecerá aquí.</div>
+                            </div>
+                        ) : (
+                            leaderboardParticipants.map((participant, idx) => {
+                                const relative = participant.vspar;
+                                const relativeStr = relative === null || relative === undefined
+                                    ? '-'
+                                    : relative > 0 ? `+${relative}` : (relative === 0 ? 'E' : relative);
+                                const relativeColor = relative === null || relative === undefined
+                                    ? '#94a3b8'
+                                    : relative <= 0 ? '#10b981' : '#ef4444';
+                                const isCurrent = participant.username === username;
 
-                                    return processed.map((item, idx) => (
-                                        <tr key={item.username} style={{ borderBottom: '1px solid #334155', background: item.username === username ? '#1e3a8a44' : 'transparent' }}>
-                                            <td style={{ padding: '14px 10px', fontWeight: 'bold', color: idx === 0 ? '#eab308' : (idx === 1 ? '#94a3b8' : (idx === 2 ? '#b45309' : '#64748b')) }}>
-                                                {idx + 1}
-                                            </td>
-                                            <td style={{ padding: '14px 10px' }}>
-                                                <div style={{ fontWeight: '700', color: 'white', marginBottom: '1px' }}>{item.profile?.full_name?.split(' ')[0] || item.username.toUpperCase()}</div>
-                                                <div style={{ fontSize: '0.65rem', color: '#94a3b8', textTransform: 'uppercase' }}>{item.profile?.club || 'SIN CLUB'}</div>
-                                            </td>
-                                            <td style={{ padding: '14px 10px', textAlign: 'center', color: '#94a3b8' }}>
-                                                {item.lastHole === 18 ? 'F' : (item.lastHole || '-')}
-                                            </td>
-                                            <td style={{ padding: '14px 10px', textAlign: 'right', fontWeight: 'bold', color: item.diff < 0 ? '#10b981' : (item.diff > 0 ? '#ef4444' : '#ffffff') }}>
-                                                {item.diff === 999 ? '-' : (item.diff > 0 ? `+${item.diff}` : (item.diff < 0 ? item.diff : 'E'))}
-                                            </td>
-                                        </tr>
-                                    ));
-                                })()}
-                            </tbody>
-                        </table>
+                                return (
+                                    <div
+                                        key={participant.id || participant.username}
+                                        style={{
+                                            display: 'grid',
+                                            gridTemplateColumns: '44px minmax(0, 1fr) 72px 72px',
+                                            alignItems: 'center',
+                                            borderBottom: '1px solid #334155',
+                                            background: isCurrent ? '#1e3a8a44' : 'transparent'
+                                        }}
+                                    >
+                                        <div style={{
+                                            padding: '14px 10px',
+                                            fontWeight: '900',
+                                            color: idx === 0 ? '#eab308' : (idx === 1 ? '#cbd5e1' : (idx === 2 ? '#f97316' : '#64748b'))
+                                        }}>
+                                            {idx + 1}
+                                        </div>
+                                        <div style={{ padding: '12px 10px', minWidth: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <ProfileImage
+                                                photoPath={participant.photo_url}
+                                                displayName={participant.fullName || participant.username}
+                                                alt={participant.fullName || participant.username}
+                                                style={{
+                                                    width: '34px',
+                                                    height: '34px',
+                                                    borderRadius: '50%',
+                                                    objectFit: 'cover',
+                                                    border: isCurrent ? '2px solid #3b82f6' : '1px solid #334155',
+                                                    flexShrink: 0
+                                                }}
+                                            />
+                                            <div style={{ minWidth: 0 }}>
+                                                <div style={{
+                                                    fontWeight: '800',
+                                                    color: isCurrent ? '#bfdbfe' : 'white',
+                                                    whiteSpace: 'nowrap',
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis'
+                                                }}>
+                                                    {participant.fullName || participant.username}
+                                                </div>
+                                                <div style={{ fontSize: '0.65rem', color: '#94a3b8', textTransform: 'uppercase' }}>
+                                                    {participant.roundsPlayed > 0 ? `${participant.roundsPlayed} vuelta${participant.roundsPlayed === 1 ? '' : 's'}` : 'Pendiente'}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div style={{ padding: '14px 10px', textAlign: 'center', fontWeight: '900', color: '#e2e8f0' }}>
+                                            {participant.total || '-'}
+                                        </div>
+                                        <div style={{ padding: '14px 10px', textAlign: 'right', fontWeight: '900', color: relativeColor }}>
+                                            {relativeStr}
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
                     </div>
                 </div>
             )}

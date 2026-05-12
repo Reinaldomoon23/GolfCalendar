@@ -173,6 +173,19 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
 ==========================================================================
   Siguiente: Añadir filtros por ronda (D1, D2, Total) en el componente TournamentLeaderboard.jsx.
 
+[COMPLETADO] HOTFIX — Clasificación conjunta dentro del modo vivo
+  Archivos modificados:
+    - src/components/PublicScorecardView.jsx
+  Resumen:
+    - La ruta pública `/live/:username/:id` abre por defecto en la pestaña "CLASIFICACIÓN".
+    - La clasificación de esa página ya no lee resultados privados de una lista fija de jugadoras; ahora escucha `tournaments/{id}/participants`.
+    - Verificado en preview: `/live/ona/{Catalunya Infantil ID}` muestra Maria Ros, Nicole, Ona y Txell en la misma tabla.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Backfill automático de participantes con score
+==========================================================================
+  Siguiente: Generalizar el backfill para que cualquier resultado existente bajo un ID canónico actualice `tournaments/{id}/participants/{username}` sin depender de acciones manuales.
+
 ==========================================================================
  SESIÓN: 2026-05-12 | Modelo: Codex GPT-5
 ==========================================================================
