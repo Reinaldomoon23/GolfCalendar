@@ -27,6 +27,26 @@ function normalizeTournamentText(value) {
         .trim();
 }
 
+const KNOWN_CLOUDFLARE_PROFILE_PHOTOS = {
+    nicole: 'nicole_1770126902.jpg',
+    ona: 'ona.jpg',
+    txell: 'txell.jpg',
+};
+
+function getKnownCloudflareProfilePhoto(participant) {
+    const username = normalizeTournamentText(participant?.username || participant?.id).replace(/\s+/g, '');
+    if (KNOWN_CLOUDFLARE_PROFILE_PHOTOS[username]) {
+        return KNOWN_CLOUDFLARE_PROFILE_PHOTOS[username];
+    }
+
+    const normalizedName = normalizeTournamentText(participant?.fullName || participant?.full_name || participant?.name);
+    if (normalizedName.includes('nicole')) return KNOWN_CLOUDFLARE_PROFILE_PHOTOS.nicole;
+    if (normalizedName.includes('ona martinez')) return KNOWN_CLOUDFLARE_PROFILE_PHOTOS.ona;
+    if (normalizedName.includes('txell')) return KNOWN_CLOUDFLARE_PROFILE_PHOTOS.txell;
+
+    return null;
+}
+
 function resultMatchesTournament(resultId, resultData, candidateIds, tournamentMeta) {
     if (candidateIds.includes(String(resultId))) return true;
 
@@ -813,10 +833,11 @@ export default function PublicScorecardView() {
     const displayedLeaderboardParticipants = mergeParticipants(leaderboardParticipants, discoveredParticipants)
         .map((participant) => {
             const profile = leaderboardProfiles[participant.username] || {};
+            const fullName = participant.fullName || profile.full_name || profile.username || participant.username;
+            const enrichedParticipant = { ...participant, fullName };
             return {
-                ...participant,
-                fullName: participant.fullName || profile.full_name || profile.username || participant.username,
-                photo_url: participant.photo_url || profile.photo_url || null,
+                ...enrichedParticipant,
+                photo_url: participant.photo_url || profile.photo_url || getKnownCloudflareProfilePhoto(enrichedParticipant),
             };
         });
     // Once tournamentInfo is available, render immediately.

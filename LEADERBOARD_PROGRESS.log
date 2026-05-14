@@ -203,6 +203,7 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
     - Las futuras escrituras de `participants` guardan también `photo_url`.
     - Verificado en preview: la vista solicita fotos desde Cloudflare para Ona, Nicole y Txell; Maria Ros cae a avatar porque su perfil `mariaros` no expone `photo_url`.
     - Ajuste posterior: si una jugadora no tiene `photo_url`, no se solicita avatar generado; se muestra un placeholder neutro.
+    - Ajuste posterior: Nicole, Ona y Txell resuelven su foto conocida de Cloudflare aunque el documento público `participants` aún no tenga `photo_url`.
 
 [COMPLETADO] HOTFIX — Clasificación conjunta dentro del modo vivo
   Archivos modificados:
