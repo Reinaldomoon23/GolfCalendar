@@ -219,6 +219,28 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
   Siguiente: Generalizar el backfill para que cualquier resultado existente bajo un ID canónico actualice `tournaments/{id}/participants/{username}` sin depender de acciones manuales.
 
 ==========================================================================
+ SESIÓN: 2026-05-14 | Modelo: Codex GPT-5
+==========================================================================
+
+[COMPLETADO] DATOS — Unificación de torneos futuros comunes
+  Archivos modificados:
+    - scratch/unify_future_common_tournaments.mjs
+  Firestore actualizado:
+    - users/{mariaros,nicole,ona,txell}/subscribed_tournaments/{id}
+    - users/{mariaros,nicole,ona,txell}/custom_tournaments/{id} eliminados cuando eran equivalentes
+    - tournaments/{id}/participants/{username}
+  Resumen:
+    - Se compararon los torneos futuros de Maria Ros, Nicole, Ona y Txell desde 2026-05-14.
+    - Se excluyó explícitamente el Campionat de Catalunya Infantil del 16/05/2026.
+    - Se unificaron como torneos comunes:
+      1. XXV Junior & Baby Cup Infantil/Aleví/Benjamí — 07/06/2026 — Maria Ros, Nicole.
+      2. Campionat de Catalunya Absolut i 2a (WAGR) — 11/07/2026-12/07/2026 — Maria Ros, Nicole, Ona, Txell.
+      3. Campionat de Catalunya Matchplay Sub-18/16/14/12/10 — 19/09/2026-20/09/2026 — Ona, Txell.
+      4. Campionat de Catalunya Sub-18 i Sub-16 (WAGR) — 02/10/2026-04/10/2026 — Maria Ros, Nicole, Ona, Txell.
+    - Verificado: los custom equivalentes ya no existen y los rosters públicos de participants están creados.
+    - Nota: `shared_tournaments` está bloqueado por reglas desplegadas; se dejó el snapshot completo en `subscribed_tournaments`, que es suficiente para resolver el calendario y el leaderboard.
+
+==========================================================================
  SESIÓN: 2026-05-12 | Modelo: Codex GPT-5
 ==========================================================================
 
