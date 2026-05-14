@@ -32,6 +32,7 @@ const ADMIN_EMAIL = process.env.FIREBASE_ADMIN_EMAIL || 'jordi@golfteam.app';
 const ADMIN_PASS = process.env.FIREBASE_ADMIN_PASSWORD || 'Garcia';
 const TARGET_PLAYERS = ['mariaros', 'nicole', 'ona', 'txell'];
 const APPLY = process.argv.includes('--apply');
+const WRITE_SHARED = !process.argv.includes('--skip-shared');
 const TODAY_ISO = '2026-05-14';
 const EXCLUDED_SIGNATURES = new Set([
   'campionat de catalunya infantil|2026-05-16|2026-05-17',
@@ -273,6 +274,11 @@ async function findResultForTournament(resultsById, tournament) {
 
 async function applyGroup(canonicalId, entries, usersByUsername, resultsByUsername) {
   const sharedData = buildSharedTournamentData(canonicalId, entries);
+  if (WRITE_SHARED) {
+    await writeStep(`set shared_tournaments/${canonicalId}`, () => (
+      setDoc(doc(db, 'shared_tournaments', canonicalId), sharedData, { merge: true })
+    ));
+  }
 
   const targetUsernames = Array.from(new Set(entries.map((entry) => entry.username)));
 
@@ -387,7 +393,7 @@ async function main() {
         .sort(),
       subscriptionsToUpsert: group.players.map((username) => `${username}:${canonicalId}`),
       participantsToUpsert: group.players.map((username) => `${username}:${canonicalId}`),
-      sharedTournamentWrite: 'skipped-rules-blocked; subscribed_tournaments keeps cached common tournament data',
+      sharedTournamentWrite: WRITE_SHARED ? 'enabled' : 'skipped-by-flag',
     });
 
     if (APPLY) {
@@ -397,6 +403,7 @@ async function main() {
 
   console.log(JSON.stringify({
     mode: APPLY ? 'apply' : 'dry-run',
+    writeShared: WRITE_SHARED,
     todayIso: TODAY_ISO,
     excluded: Array.from(EXCLUDED_SIGNATURES),
     players: users.map((user) => ({ username: user.username, docId: user.docId })),

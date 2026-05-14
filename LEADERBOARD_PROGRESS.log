@@ -238,7 +238,8 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
       3. Campionat de Catalunya Matchplay Sub-18/16/14/12/10 — 19/09/2026-20/09/2026 — Ona, Txell.
       4. Campionat de Catalunya Sub-18 i Sub-16 (WAGR) — 02/10/2026-04/10/2026 — Maria Ros, Nicole, Ona, Txell.
     - Verificado: los custom equivalentes ya no existen y los rosters públicos de participants están creados.
-    - Nota: `shared_tournaments` está bloqueado por reglas desplegadas; se dejó el snapshot completo en `subscribed_tournaments`, que es suficiente para resolver el calendario y el leaderboard.
+    - Corrección posterior: `.firebaserc` apuntaba al proyecto antiguo `golfscoring-a9a6c`, mientras la app usa `golfscorings-e4338`.
+    - Se desplegaron `firestore.rules` al proyecto real `golfscorings-e4338` y se escribieron también los 4 documentos en `shared_tournaments`.
 
 ==========================================================================
  SESIÓN: 2026-05-12 | Modelo: Codex GPT-5
