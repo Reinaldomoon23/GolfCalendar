@@ -33,6 +33,7 @@ const ADMIN_PASS = process.env.FIREBASE_ADMIN_PASSWORD || 'Garcia';
 const TARGET_PLAYERS = ['mariaros', 'nicole', 'ona', 'txell'];
 const APPLY = process.argv.includes('--apply');
 const WRITE_SHARED = !process.argv.includes('--skip-shared');
+const FORCE_ALL_TARGET_PLAYERS = process.argv.includes('--all-target-players');
 const TODAY_ISO = '2026-05-14';
 const EXCLUDED_SIGNATURES = new Set([
   'campionat de catalunya infantil|2026-05-16|2026-05-17',
@@ -117,11 +118,12 @@ function getCanonicalTournamentId(tournament) {
   );
 }
 
-function buildSharedTournamentData(canonicalId, entries) {
+function buildSharedTournamentData(canonicalId, entries, unifiedPlayers = null) {
   const sourceEntry = entries.find((entry) => entry.kind === 'subscribed')
     || entries.find((entry) => String(entry.id).startsWith('tt_v2__'))
     || entries[0];
   const source = sourceEntry.data;
+  const resolvedUnifiedPlayers = unifiedPlayers || Array.from(new Set(entries.map((entry) => entry.username)));
 
   return {
     ...source,
@@ -135,7 +137,7 @@ function buildSharedTournamentData(canonicalId, entries) {
     isShared: true,
     source: source.source || 'shared',
     unifiedFrom: Array.from(new Set(entries.map((entry) => String(entry.id)))),
-    unifiedPlayers: Array.from(new Set(entries.map((entry) => entry.username))),
+    unifiedPlayers: resolvedUnifiedPlayers,
     updatedAt: serverTimestamp(),
   };
 }
@@ -272,15 +274,13 @@ async function findResultForTournament(resultsById, tournament) {
   return null;
 }
 
-async function applyGroup(canonicalId, entries, usersByUsername, resultsByUsername) {
-  const sharedData = buildSharedTournamentData(canonicalId, entries);
+async function applyGroup(canonicalId, entries, usersByUsername, resultsByUsername, targetUsernames) {
+  const sharedData = buildSharedTournamentData(canonicalId, entries, targetUsernames);
   if (WRITE_SHARED) {
     await writeStep(`set shared_tournaments/${canonicalId}`, () => (
       setDoc(doc(db, 'shared_tournaments', canonicalId), sharedData, { merge: true })
     ));
   }
-
-  const targetUsernames = Array.from(new Set(entries.map((entry) => entry.username)));
 
   for (const username of targetUsernames) {
     const user = usersByUsername.get(username);
@@ -381,29 +381,33 @@ async function main() {
       generateTournamentDeterministicId(group.entries[0].data)
     );
 
+    const targetUsernames = FORCE_ALL_TARGET_PLAYERS ? TARGET_PLAYERS : group.players;
+
     operations.push({
       canonicalId,
       name: extractTournamentName(group.entries[0].data),
       dates: extractTournamentDates(group.entries[0].data),
       course: extractTournamentCourse(group.entries[0].data),
-      players: group.players,
+      originalPlayers: group.players,
+      players: targetUsernames,
       existingIds: Array.from(new Set(group.entries.map((entry) => `${entry.username}:${entry.kind}:${entry.id}`))).sort(),
       customDocsToDelete: group.customEntries
         .map((entry) => `${entry.username}:${entry.id}`)
         .sort(),
-      subscriptionsToUpsert: group.players.map((username) => `${username}:${canonicalId}`),
-      participantsToUpsert: group.players.map((username) => `${username}:${canonicalId}`),
+      subscriptionsToUpsert: targetUsernames.map((username) => `${username}:${canonicalId}`),
+      participantsToUpsert: targetUsernames.map((username) => `${username}:${canonicalId}`),
       sharedTournamentWrite: WRITE_SHARED ? 'enabled' : 'skipped-by-flag',
     });
 
     if (APPLY) {
-      await applyGroup(canonicalId, group.entries, usersByUsername, resultsByUsername);
+      await applyGroup(canonicalId, group.entries, usersByUsername, resultsByUsername, targetUsernames);
     }
   }
 
   console.log(JSON.stringify({
     mode: APPLY ? 'apply' : 'dry-run',
     writeShared: WRITE_SHARED,
+    forceAllTargetPlayers: FORCE_ALL_TARGET_PLAYERS,
     todayIso: TODAY_ISO,
     excluded: Array.from(EXCLUDED_SIGNATURES),
     players: users.map((user) => ({ username: user.username, docId: user.docId })),

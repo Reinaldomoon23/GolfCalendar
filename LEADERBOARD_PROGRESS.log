@@ -240,6 +240,8 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
     - Verificado: los custom equivalentes ya no existen y los rosters públicos de participants están creados.
     - Corrección posterior: `.firebaserc` apuntaba al proyecto antiguo `golfscoring-a9a6c`, mientras la app usa `golfscorings-e4338`.
     - Se desplegaron `firestore.rules` al proyecto real `golfscorings-e4338` y se escribieron también los 4 documentos en `shared_tournaments`.
+    - Ajuste posterior: por decisión de producto, las 4 jugadoras (`mariaros`, `nicole`, `ona`, `txell`) quedan apuntadas a los 4 torneos futuros comunes, aunque originalmente no todas los tuvieran en su calendario.
+    - Verificado: los 4 torneos futuros tienen las 4 en `subscribed_tournaments`, `tournaments/{id}/participants` y `shared_tournaments.unifiedPlayers`.
 
 ==========================================================================
  SESIÓN: 2026-05-12 | Modelo: Codex GPT-5
