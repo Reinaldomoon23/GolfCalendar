@@ -31,6 +31,129 @@ export function isSharedTournamentId(id) {
   return strId.includes('_') || strId.length > 10;
 }
 
+export function getResultProgress(resultData) {
+  const scorecards = resultData?.scorecards || {};
+  const roundKeys = Object.keys(scorecards).sort((a, b) => Number(a) - Number(b));
+  let totalPlayed = 0;
+  let latestPlayedRound = null;
+  let nextEmptyRound = null;
+
+  for (const roundKey of roundKeys) {
+    const card = scorecards[roundKey] || {};
+    let holesPlayed = 0;
+
+    for (let i = 0; i < 18; i += 1) {
+      const stroke = String(card.strokes?.[i] || '').trim();
+      if (stroke !== '' && stroke !== '-' && stroke !== '0') holesPlayed += 1;
+    }
+
+    totalPlayed += holesPlayed;
+    const roundNumber = Number(roundKey) + 1;
+
+    if (holesPlayed > 0 && holesPlayed < 18) {
+      return {
+        status: 'in_progress',
+        currentRound: roundNumber,
+        currentHole: holesPlayed + 1,
+        holesPlayed: totalPlayed,
+        progressLabel: roundKeys.length > 1 ? `R${roundNumber} · Hoyo ${holesPlayed + 1}` : `Hoyo ${holesPlayed + 1}`,
+      };
+    }
+
+    if (holesPlayed === 18) {
+      latestPlayedRound = roundNumber;
+    } else if (holesPlayed === 0 && latestPlayedRound !== null && nextEmptyRound === null) {
+      nextEmptyRound = roundNumber;
+    }
+  }
+
+  if (nextEmptyRound !== null) {
+    return {
+      status: 'in_progress',
+      currentRound: nextEmptyRound,
+      currentHole: 1,
+      holesPlayed: totalPlayed,
+      progressLabel: roundKeys.length > 1 ? `R${nextEmptyRound} · Hoyo 1` : 'Hoyo 1',
+    };
+  }
+
+  if (totalPlayed > 0) {
+    return {
+      status: 'finished',
+      currentRound: latestPlayedRound,
+      currentHole: null,
+      holesPlayed: totalPlayed,
+      progressLabel: 'Finalizada',
+    };
+  }
+
+  if (Array.isArray(resultData?.rounds) && resultData.rounds.some((roundScore) => Number(roundScore) > 0)) {
+    return {
+      status: 'finished',
+      currentRound: null,
+      currentHole: null,
+      holesPlayed: null,
+      progressLabel: 'Finalizada',
+    };
+  }
+
+  return {
+    status: 'pending',
+    currentRound: null,
+    currentHole: null,
+    holesPlayed: 0,
+    progressLabel: 'Pendiente',
+  };
+}
+
+function getResultScoreSummary(resultData) {
+  const scorecards = resultData?.scorecards || {};
+  const roundKeys = Object.keys(scorecards).sort((a, b) => Number(a) - Number(b));
+  const rounds = [];
+  let total = 0;
+  let totalPar = 0;
+
+  for (const roundKey of roundKeys) {
+    const card = scorecards[roundKey] || {};
+    let roundScore = 0;
+    let roundPar = 0;
+    let holesPlayed = 0;
+
+    for (let i = 0; i < 18; i += 1) {
+      const stroke = parseInt(card.strokes?.[i], 10);
+      if (!Number.isFinite(stroke) || stroke <= 0) continue;
+
+      const holePar = parseInt(card.pars?.[i], 10);
+      roundScore += stroke;
+      roundPar += Number.isFinite(holePar) && holePar > 0 ? holePar : 4;
+      holesPlayed += 1;
+    }
+
+    if (holesPlayed > 0) {
+      rounds.push(roundScore);
+      total += roundScore;
+      totalPar += roundPar;
+    }
+  }
+
+  if (rounds.length > 0) {
+    return { rounds, total, roundsPlayed: rounds.length, totalPar };
+  }
+
+  const validScores = (resultData?.rounds || [])
+    .filter((r) => r && !isNaN(r))
+    .map(Number);
+  const fallbackTotal = validScores.reduce((a, b) => a + b, 0);
+  const par = Number(resultData?.tournamentPar || resultData?.par || 72);
+
+  return {
+    rounds: validScores,
+    total: fallbackTotal,
+    roundsPlayed: validScores.length,
+    totalPar: par * validScores.length,
+  };
+}
+
 /**
  * Registers a user as a participant in a centralized tournament.
  * This creates/updates their participant document WITHOUT a score yet.
@@ -60,6 +183,11 @@ export async function joinTournamentAsParticipant(user, tournamentId, tournament
       photo_url: user.photo_url || null,
       joinedAt: serverTimestamp(),
       hasScore: false,
+      status: 'pending',
+      currentRound: null,
+      currentHole: null,
+      holesPlayed: 0,
+      progressLabel: 'Pendiente',
       tournamentName: tournamentMeta.name || null,
       tournamentCourse: tournamentMeta.course || null,
       tournamentDates: tournamentMeta.dates || null,
@@ -80,15 +208,13 @@ export async function joinTournamentAsParticipant(user, tournamentId, tournament
 export async function updateParticipantScore(user, tournamentId, resultData) {
   if (!user?.username || !tournamentId || !resultData) return;
 
-  // Calculate summary from resultData
-  const validScores = (resultData.rounds || [])
-    .filter((r) => r && !isNaN(r))
-    .map(Number);
-  const total = validScores.reduce((a, b) => a + b, 0);
-  const roundsPlayed = validScores.length;
+  // Calculate summary from scorecards first so partial live rounds use played-hole par.
+  const scoreSummary = getResultScoreSummary(resultData);
+  const total = scoreSummary.total;
+  const roundsPlayed = scoreSummary.roundsPlayed;
   const par = resultData.tournamentPar || 72;
-  const totalPar = par * roundsPlayed;
-  const vspar = total > 0 ? total - totalPar : null;
+  const vspar = total > 0 ? total - scoreSummary.totalPar : null;
+  const progress = getResultProgress(resultData);
 
   const participantRef = doc(
     db,
@@ -105,9 +231,14 @@ export async function updateParticipantScore(user, tournamentId, resultData) {
     total: total > 0 ? total : null,
     roundsPlayed,
     vspar,
-    rounds: validScores,
+    rounds: scoreSummary.rounds,
     par,
     hasScore: total > 0,
+    status: progress.status,
+    currentRound: progress.currentRound,
+    currentHole: progress.currentHole,
+    holesPlayed: progress.holesPlayed,
+    progressLabel: progress.progressLabel,
     updatedAt: serverTimestamp(),
     joinedAt: serverTimestamp(), // Will only set if doc doesn't exist; merge takes care of existing
     tournamentName: resultData.tournamentName || null,

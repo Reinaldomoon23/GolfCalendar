@@ -16,7 +16,7 @@ import {
     resolveCanonicalTournamentId,
     getTournamentIdCandidates
 } from '../services/tournaments.service';
-import { subscribeToLeaderboard } from '../services/leaderboard.service';
+import { getResultProgress, subscribeToLeaderboard } from '../services/leaderboard.service';
 
 function normalizeTournamentText(value) {
     return String(value || '')
@@ -108,6 +108,7 @@ function summarizeResultForLeaderboard(profile, resultData, fallbackUsername) {
         const par = Number(resultData?.tournamentPar || resultData?.par || 72);
         totalPar = par * rounds.length;
     }
+    const progress = getResultProgress(resultData);
 
     return {
         id: username,
@@ -119,6 +120,11 @@ function summarizeResultForLeaderboard(profile, resultData, fallbackUsername) {
         vspar: total > 0 ? total - totalPar : null,
         rounds,
         hasScore: total > 0,
+        status: progress.status,
+        currentRound: progress.currentRound,
+        currentHole: progress.currentHole,
+        holesPlayed: progress.holesPlayed,
+        progressLabel: progress.progressLabel,
         updatedAt: resultData?.updatedAt || resultData?.savedAt || null,
     };
 }
@@ -139,11 +145,16 @@ function mergeParticipants(primaryParticipants, discoveredParticipants) {
         byUsername.set(username, {
             ...participant,
             ...previous,
-            total: previous.total || participant.total || null,
-            roundsPlayed: previous.roundsPlayed || participant.roundsPlayed || 0,
-            vspar: previous.vspar ?? participant.vspar ?? null,
+            total: participant.hasScore ? participant.total : (previous.total || participant.total || null),
+            roundsPlayed: participant.hasScore ? participant.roundsPlayed : (previous.roundsPlayed || participant.roundsPlayed || 0),
+            vspar: participant.hasScore ? participant.vspar : (previous.vspar ?? participant.vspar ?? null),
             hasScore: Boolean(previous.hasScore || participant.hasScore),
             photo_url: previous.photo_url || participant.photo_url || null,
+            status: participant.status || previous.status || 'pending',
+            currentRound: participant.currentRound ?? previous.currentRound ?? null,
+            currentHole: participant.currentHole ?? previous.currentHole ?? null,
+            holesPlayed: participant.holesPlayed ?? previous.holesPlayed ?? 0,
+            progressLabel: participant.progressLabel || previous.progressLabel || 'Pendiente',
         });
     });
 
@@ -1580,7 +1591,7 @@ export default function PublicScorecardView() {
                     <div style={{ background: '#1e293b', borderRadius: '12px', overflow: 'hidden', border: '1px solid #334155', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.5)' }}>
                         <div style={{
                             display: 'grid',
-                            gridTemplateColumns: '44px minmax(0, 1fr) 72px 72px',
+                            gridTemplateColumns: '44px minmax(0, 1fr) 86px 72px 72px',
                             background: '#0f172a',
                             color: '#94a3b8',
                             textTransform: 'uppercase',
@@ -1590,6 +1601,7 @@ export default function PublicScorecardView() {
                         }}>
                             <div style={{ padding: '14px 10px' }}>POS</div>
                             <div style={{ padding: '14px 10px' }}>JUGADORA</div>
+                            <div style={{ padding: '14px 10px', textAlign: 'center' }}>HOYO</div>
                             <div style={{ padding: '14px 10px', textAlign: 'center' }}>TOTAL</div>
                             <div style={{ padding: '14px 10px', textAlign: 'right' }}>VS PAR</div>
                         </div>
@@ -1615,6 +1627,13 @@ export default function PublicScorecardView() {
                                 const isCurrent = participant.username === username;
                                 const detailSearch = queryRIdx !== null ? `?r=${encodeURIComponent(queryRIdx)}` : '';
                                 const detailUrl = `/live/${participant.username}/${eventId || canonicalEventId}${detailSearch}`;
+                                const progressLabel = participant.progressLabel || (participant.hasScore ? 'Finalizada' : 'Pendiente');
+                                const progressColor = participant.status === 'in_progress'
+                                    ? '#60a5fa'
+                                    : participant.status === 'finished' ? '#10b981' : '#94a3b8';
+                                const secondaryLabel = participant.status === 'in_progress' && Number(participant.holesPlayed) > 0
+                                    ? `${participant.holesPlayed} hoyo${participant.holesPlayed === 1 ? '' : 's'} jugado${participant.holesPlayed === 1 ? '' : 's'}`
+                                    : participant.roundsPlayed > 0 ? `${participant.roundsPlayed} vuelta${participant.roundsPlayed === 1 ? '' : 's'}` : 'Pendiente';
 
                                 return (
                                     <Link
@@ -1622,7 +1641,7 @@ export default function PublicScorecardView() {
                                         to={detailUrl}
                                         style={{
                                             display: 'grid',
-                                            gridTemplateColumns: '44px minmax(0, 1fr) 72px 72px',
+                                            gridTemplateColumns: '44px minmax(0, 1fr) 86px 72px 72px',
                                             alignItems: 'center',
                                             borderBottom: '1px solid #334155',
                                             background: isCurrent ? '#1e3a8a44' : 'transparent',
@@ -1678,9 +1697,20 @@ export default function PublicScorecardView() {
                                                     {participant.fullName || participant.username}
                                                 </div>
                                                 <div style={{ fontSize: '0.65rem', color: '#94a3b8', textTransform: 'uppercase' }}>
-                                                    {participant.roundsPlayed > 0 ? `${participant.roundsPlayed} vuelta${participant.roundsPlayed === 1 ? '' : 's'}` : 'Pendiente'}
+                                                    {secondaryLabel}
                                                 </div>
                                             </div>
+                                        </div>
+                                        <div style={{
+                                            padding: '14px 8px',
+                                            textAlign: 'center',
+                                            fontWeight: '900',
+                                            color: progressColor,
+                                            fontSize: '0.72rem',
+                                            textTransform: 'uppercase',
+                                            letterSpacing: '0.03em'
+                                        }}>
+                                            {progressLabel}
                                         </div>
                                         <div style={{ padding: '14px 10px', textAlign: 'center', fontWeight: '900', color: '#e2e8f0' }}>
                                             {participant.total || '-'}
