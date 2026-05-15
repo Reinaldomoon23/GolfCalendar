@@ -218,6 +218,20 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
 ==========================================================================
   Siguiente: Generalizar el backfill para que cualquier resultado existente bajo un ID canónico actualice `tournaments/{id}/participants/{username}` sin depender de acciones manuales.
 
+[COMPLETADO] UX — Compartir clasificación usando modo vivo
+  Archivos modificados:
+    - src/components/CalendarView.jsx
+  Resumen:
+    - El botón "Compartir Clasificación Pública" vuelve a generar enlaces `/live/{username}/{tournamentId}?r=0`.
+    - Se abandona la ruta `/leaderboard/{id}` para este flujo porque el leaderboard integrado en modo vivo es la vista preferida.
+    - Se eliminó el `alert()` de fallback en este botón; la acción copia en portapapeles y registra el enlace en consola.
+    - Build y despliegue ejecutados con `npm run deploy:all`.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Backfill automático de participantes con score
+==========================================================================
+  Siguiente: Generalizar el backfill para que cualquier resultado existente bajo un ID canónico actualice `tournaments/{id}/participants/{username}` sin depender de acciones manuales.
+
 ==========================================================================
  SESIÓN: 2026-05-14 | Modelo: Codex GPT-5
 ==========================================================================

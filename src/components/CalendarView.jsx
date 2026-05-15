@@ -2820,7 +2820,8 @@ export default function CalendarView({
                                 <button
                                     onClick={() => {
                                         const base = window.location.origin + (import.meta.env.BASE_URL.replace(/\/$/, ''));
-                                        const shareLink = `${base}/leaderboard/${selectedTournament.id}`;
+                                        const liveUsername = encodeURIComponent(user?.username || 'ona');
+                                        const shareLink = `${base}/live/${liveUsername}/${selectedTournament.id}?r=0`;
                                         
                                         if (navigator.share) {
                                             navigator.share({
@@ -2829,8 +2830,8 @@ export default function CalendarView({
                                                 url: shareLink
                                             }).catch(console.error);
                                         } else {
-                                            navigator.clipboard.writeText(shareLink);
-                                            alert('Enlace de clasificación copiado al portapapeles:\n' + shareLink);
+                                            navigator.clipboard?.writeText(shareLink).catch(console.warn);
+                                            console.info('[leaderboard] Link copied:', shareLink);
                                         }
                                     }}
                                     style={{
