@@ -1,19 +1,19 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { Suspense, lazy, useState, useEffect, useRef, useMemo } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { BrowserRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
 
 // Views
-import CalendarView from './components/CalendarView';
-import StatsView from './components/StatsView';
-import HandicapView from './components/HandicapView';
-import LoginViewFirebase from './components/LoginViewFirebase';
-import PublicScorecardView from './components/PublicScorecardView';
-import PublicLeaderboardView from './components/PublicLeaderboardView';
-import TeamLiveScorecard from './components/TeamLiveScorecard';
-import TournamentsCentralView from './components/TournamentsCentralView';
-import AdminDashboardView from './components/admin/AdminDashboardView';
-import AdminRoute from './components/admin/AdminRoute';
+const CalendarView = lazy(() => import('./components/CalendarView'));
+const StatsView = lazy(() => import('./components/StatsView'));
+const HandicapView = lazy(() => import('./components/HandicapView'));
+const LoginViewFirebase = lazy(() => import('./components/LoginViewFirebase'));
+const PublicScorecardView = lazy(() => import('./components/PublicScorecardView'));
+const PublicLeaderboardView = lazy(() => import('./components/PublicLeaderboardView'));
+const TeamLiveScorecard = lazy(() => import('./components/TeamLiveScorecard'));
+const TournamentsCentralView = lazy(() => import('./components/TournamentsCentralView'));
+const AdminDashboardView = lazy(() => import('./components/admin/AdminDashboardView'));
+const AdminRoute = lazy(() => import('./components/admin/AdminRoute'));
 
 // New Components
 import AppHeader from './components/AppHeader';
@@ -41,6 +41,43 @@ import { updateParticipantScore, isSharedTournamentId } from './services/leaderb
 import { IS_MULTI, DEFAULT_PREFERENCES } from './config/app';
 
 // ─────────────────────────────────────────────────────────────────────────────
+
+function LoadingShell({ dark = false, text = 'Cargando...' }) {
+  return (
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: dark ? '#0f172a' : 'var(--color-bg)',
+      color: dark ? '#e2e8f0' : 'var(--color-text)',
+      fontWeight: '800'
+    }}>
+      {text}
+    </div>
+  );
+}
+
+function PublicRoutes() {
+  return (
+    <Suspense fallback={<LoadingShell dark text="Cargando datos en vivo..." />}>
+      <Routes>
+        <Route path="/live/:username/:id" element={<PublicScorecardView />} />
+        <Route path="/leaderboard/:id" element={<PublicLeaderboardView />} />
+        <Route path="/live-team/:teamId/:tournamentId" element={<TeamLiveScorecard />} />
+      </Routes>
+    </Suspense>
+  );
+}
+
+function AppRouterShell() {
+  const location = useLocation();
+  const isPublicRoute = location.pathname.startsWith('/live/')
+    || location.pathname.startsWith('/live-team/')
+    || location.pathname.startsWith('/leaderboard/');
+
+  return isPublicRoute ? <PublicRoutes /> : <AppContent />;
+}
 
 function AppContent() {
   const location = useLocation();
@@ -413,13 +450,8 @@ function AppContent() {
     return copy;
   }, [results]);
 
-  // ── Routing guards ───────────────────────────────────────────────────────
-  const isPublicRoute = location.pathname.startsWith('/live/') || 
-                       location.pathname.startsWith('/live-team/') || 
-                       location.pathname.startsWith('/leaderboard/');
-
   const tournamentsState = useTournaments(user, preferences, handleUpdatePreferences, mappedResults, {
-    disabled: isPublicRoute,
+    disabled: false,
   });
   const {
     baseTournaments,
@@ -467,16 +499,6 @@ function AppContent() {
     }
   };
 
-  if (isPublicRoute) {
-    return (
-      <Routes>
-        <Route path="/live/:username/:id" element={<PublicScorecardView />} />
-        <Route path="/leaderboard/:id" element={<PublicLeaderboardView />} />
-        <Route path="/live-team/:teamId/:tournamentId" element={<TeamLiveScorecard />} />
-      </Routes>
-    );
-  }
-
   if (IS_MULTI && !authReady && !user) {
     return (
       <div className="app-container fade-in" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -488,7 +510,13 @@ function AppContent() {
     );
   }
 
-  if (!user && IS_MULTI) return <LoginViewFirebase onLogin={handleLogin} />;
+  if (!user && IS_MULTI) {
+    return (
+      <Suspense fallback={<LoadingShell text="Cargando login..." />}>
+        <LoginViewFirebase onLogin={handleLogin} />
+      </Suspense>
+    );
+  }
   if (!user && !IS_MULTI) return null;
 
   // Special groups for certain users (hide merit group)
@@ -525,6 +553,7 @@ function AppContent() {
 
       {/* ── Main content routes ──────────────────────────────────────────── */}
       <main>
+        <Suspense fallback={<LoadingShell text="Cargando sección..." />}>
         <Routes>
           <Route path="/" element={
             <CalendarView
@@ -595,6 +624,7 @@ function AppContent() {
             </AdminRoute>
           } />
         </Routes>
+        </Suspense>
       </main>
 
 
@@ -638,7 +668,7 @@ function App() {
   
   return (
     <BrowserRouter basename={basename}>
-      <AppContent />
+      <AppRouterShell />
     </BrowserRouter>
   );
 }

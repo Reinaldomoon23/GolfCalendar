@@ -238,6 +238,15 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
     - Corrección adicional: el `vs par` de vueltas parciales se calcula contra el par de los hoyos jugados, no contra el par completo de 18 hoyos.
     - Build verificado con `npm run build`.
 
+[COMPLETADO] PERFORMANCE — Carga inicial más ligera para Safari
+  Archivos modificados:
+    - src/App.jsx
+  Resumen:
+    - Las rutas públicas (`/live`, `/live-team`, `/leaderboard`) se separaron del arranque privado de la app.
+    - Los componentes principales pasan a cargarse con `React.lazy()` y `Suspense`.
+    - La vista viva ya no ejecuta el arranque privado completo ni registra el service worker desde `AppContent`.
+    - Build verificado: el bundle principal bajó de ~1.67 MB a ~1.10 MB y `PublicScorecardView` queda como chunk separado (~37 KB).
+
 ==========================================================================
   PRÓXIMO PASO: HARDENING — Backfill automático de participantes con score
 ==========================================================================
