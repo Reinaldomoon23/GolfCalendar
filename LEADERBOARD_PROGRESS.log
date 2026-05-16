@@ -580,3 +580,14 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
     - Contraseña cambiada a la temporal solicitada por el administrador.
     - Perfil marcado con `must_change_password: true` y metadatos de asignación temporal.
     - Verificado login correcto con Identity Toolkit sin exponer tokens.
+
+[COMPLETADO] HARDENING OPERATIVO — Firebase Admin en Vercel
+  Configuracion modificada:
+    - Vercel Production: `FIREBASE_SERVICE_ACCOUNT_BASE64` añadido como variable cifrada.
+  Resumen:
+    - Generada una key nueva del service account `firebase-adminsdk-fbsvc@golfscorings-e4338.iam.gserviceaccount.com`.
+    - Cargada en Vercel como secreto cifrado y eliminada la copia temporal local.
+    - Redeploy completo ejecutado con `npm run deploy:all`.
+    - Verificado `/api/set_temp_password`: ya no falla por falta de Firebase Admin y devuelve `401 Falta token de autenticacion` cuando se llama sin token, que es el comportamiento seguro esperado.
+  Siguiente:
+    - Probar desde el panel admin real el boton `Temporal` con una cuenta interna si hace falta validar flujo end-to-end con ID token de administrador.
