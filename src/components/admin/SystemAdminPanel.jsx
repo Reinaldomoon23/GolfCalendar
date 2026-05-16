@@ -3,6 +3,7 @@ import { Trash2, RefreshCw, Database, AlertCircle } from 'lucide-react';
 import { db } from '../../firebase';
 import { collection, getDocs, doc, setDoc } from 'firebase/firestore';
 import { dedupeAdminUsers } from '../../utils/adminUserRecords';
+import { useFeedbackLayer } from '../FeedbackLayer';
 
 /**
  * SystemAdminPanel - Utilidades del sistema
@@ -10,6 +11,7 @@ import { dedupeAdminUsers } from '../../utils/adminUserRecords';
 function SystemAdminPanel() {
   const [loading, setLoading] = useState(false);
   const [logs, setLogs] = useState([]);
+  const { notify, confirm, FeedbackLayer } = useFeedbackLayer();
 
   const addLog = (message, type = 'info') => {
     const timestamp = new Date().toLocaleTimeString();
@@ -17,11 +19,14 @@ function SystemAdminPanel() {
   };
 
   const handleClearAllCaches = async () => {
-    const confirm = window.confirm(
-      '⚠️ Esto borrará todos los caches de hándicap de todos los usuarios.\n\n¿Continuar?'
-    );
-
-    if (!confirm) return;
+    const shouldClear = await confirm({
+      title: 'Limpiar caches',
+      message: 'Esto borrara todos los caches de handicap del dispositivo admin actual.',
+      confirmText: 'Limpiar caches',
+      cancelText: 'Cancelar',
+      danger: true,
+    });
+    if (!shouldClear) return;
 
     setLoading(true);
     addLog('Iniciando limpieza de caches...', 'info');
@@ -39,22 +44,24 @@ function SystemAdminPanel() {
       keysToRemove.forEach(key => localStorage.removeItem(key));
 
       addLog(`✅ ${keysToRemove.length} caches locales eliminados`, 'success');
-      alert('✅ Caches locales limpiados correctamente');
+      notify('Caches locales limpiados correctamente.', 'success');
     } catch (error) {
       console.error('Error clearing caches:', error);
       addLog(`❌ Error: ${error.message}`, 'error');
-      alert('Error al limpiar caches: ' + error.message);
+      notify('Error al limpiar caches: ' + error.message, 'error');
     } finally {
       setLoading(false);
     }
   };
 
   const handleRegenerateUsernameMappings = async () => {
-    const confirm = window.confirm(
-      '⚠️ Esto regenerará el mapping de usernames → uid para todos los usuarios.\n\nÚtil si hay inconsistencias.\n\n¿Continuar?'
-    );
-
-    if (!confirm) return;
+    const shouldRegenerate = await confirm({
+      title: 'Regenerar mappings',
+      message: 'Esto regenerara el mapping de usernames a uid para todos los usuarios. Es util si hay inconsistencias.',
+      confirmText: 'Regenerar',
+      cancelText: 'Cancelar',
+    });
+    if (!shouldRegenerate) return;
 
     setLoading(true);
     addLog('Regenerando mappings de usernames...', 'info');
@@ -84,29 +91,33 @@ function SystemAdminPanel() {
       }
 
       addLog(`✅ ${count} mappings regenerados correctamente`, 'success');
-      alert(`✅ ${count} mappings regenerados correctamente`);
+      notify(`${count} mappings regenerados correctamente.`, 'success');
     } catch (error) {
       console.error('Error regenerating mappings:', error);
       addLog(`❌ Error: ${error.message}`, 'error');
-      alert('Error al regenerar mappings: ' + error.message);
+      notify('Error al regenerar mappings: ' + error.message, 'error');
     } finally {
       setLoading(false);
     }
   };
 
   const handleDeleteOrphanedData = async () => {
-    const confirm = window.confirm(
-      '⚠️ PELIGRO: Esto buscará y eliminará datos huérfanos (resultados sin usuario, etc.)\n\nEsta acción NO se puede deshacer.\n\n¿Continuar?'
-    );
-
-    if (!confirm) return;
+    const shouldContinue = await confirm({
+      title: 'Datos huerfanos',
+      message: 'Esta funcionalidad esta deshabilitada por seguridad y requiere operacion manual en Firebase Console.',
+      confirmText: 'Entendido',
+      cancelText: 'Cancelar',
+      danger: true,
+    });
+    if (!shouldContinue) return;
 
     addLog('Esta funcionalidad está deshabilitada por seguridad', 'warning');
-    alert('Por seguridad, esta funcionalidad requiere implementación manual en Firebase Console');
+    notify('Por seguridad, requiere implementacion manual en Firebase Console.', 'warning');
   };
 
   return (
     <div>
+      <FeedbackLayer />
       <h2 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1.5rem', color: '#0f172a' }}>
         Utilidades del Sistema
       </h2>

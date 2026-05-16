@@ -3,6 +3,7 @@ import { Plus, Edit, Trash2, Download } from 'lucide-react';
 import { db } from '../../firebase';
 import { collection, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { generateTournamentDeterministicId } from '../../services/tournaments.service';
+import { useFeedbackLayer } from '../FeedbackLayer';
 
 /**
  * TournamentsAdminPanel - Panel de gestión de torneos oficiales
@@ -17,6 +18,7 @@ function TournamentsAdminPanel() {
   const [editingTournament, setEditingTournament] = useState(null);
   const [viewingParticipants, setViewingParticipants] = useState(null);
   const [participantsList, setParticipantsList] = useState([]);
+  const { notify, confirm, FeedbackLayer } = useFeedbackLayer();
 
   const [formData, setFormData] = useState({
     id: '',
@@ -73,7 +75,7 @@ function TournamentsAdminPanel() {
       }));
     } catch (error) {
       console.error('Error loading tournaments:', error);
-      alert('Error al cargar torneos: ' + error.message);
+      notify('Error al cargar torneos: ' + error.message, 'error');
     } finally {
       setLoading(false);
     }
@@ -83,7 +85,7 @@ function TournamentsAdminPanel() {
     e.preventDefault();
 
     if (!formData.id || !formData.name || !formData.dates) {
-      alert('Por favor completa los campos requeridos');
+      notify('Por favor completa los campos requeridos.', 'warning');
       return;
     }
 
@@ -91,13 +93,13 @@ function TournamentsAdminPanel() {
 
     try {
       await setDoc(doc(db, 'tournaments', String(formData.id)), formData);
-      alert(`✅ Torneo "${formData.name}" creado correctamente`);
+      notify(`Torneo "${formData.name}" creado correctamente.`, 'success');
       setIsCreatingTournament(false);
       resetForm();
       loadTournaments();
     } catch (error) {
       console.error('Error creating tournament:', error);
-      alert('Error al crear torneo: ' + error.message);
+      notify('Error al crear torneo: ' + error.message, 'error');
     } finally {
       setLoading(false);
     }
@@ -110,34 +112,37 @@ function TournamentsAdminPanel() {
 
     try {
       await setDoc(doc(db, 'tournaments', String(editingTournament.id)), formData);
-      alert(`✅ Torneo "${formData.name}" actualizado correctamente`);
+      notify(`Torneo "${formData.name}" actualizado correctamente.`, 'success');
       setEditingTournament(null);
       resetForm();
       loadTournaments();
     } catch (error) {
       console.error('Error updating tournament:', error);
-      alert('Error al actualizar torneo: ' + error.message);
+      notify('Error al actualizar torneo: ' + error.message, 'error');
     } finally {
       setLoading(false);
     }
   };
 
   const handleDeleteTournament = async (tournament) => {
-    const confirm = window.confirm(
-      `⚠️ ¿Estás seguro de eliminar el torneo "${tournament.name}"?\n\nEsta acción NO se puede deshacer.`
-    );
-
-    if (!confirm) return;
+    const shouldDelete = await confirm({
+      title: 'Eliminar torneo',
+      message: `Se eliminara el torneo "${tournament.name}". Esta accion no se puede deshacer.`,
+      confirmText: 'Eliminar',
+      cancelText: 'Cancelar',
+      danger: true,
+    });
+    if (!shouldDelete) return;
 
     setLoading(true);
 
     try {
       await deleteDoc(doc(db, 'tournaments', String(tournament.id)));
-      alert(`✅ Torneo "${tournament.name}" eliminado correctamente`);
+      notify(`Torneo "${tournament.name}" eliminado correctamente.`, 'success');
       loadTournaments();
     } catch (error) {
       console.error('Error deleting tournament:', error);
-      alert('Error al eliminar torneo: ' + error.message);
+      notify('Error al eliminar torneo: ' + error.message, 'error');
     } finally {
       setLoading(false);
     }
@@ -176,7 +181,7 @@ function TournamentsAdminPanel() {
   const handleCreateCentralized = async (e) => {
     e.preventDefault();
     if (!centralizedFormData.name || !centralizedFormData.dates) {
-      alert('Por favor completa nombre y fechas');
+      notify('Por favor completa nombre y fechas.', 'warning');
       return;
     }
     setLoading(true);
@@ -193,29 +198,35 @@ function TournamentsAdminPanel() {
         subscriberCount: 0
       };
       await setDoc(doc(db, 'shared_tournaments', detId), data);
-      alert(`✅ Torneo centralizado "${data.name}" creado`);
+      notify(`Torneo centralizado "${data.name}" creado.`, 'success');
       setIsCreatingCentralized(false);
       resetForm();
       loadSharedTournaments();
     } catch (err) {
       console.error(err);
-      alert('Error: ' + err.message);
+      notify('Error: ' + err.message, 'error');
     } finally {
       setLoading(false);
     }
   };
 
   const handleDeleteCentralized = async (tournament) => {
-    const confirm = window.confirm(`⚠️ ¿Eliminar torneo centralizado "${tournament.name}"?`);
-    if (!confirm) return;
+    const shouldDelete = await confirm({
+      title: 'Eliminar torneo centralizado',
+      message: `Se eliminara el torneo centralizado "${tournament.name}".`,
+      confirmText: 'Eliminar',
+      cancelText: 'Cancelar',
+      danger: true,
+    });
+    if (!shouldDelete) return;
     setLoading(true);
     try {
       await deleteDoc(doc(db, 'shared_tournaments', String(tournament.id)));
-      alert(`✅ Torneo eliminado`);
+      notify('Torneo eliminado.', 'success');
       loadSharedTournaments();
     } catch (err) {
       console.error(err);
-      alert('Error: ' + err.message);
+      notify('Error: ' + err.message, 'error');
     } finally {
       setLoading(false);
     }
@@ -230,7 +241,7 @@ function TournamentsAdminPanel() {
       setParticipantsList(list.sort((a, b) => (a.totalScore || 999) - (b.totalScore || 999)));
     } catch (err) {
       console.error(err);
-      alert('Error cargando participantes: ' + err.message);
+      notify('Error cargando participantes: ' + err.message, 'error');
     } finally {
       setLoading(false);
     }
@@ -262,11 +273,17 @@ function TournamentsAdminPanel() {
   };
 
   if (loading && tournaments.length === 0) {
-    return <div style={{ textAlign: 'center', padding: '3rem' }}>Cargando torneos...</div>;
+    return (
+      <>
+        <FeedbackLayer />
+        <div style={{ textAlign: 'center', padding: '3rem' }}>Cargando torneos...</div>
+      </>
+    );
   }
 
   return (
     <div>
+      <FeedbackLayer />
       {/* Sub-Tabs */}
       <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '2px solid #e2e8f0', paddingBottom: '0.5rem' }}>
         <button

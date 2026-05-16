@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Shield, Lock, AlertTriangle, CheckCircle } from 'lucide-react';
+import { useFeedbackLayer } from '../FeedbackLayer';
 
 /**
  * SecurityAdminPanel - Panel de seguridad
@@ -8,6 +9,7 @@ import { Shield, Lock, AlertTriangle, CheckCircle } from 'lucide-react';
  */
 function SecurityAdminPanel() {
   const [rulesStatus] = useState('restrictive');
+  const { notify, FeedbackLayer } = useFeedbackLayer();
 
   const firestoreRulesTemplate = `rules_version = '2';
 service cloud.firestore {
@@ -108,11 +110,12 @@ service cloud.firestore {
 
   const handleCopyRules = () => {
     navigator.clipboard.writeText(firestoreRulesTemplate);
-    alert('✅ Reglas copiadas al portapapeles. Pégalas en Firebase Console > Firestore > Rules');
+    notify('Reglas copiadas. Pegalas en Firebase Console > Firestore > Rules.', 'success');
   };
 
   return (
     <div>
+      <FeedbackLayer />
       <h2 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1.5rem', color: '#0f172a' }}>
         Seguridad de Firestore
       </h2>

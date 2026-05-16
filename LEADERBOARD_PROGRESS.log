@@ -242,6 +242,20 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
 ==========================================================================
   Siguiente: Reemplazar los usos restantes en `ResultsView.jsx`, `TournamentsAdminPanel.jsx`, `UsersAdminPanel.jsx`, `SystemAdminPanel.jsx` y `SecurityAdminPanel.jsx`.
 
+[COMPLETADO] HARDENING — Sustitución completa de alert/confirm restantes
+  Archivos modificados:
+    - src/components/FeedbackLayer.jsx
+    - src/components/ResultsView.jsx
+    - src/components/admin/SecurityAdminPanel.jsx
+    - src/components/admin/SystemAdminPanel.jsx
+    - src/components/admin/TournamentsAdminPanel.jsx
+    - src/components/admin/UsersAdminPanel.jsx
+  Resumen:
+    - Añadido `useFeedbackLayer()` reutilizable para toasts y confirmaciones propias.
+    - Eliminados todos los usos restantes de `alert()` y `window.confirm()` en `src`.
+    - Los paneles secundarios/admin mantienen confirmaciones destructivas con modal propio y mensajes no bloqueantes.
+    - Build verificado con `npm run build`.
+
 [COMPLETADO] HOTFIX — Fotos de perfil en clasificación del modo vivo
   Archivos modificados:
     - src/components/PublicScorecardView.jsx

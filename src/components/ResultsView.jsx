@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Trophy, Save, Edit2, ChevronLeft, Calendar as CalendarIcon, Hash, Trash2 } from 'lucide-react';
+import { useFeedbackLayer } from './FeedbackLayer';
 
 // -------------------------------------------------------------------------
 // LOGIC HELPERS
@@ -38,6 +39,7 @@ const getRoundDates = (dateStr) => {
 
 export default function ResultsView({ initialTournamentId, results = {}, tournaments = [], onUpdateResults }) {
     const [selectedTournament, setSelectedTournament] = useState(null); // ID of tournament in Detail View
+    const { notify, confirm, FeedbackLayer } = useFeedbackLayer();
 
     // Form State
     const [formData, setFormData] = useState({
@@ -142,15 +144,23 @@ export default function ResultsView({ initialTournamentId, results = {}, tournam
         setSelectedTournament(null);
     };
 
-    const handleDeleteResult = () => {
+    const handleDeleteResult = async () => {
         if (!selectedTournament) return;
 
-        if (window.confirm('¿Seguro que quieres borrar estos resultados?')) {
-            const newResults = { ...results };
-            delete newResults[selectedTournament.id];
-            onUpdateResults(newResults);
-            setSelectedTournament(null);
-        }
+        const shouldDelete = await confirm({
+            title: 'Borrar resultados',
+            message: 'Se borraran los resultados guardados de este torneo.',
+            confirmText: 'Borrar resultados',
+            cancelText: 'Cancelar',
+            danger: true,
+        });
+        if (!shouldDelete) return;
+
+        const newResults = { ...results };
+        delete newResults[selectedTournament.id];
+        onUpdateResults(newResults);
+        setSelectedTournament(null);
+        notify('Resultados borrados.', 'success');
     };
 
     // -------------------------------------------------------------------------
@@ -164,6 +174,7 @@ export default function ResultsView({ initialTournamentId, results = {}, tournam
 
         return (
             <div className="detail-view fade-in">
+                <FeedbackLayer />
                 <button onClick={handleBack} className="btn" style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '5px' }}>
                     <ChevronLeft size={16} /> Volver
                 </button>
@@ -263,6 +274,7 @@ export default function ResultsView({ initialTournamentId, results = {}, tournam
 
     return (
         <div className="results-container">
+            <FeedbackLayer />
             <div className="card" style={{ marginBottom: '2rem', textAlign: 'center', background: 'linear-gradient(135deg, var(--color-primary) 0%, #143a22 100%)', color: 'white' }}>
                 <h2 style={{ color: 'white', marginBottom: '0.5rem' }}>Resultados & Palmarés</h2>
                 <p style={{ opacity: 0.9 }}>Selecciona un torneo para introducir los resultados detallados.</p>

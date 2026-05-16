@@ -13,6 +13,7 @@ import {
   sendPasswordResetEmail,
   setPersistence
 } from 'firebase/auth';
+import { useFeedbackLayer } from '../FeedbackLayer';
 
 /**
  * UsersAdminPanel - Panel de gestión de usuarios
@@ -36,6 +37,7 @@ function UsersAdminPanel() {
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [legacyDuplicatesHidden, setLegacyDuplicatesHidden] = useState(0);
+  const { notify, confirm, FeedbackLayer } = useFeedbackLayer();
 
   // Form states
   const [formData, setFormData] = useState({
@@ -69,7 +71,7 @@ function UsersAdminPanel() {
       setFilteredUsers(usersData);
     } catch (error) {
       console.error('Error loading users:', error);
-      alert('Error al cargar usuarios: ' + error.message);
+      notify('Error al cargar usuarios: ' + error.message, 'error');
     } finally {
       setLoading(false);
     }
@@ -96,12 +98,12 @@ function UsersAdminPanel() {
     e.preventDefault();
 
     if (!formData.username || !formData.email || !formData.password) {
-      alert('Por favor completa todos los campos requeridos');
+      notify('Por favor completa todos los campos requeridos.', 'warning');
       return;
     }
 
     if (formData.password.length < 6) {
-      alert('La contraseña debe tener al menos 6 caracteres');
+      notify('La contraseña debe tener al menos 6 caracteres.', 'warning');
       return;
     }
 
@@ -160,7 +162,7 @@ function UsersAdminPanel() {
         updated_at: new Date()
       });
 
-      alert(`✅ Usuario "${formData.username}" creado correctamente`);
+      notify(`Usuario "${formData.username}" creado correctamente.`, 'success');
       setIsCreatingUser(false);
       setFormData({
         username: '',
@@ -195,7 +197,7 @@ function UsersAdminPanel() {
         errorMsg = 'Contraseña débil (mínimo 6 caracteres)';
       }
 
-      alert('Error al crear usuario: ' + errorMsg);
+      notify('Error al crear usuario: ' + errorMsg, 'error');
     } finally {
       if (secondaryAuth) {
         try {
@@ -231,7 +233,7 @@ function UsersAdminPanel() {
     );
 
     if (isRemovingLastAdmin) {
-      alert('No puedes quitar el rol al ultimo administrador del sistema.');
+      notify('No puedes quitar el rol al ultimo administrador del sistema.', 'warning');
       return;
     }
 
@@ -247,12 +249,12 @@ function UsersAdminPanel() {
         updated_at: new Date().toISOString()
       });
 
-      alert(`✅ Usuario "${editingUser.username}" actualizado correctamente`);
+      notify(`Usuario "${editingUser.username}" actualizado correctamente.`, 'success');
       setEditingUser(null);
       loadUsers();
     } catch (error) {
       console.error('Error updating user:', error);
-      alert('Error al actualizar usuario: ' + error.message);
+      notify('Error al actualizar usuario: ' + error.message, 'error');
     } finally {
       setLoading(false);
     }
@@ -261,21 +263,24 @@ function UsersAdminPanel() {
   // Eliminar usuario
   const handleDeleteUser = async (user) => {
     if (auth.currentUser?.uid === user.id) {
-      alert('No puedes eliminar tu propio perfil desde el panel de administración.');
+      notify('No puedes eliminar tu propio perfil desde el panel de administracion.', 'warning');
       return;
     }
 
     const adminCount = users.filter((candidate) => candidate.role === 'admin').length;
     if (user.role === 'admin' && adminCount <= 1) {
-      alert('No puedes eliminar el ultimo administrador del sistema.');
+      notify('No puedes eliminar el ultimo administrador del sistema.', 'warning');
       return;
     }
 
-    const confirm = window.confirm(
-      `⚠️ ¿Estás seguro de eliminar el perfil de "${user.username}"?\n\nEsto eliminará:\n- Su perfil en Firestore\n- Todos sus resultados\n- Sus torneos personalizados\n- Sus preferencias\n\nNota: el usuario en Firebase Authentication debe borrarse aparte si también quieres bloquear el login.\n\nEsta acción NO se puede deshacer.`
-    );
-
-    if (!confirm) return;
+    const shouldDelete = await confirm({
+      title: 'Eliminar perfil',
+      message: `Se eliminara el perfil de "${user.username}", sus resultados, torneos personalizados y preferencias. El usuario de Firebase Authentication debe borrarse aparte si quieres bloquear el login.`,
+      confirmText: 'Eliminar perfil',
+      cancelText: 'Cancelar',
+      danger: true,
+    });
+    if (!shouldDelete) return;
 
     setLoading(true);
 
@@ -289,11 +294,11 @@ function UsersAdminPanel() {
         await deleteDoc(doc(db, 'usernames', user.username));
       }
 
-      alert(`✅ Perfil de "${user.username}" eliminado correctamente`);
+      notify(`Perfil de "${user.username}" eliminado correctamente.`, 'success');
       loadUsers();
     } catch (error) {
       console.error('Error deleting user:', error);
-      alert('Error al eliminar usuario: ' + error.message);
+      notify('Error al eliminar usuario: ' + error.message, 'error');
     } finally {
       setLoading(false);
     }
@@ -302,22 +307,24 @@ function UsersAdminPanel() {
   // Resetear contraseña
   const handleResetPassword = async (user) => {
     if (!user.email) {
-      alert('Este usuario no tiene email configurado');
+      notify('Este usuario no tiene email configurado.', 'warning');
       return;
     }
 
-    const confirm = window.confirm(
-      `¿Enviar email de recuperación de contraseña a ${user.email}?`
-    );
-
-    if (!confirm) return;
+    const shouldSend = await confirm({
+      title: 'Enviar recuperacion',
+      message: `Enviar email de recuperacion de contraseña a ${user.email}.`,
+      confirmText: 'Enviar email',
+      cancelText: 'Cancelar',
+    });
+    if (!shouldSend) return;
 
     try {
       await sendPasswordResetEmail(auth, user.email);
-      alert(`✅ Email enviado a ${user.email}`);
+      notify(`Email enviado a ${user.email}.`, 'success');
     } catch (error) {
       console.error('Error sending reset email:', error);
-      alert('Error al enviar email: ' + error.message);
+      notify('Error al enviar email: ' + error.message, 'error');
     }
   };
 
@@ -347,14 +354,18 @@ function UsersAdminPanel() {
 
   if (loading && users.length === 0) {
     return (
-      <div style={{ textAlign: 'center', padding: '3rem' }}>
-        <p>Cargando usuarios...</p>
-      </div>
+      <>
+        <FeedbackLayer />
+        <div style={{ textAlign: 'center', padding: '3rem' }}>
+          <p>Cargando usuarios...</p>
+        </div>
+      </>
     );
   }
 
   return (
     <div>
+      <FeedbackLayer />
       {/* Header con búsqueda y botón crear */}
       <div style={{
         display: 'flex',
