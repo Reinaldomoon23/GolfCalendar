@@ -22,6 +22,11 @@ export default function LoginViewFirebase({ onLogin }) {
     const [fullName, setFullName] = useState('');
     const [federationId, setFederationId] = useState('');
 
+    const normalizeLoginName = (value) => String(value || '')
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, '');
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
@@ -29,7 +34,8 @@ export default function LoginViewFirebase({ onLogin }) {
 
         try {
             // Generar email a partir del username
-            const email = `${username.toLowerCase()}@golfteam.app`;
+            const normalizedUsernameInput = normalizeLoginName(username);
+            const email = `${normalizedUsernameInput}@golfteam.app`;
 
             if (isRegister) {
                 // REGISTRO: Crear usuario en Firebase Auth
@@ -41,7 +47,7 @@ export default function LoginViewFirebase({ onLogin }) {
                     displayName: fullName
                 });
 
-                const normalizedUsername = username.toLowerCase();
+                const normalizedUsername = normalizedUsernameInput;
 
                 // Guardar datos adicionales en Firestore con ownership canonico por uid
                 await ensureUserProfileDocument(db, {
@@ -78,9 +84,9 @@ export default function LoginViewFirebase({ onLogin }) {
                 const normalizedProfile = await ensureUserProfileDocument(db, {
                     ...profile,
                     uid: user.uid,
-                    username: profile?.username || username.toLowerCase(),
+                    username: profile?.username || normalizedUsernameInput,
                     email: profile?.email || user.email || email
-                }, username.toLowerCase());
+                }, normalizedUsernameInput);
 
                 if (!normalizedProfile) {
                     throw new Error('Perfil de usuario no encontrado');

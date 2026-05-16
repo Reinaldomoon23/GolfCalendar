@@ -855,6 +855,44 @@ export default function PublicScorecardView() {
         if (diff === 2) return '#ef4444'; // Doble bogey (rojo)
         return '#000000'; // Triple bogey o peor (negro)
     };
+    const hasRoundResult = (participant, roundIdx) => {
+        if (roundIdx === null || roundIdx === undefined) {
+            return Boolean(participant.hasScore) || Number(participant.total) > 0 || Number(participant.roundsPlayed) > 0;
+        }
+
+        const roundScore = Number(participant.rounds?.[Number(roundIdx)]);
+        if (Number.isFinite(roundScore) && roundScore > 0) return true;
+
+        const card = participant.scorecards?.[String(roundIdx)];
+        return Array.isArray(card?.strokes) && card.strokes.some((stroke) => {
+            const value = String(stroke || '').trim();
+            return value !== '' && value !== '-' && value !== '0';
+        });
+    };
+    const getTodayRoundIndex = (dates) => {
+        const parts = String(dates || '').split(' - ');
+        const parse = (value) => {
+            const [day, month, year] = String(value || '').split('/').map(Number);
+            if (!day || !month || !year) return null;
+            return new Date(year, month - 1, day).setHours(0, 0, 0, 0);
+        };
+        const start = parse(parts[0]);
+        if (!start) return null;
+        const end = parse(parts[1]) || start;
+        const today = new Date().setHours(0, 0, 0, 0);
+        if (today < start || today > end) return null;
+        return String(Math.floor((today - start) / (24 * 60 * 60 * 1000)));
+    };
+    const todayRoundIndex = getTodayRoundIndex(activeResult?.tournamentDates || tournament?.dates);
+    const activeLeaderboardRound = queryRIdx !== null
+        ? String(queryRIdx)
+        : activeRoundTab !== null
+            ? String(activeRoundTab)
+            : todayRoundIndex !== null
+                ? todayRoundIndex
+                : foundActiveRIdx !== null && foundActiveRIdx !== undefined
+                    ? String(foundActiveRIdx)
+                    : null;
     const displayedLeaderboardParticipants = mergeParticipants(leaderboardParticipants, discoveredParticipants)
         .map((participant) => {
             const profile = leaderboardProfiles[participant.username] || {};
@@ -864,7 +902,20 @@ export default function PublicScorecardView() {
                 ...enrichedParticipant,
                 photo_url: participant.photo_url || profile.photo_url || getKnownCloudflareProfilePhoto(enrichedParticipant),
             };
+        })
+        .sort((a, b) => {
+            const aHasRound = hasRoundResult(a, activeLeaderboardRound);
+            const bHasRound = hasRoundResult(b, activeLeaderboardRound);
+            if (aHasRound && !bHasRound) return -1;
+            if (!aHasRound && bHasRound) return 1;
+            if (!aHasRound && !bHasRound) {
+                return String(a.fullName || a.username).localeCompare(String(b.fullName || b.username));
+            }
+            return Number(a.total || 999) - Number(b.total || 999);
         });
+    const rankedLeaderboardParticipants = displayedLeaderboardParticipants.filter((participant) => (
+        hasRoundResult(participant, activeLeaderboardRound)
+    ));
     const renderParticipantHoleScores = (participant) => {
         const scorecards = participant?.scorecards || {};
         const roundEntries = Object.keys(scorecards)
@@ -1735,6 +1786,11 @@ export default function PublicScorecardView() {
                             </div>
                         ) : (
                             displayedLeaderboardParticipants.map((participant, idx) => {
+                                const hasActiveRoundResult = hasRoundResult(participant, activeLeaderboardRound);
+                                const rankedIndex = rankedLeaderboardParticipants.findIndex((candidate) => (
+                                    (candidate.username || candidate.id) === (participant.username || participant.id)
+                                ));
+                                const position = rankedIndex + 1;
                                 const relative = participant.vspar;
                                 const relativeStr = relative === null || relative === undefined
                                     ? '-'
@@ -1747,10 +1803,13 @@ export default function PublicScorecardView() {
                                 const progressLabel = participant.progressLabel || (participant.hasScore ? 'Finalizada' : 'Pendiente');
                                 const progressColor = participant.status === 'in_progress'
                                     ? '#60a5fa'
-                                    : participant.status === 'finished' ? '#10b981' : '#94a3b8';
-                                const secondaryLabel = participant.status === 'in_progress' && Number(participant.holesPlayed) > 0
+                                    : participant.status === 'finished' && hasActiveRoundResult ? '#10b981' : '#94a3b8';
+                                const secondaryLabel = !hasActiveRoundResult
+                                    ? (activeLeaderboardRound === null ? 'Sin resultados' : `Sin resultados R${Number(activeLeaderboardRound) + 1}`)
+                                    : participant.status === 'in_progress' && Number(participant.holesPlayed) > 0
                                     ? `${participant.holesPlayed} hoyo${participant.holesPlayed === 1 ? '' : 's'} jugado${participant.holesPlayed === 1 ? '' : 's'}`
                                     : participant.roundsPlayed > 0 ? `${participant.roundsPlayed} vuelta${participant.roundsPlayed === 1 ? '' : 's'}` : 'Pendiente';
+                                const displayedProgressLabel = hasActiveRoundResult ? progressLabel : 'Sin resultados';
 
                                 return (
                                     <React.Fragment key={participant.id || participant.username}>
@@ -1780,9 +1839,9 @@ export default function PublicScorecardView() {
                                             <div style={{
                                                 padding: '14px 10px',
                                                 fontWeight: '900',
-                                                color: idx === 0 ? '#eab308' : (idx === 1 ? '#cbd5e1' : (idx === 2 ? '#f97316' : '#64748b'))
+                                                color: !hasActiveRoundResult ? '#64748b' : (position === 1 ? '#eab308' : (position === 2 ? '#cbd5e1' : (position === 3 ? '#f97316' : '#64748b')))
                                             }}>
-                                                {idx + 1}
+                                                {hasActiveRoundResult ? position : '—'}
                                             </div>
                                             <div style={{ padding: '12px 10px', minWidth: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
                                                 {participant.photo_url ? (
@@ -1831,18 +1890,18 @@ export default function PublicScorecardView() {
                                                 padding: '14px 8px',
                                                 textAlign: 'center',
                                                 fontWeight: '900',
-                                                color: progressColor,
+                                                color: hasActiveRoundResult ? progressColor : '#94a3b8',
                                                 fontSize: '0.72rem',
                                                 textTransform: 'uppercase',
                                                 letterSpacing: '0.03em'
                                             }}>
-                                                {progressLabel}
+                                                {displayedProgressLabel}
                                             </div>
                                             <div style={{ padding: '14px 10px', textAlign: 'center', fontWeight: '900', color: '#e2e8f0' }}>
-                                                {participant.total || '-'}
+                                                {hasActiveRoundResult ? (participant.total || '-') : '-'}
                                             </div>
                                             <div style={{ padding: '14px 10px', textAlign: 'right', fontWeight: '900', color: relativeColor }}>
-                                                {relativeStr}
+                                                {hasActiveRoundResult ? relativeStr : '-'}
                                             </div>
                                         </div>
                                         {isExpanded && renderParticipantHoleScores(participant)}

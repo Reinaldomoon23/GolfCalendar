@@ -612,3 +612,41 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
   Resumen:
     - Nombre completo actualizado a `Itziar de Ormaechea`.
     - Leaderboards públicos actualizados para mostrar el nombre completo correcto.
+
+==========================================================================
+ SESIÓN: 2026-05-16 | Modelo: Codex GPT-5
+==========================================================================
+
+[COMPLETADO] OPERACIÓN ADMIN — Login por nombre completo para nuevas altas
+  Archivos modificados:
+    - src/components/LoginViewFirebase.jsx
+  Datos modificados:
+    - Firebase Auth: Itziar migrada de `itziar@golfteam.app` a `itziardeormaechea@golfteam.app`
+    - Firestore: `users/nfAPpZ2WXlMkNPDAKAiAvUTSG2K3.username`
+    - Firestore: `usernames/itziar` eliminado y `usernames/itziardeormaechea` creado
+    - Firestore: 10 documentos `tournaments/{id}/participants/itziar` migrados a `itziardeormaechea`
+  Resumen:
+    - El login normaliza el nombre escrito quitando espacios y pasando a minúsculas antes de construir el email interno.
+    - Itziar puede entrar con `Itziar de Ormaechea` / `Itziar`.
+    - Paula puede entrar con `Paula Albadalejo` / `Albadalejo`.
+    - Los usuarios existentes no se han migrado salvo Itziar, respetando la decisión de producto.
+
+[COMPLETADO] UX — Clasificación solo por ronda/día activo
+  Archivos modificados:
+    - src/components/PublicScorecardView.jsx
+    - src/components/PublicLeaderboardView.jsx
+    - src/components/TournamentLeaderboard.jsx
+    - src/services/leaderboard.service.js
+  Resumen:
+    - En torneos de varios días, el leaderboard vivo detecta la ronda correspondiente a la fecha actual.
+    - Una jugadora solo entra en la clasificación del día si tiene golpes o total en esa ronda concreta.
+    - Si tiene resultados de días anteriores pero todavía no ha empezado la ronda actual, queda debajo como `Sin resultados`.
+    - Al introducir cualquier golpe de la ronda activa, sube automáticamente a la clasificación general usando su acumulado.
+    - La misma regla se aplica a la vista pública `/leaderboard/:id` y a las pestañas R1/R2/... del leaderboard interno.
+    - Build verificado con `npm run build`.
+    - Despliegue completo ejecutado con `npm run deploy:all` y verificado en `https://reinaldomoon.top/GolfTeam/`.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Revisión de ordenación acumulada multi-ronda
+==========================================================================
+  Siguiente: Validar con datos reales de torneo de varios días que el acumulado mantiene la clasificación correcta cuando varias jugadoras empiezan la ronda activa en momentos distintos.

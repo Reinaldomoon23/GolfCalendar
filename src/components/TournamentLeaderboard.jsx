@@ -54,6 +54,16 @@ export default function TournamentLeaderboard({ tournamentId, par = 72, currentU
         return Array.isArray(participant.rounds) ? Number(participant.rounds[roundIdx]) || null : null;
     };
 
+    const hasDisplayResult = (participant) => (
+        viewMode === 'total'
+            ? (
+                participant.hasScore === true ||
+                Number(getDisplayScore(participant)) > 0 ||
+                Number(participant.roundsPlayed) > 0
+            )
+            : Number(getDisplayScore(participant)) > 0
+    );
+
     const getDisplayVsPar = (participant) => {
         if (viewMode === 'total') return participant.vspar;
         const score = getDisplayScore(participant);
@@ -63,14 +73,18 @@ export default function TournamentLeaderboard({ tournamentId, par = 72, currentU
     const sortedParticipants = [...participants].sort((a, b) => {
         const scoreA = getDisplayScore(a);
         const scoreB = getDisplayScore(b);
-        if (scoreA && !scoreB) return -1;
-        if (!scoreA && scoreB) return 1;
-        if (!scoreA && !scoreB) return 0;
+        const hasA = hasDisplayResult(a);
+        const hasB = hasDisplayResult(b);
+        if (hasA && !hasB) return -1;
+        if (!hasA && hasB) return 1;
+        if (!hasA && !hasB) {
+            return String(a.fullName || a.username).localeCompare(String(b.fullName || b.username));
+        }
         return scoreA - scoreB;
     });
 
-    const withScores = sortedParticipants.filter(p => getDisplayScore(p));
-    const withoutScores = sortedParticipants.filter(p => !getDisplayScore(p));
+    const withScores = sortedParticipants.filter(p => hasDisplayResult(p));
+    const withoutScores = sortedParticipants.filter(p => !hasDisplayResult(p));
 
     if (loading) {
         return (
@@ -314,7 +328,7 @@ export default function TournamentLeaderboard({ tournamentId, par = 72, currentU
                         gap: '8px'
                     }}>
                         <Clock size={12} />
-                        Pendientes de jugar
+                        Sin resultados
                     </div>
                 )}
 
@@ -350,6 +364,12 @@ export default function TournamentLeaderboard({ tournamentId, par = 72, currentU
                                     whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
                                 }}>
                                     {p.fullName || p.username}
+                                    {isCurrentUser && (
+                                        <span style={{ marginLeft: '6px', fontSize: '0.65rem', color: '#3b82f6', fontWeight: '700' }}>TÚ</span>
+                                    )}
+                                    <div style={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: '700', textTransform: 'uppercase' }}>
+                                        Sin resultados
+                                    </div>
                                 </div>
                             </div>
                             <div style={{ textAlign: 'center', fontSize: '0.8rem', color: '#94a3b8' }}>0</div>

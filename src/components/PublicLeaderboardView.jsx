@@ -89,6 +89,42 @@ export default function PublicLeaderboardView() {
         );
     }
 
+    const getActiveRoundIndex = (dates) => {
+        const parts = String(dates || '').split(' - ');
+        const parse = (value) => {
+            const [day, month, year] = String(value || '').split('/').map(Number);
+            if (!day || !month || !year) return null;
+            return new Date(year, month - 1, day).setHours(0, 0, 0, 0);
+        };
+        const start = parse(parts[0]);
+        if (!start) return null;
+
+        const today = new Date().setHours(0, 0, 0, 0);
+        const roundIdx = Math.floor((today - start) / (24 * 60 * 60 * 1000));
+        const maxIdx = Math.max(0, parts.length > 1 ? Math.floor((parse(parts[1]) - start) / (24 * 60 * 60 * 1000)) : 0);
+        return roundIdx >= 0 && roundIdx <= maxIdx ? roundIdx : null;
+    };
+
+    const activeRoundIdx = getActiveRoundIndex(tournament?.dates);
+    const hasRoundResult = (participant, roundIdx) => {
+        if (roundIdx === null) {
+            return (
+                participant.hasScore === true ||
+                Number(participant.total) > 0 ||
+                Number(participant.total_strokes) > 0 ||
+                Number(participant.roundsPlayed) > 0
+            );
+        }
+        return Number(participant.rounds?.[roundIdx]) > 0;
+    };
+    const rankedParticipants = participants
+        .filter((participant) => hasRoundResult(participant, activeRoundIdx))
+        .sort((a, b) => Number(a.total || a.total_strokes || 999) - Number(b.total || b.total_strokes || 999));
+    const noResultParticipants = participants
+        .filter((participant) => !hasRoundResult(participant, activeRoundIdx))
+        .sort((a, b) => String(a.fullName || a.username).localeCompare(String(b.fullName || b.username)));
+    const displayParticipants = [...rankedParticipants, ...noResultParticipants];
+
     return (
         <div style={{ 
             minHeight: '100vh', 
@@ -164,8 +200,11 @@ export default function PublicLeaderboardView() {
                         <p>Aún no hay resultados registrados para este torneo.</p>
                     </div>
                 ) : (
-                    participants.map((p, idx) => {
-                        const isTop3 = idx < 3;
+                    displayParticipants.map((p, idx) => {
+                        const hasPlayerResult = hasRoundResult(p, activeRoundIdx);
+                        const rankedIndex = rankedParticipants.findIndex((candidate) => candidate.username === p.username || candidate.id === p.id);
+                        const position = rankedIndex + 1;
+                        const isTop3 = hasPlayerResult && rankedIndex < 3;
                         const score = p.total || null;
                         const relative = p.vspar;
                         const relativeStr = relative === null || relative === undefined
@@ -190,7 +229,7 @@ export default function PublicLeaderboardView() {
                                     color: isTop3 ? '#f59e0b' : '#94a3b8',
                                     fontSize: isTop3 ? '1.1rem' : '1rem'
                                 }}>
-                                    {idx + 1}
+                                    {hasPlayerResult ? position : '—'}
                                 </span>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
                                     <ProfileImage username={p.username} size={32} style={{ borderRadius: '50%', flexShrink: 0 }} />
@@ -199,7 +238,9 @@ export default function PublicLeaderboardView() {
                                             {p.fullName || p.username}
                                         </span>
                                         <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
-                                            {updatedAt ? `Actualizado: ${updatedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Pendiente de jugar'}
+                                            {hasPlayerResult && updatedAt
+                                                ? `Actualizado: ${updatedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                                                : activeRoundIdx === null ? 'Sin resultados' : `Sin resultados R${activeRoundIdx + 1}`}
                                         </span>
                                     </div>
                                 </div>

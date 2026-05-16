@@ -305,13 +305,25 @@ export function subscribeToLeaderboard(tournamentId, callback) {
   const unsubscribe = onSnapshot(participantsRef, (snapshot) => {
     const participants = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
 
-    // Sort: players with scores first (ascending total), then players without scores
+    const hasResult = (participant) => (
+      participant.hasScore === true ||
+      Number(participant.total) > 0 ||
+      Number(participant.total_strokes) > 0 ||
+      Number(participant.roundsPlayed) > 0
+    );
+
+    // Sort: players with real results first (ascending total), then joined players without results.
     const sorted = participants.sort((a, b) => {
-      if (a.hasScore && !b.hasScore) return -1;
-      if (!a.hasScore && b.hasScore) return 1;
-      if (!a.hasScore && !b.hasScore) return 0;
+      const aHasResult = hasResult(a);
+      const bHasResult = hasResult(b);
+      if (aHasResult && !bHasResult) return -1;
+      if (!aHasResult && bHasResult) return 1;
+      if (!aHasResult && !bHasResult) {
+        return String(a.fullName || a.full_name || a.username || a.id)
+          .localeCompare(String(b.fullName || b.full_name || b.username || b.id));
+      }
       // Both have scores: sort by total (lower is better in stroke play)
-      return (a.total || 999) - (b.total || 999);
+      return (Number(a.total || a.total_strokes || 999)) - (Number(b.total || b.total_strokes || 999));
     });
 
     callback(sorted);
