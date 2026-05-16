@@ -173,6 +173,7 @@ export default function PublicScorecardView() {
     const location = useLocation();
     const searchParams = new URLSearchParams(location.search);
     const queryRIdx = searchParams.get('r');
+    const queryView = searchParams.get('view');
 
     const [loading, setLoading] = useState(true);
     const [userProfile, setUserProfile] = useState(null);
@@ -187,7 +188,7 @@ export default function PublicScorecardView() {
     const prevScoresRef = useRef({});
     const [profileReady, setProfileReady] = useState(false);
     const [activeRoundTab, setActiveRoundTab] = useState(null);
-    const [activeViewTab, setActiveViewTab] = useState('leaderboard'); // 'scorecard' | 'leaderboard'
+    const [activeViewTab, setActiveViewTab] = useState(queryView === 'scorecard' ? 'scorecard' : 'leaderboard'); // 'scorecard' | 'leaderboard'
     const [leaderboardParticipants, setLeaderboardParticipants] = useState([]);
     const [leaderboardLoading, setLeaderboardLoading] = useState(true);
     const [discoveredParticipants, setDiscoveredParticipants] = useState([]);
@@ -226,6 +227,14 @@ export default function PublicScorecardView() {
         }
     };
     const t = i18n[lang];
+
+    useEffect(() => {
+        if (queryView === 'scorecard') {
+            setActiveViewTab('scorecard');
+        } else if (queryView === 'leaderboard') {
+            setActiveViewTab('leaderboard');
+        }
+    }, [queryView, username, eventId]);
     
     // ── Derived Data Declarations (Pre-declared to avoid TDZ) ───────────────
     let tournamentInfo = null;
@@ -1625,7 +1634,10 @@ export default function PublicScorecardView() {
                                     ? '#94a3b8'
                                     : relative <= 0 ? '#10b981' : '#ef4444';
                                 const isCurrent = participant.username === username;
-                                const detailSearch = queryRIdx !== null ? `?r=${encodeURIComponent(queryRIdx)}` : '';
+                                const detailParams = new URLSearchParams();
+                                if (queryRIdx !== null) detailParams.set('r', queryRIdx);
+                                detailParams.set('view', 'scorecard');
+                                const detailSearch = `?${detailParams.toString()}`;
                                 const detailUrl = `/live/${participant.username}/${eventId || canonicalEventId}${detailSearch}`;
                                 const progressLabel = participant.progressLabel || (participant.hasScore ? 'Finalizada' : 'Pendiente');
                                 const progressColor = participant.status === 'in_progress'
@@ -1649,7 +1661,7 @@ export default function PublicScorecardView() {
                                             textDecoration: 'none',
                                             cursor: 'pointer'
                                         }}
-                                        title={`Ver resultado de ${participant.fullName || participant.username}`}
+                                        title={`Ver puntuacion por hoyos de ${participant.fullName || participant.username}`}
                                     >
                                         <div style={{
                                             padding: '14px 10px',
