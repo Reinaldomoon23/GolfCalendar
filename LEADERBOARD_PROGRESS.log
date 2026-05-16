@@ -571,3 +571,12 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
   PRÓXIMO PASO: OPERACIÓN — Configurar service account Firebase Admin en Vercel
 =========================================================================
   Siguiente: Añadir el service account correcto de `golfscorings-e4338` a Vercel y probar la accion "Temporal" con un usuario interno.
+
+[COMPLETADO] OPERACIÓN ADMIN — Password temporal de Maria Ros
+  Datos modificados:
+    - Firebase Auth: usuario `mariaros@golfteam.app` (`PJXYMRB36jTkWkFY7v1k8Sz7kRj2`)
+    - Firestore: `users/PJXYMRB36jTkWkFY7v1k8Sz7kRj2`
+  Resumen:
+    - Contraseña cambiada a la temporal solicitada por el administrador.
+    - Perfil marcado con `must_change_password: true` y metadatos de asignación temporal.
+    - Verificado login correcto con Identity Toolkit sin exponer tokens.
