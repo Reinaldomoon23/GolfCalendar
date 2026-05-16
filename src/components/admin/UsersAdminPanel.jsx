@@ -36,6 +36,7 @@ function UsersAdminPanel() {
   const [loading, setLoading] = useState(true);
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
+  const [temporaryPasswordResult, setTemporaryPasswordResult] = useState(null);
   const [legacyDuplicatesHidden, setLegacyDuplicatesHidden] = useState(0);
   const { notify, confirm, FeedbackLayer } = useFeedbackLayer();
 
@@ -328,6 +329,73 @@ function UsersAdminPanel() {
     }
   };
 
+  const generateTemporaryPassword = () => {
+    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+    const symbols = '!@$%';
+    const bytes = new Uint32Array(14);
+    crypto.getRandomValues(bytes);
+
+    const body = Array.from(bytes, (value) => alphabet[value % alphabet.length]).join('');
+    return `${body}${symbols[bytes[0] % symbols.length]}${(bytes[1] % 90) + 10}`;
+  };
+
+  const handleAssignTemporaryPassword = async (user) => {
+    if (!user?.id || !user?.email) {
+      notify('Este usuario no tiene uid/email suficiente para cambiar la contraseña.', 'warning');
+      return;
+    }
+
+    if (!auth.currentUser) {
+      notify('Debes estar autenticado como administrador.', 'warning');
+      return;
+    }
+
+    const shouldAssign = await confirm({
+      title: 'Asignar contraseña temporal',
+      message: `Se cambiara la contraseña de @${user.username}. La contraseña anterior dejara de funcionar y se mostrara la nueva una sola vez.`,
+      confirmText: 'Asignar temporal',
+      cancelText: 'Cancelar',
+      danger: true,
+    });
+    if (!shouldAssign) return;
+
+    setLoading(true);
+    const temporaryPassword = generateTemporaryPassword();
+
+    try {
+      const token = await auth.currentUser.getIdToken();
+      const response = await fetch('/api/set_temp_password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          uid: user.id,
+          password: temporaryPassword,
+        }),
+      });
+
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.error || 'No se pudo asignar la contraseña temporal.');
+      }
+
+      setTemporaryPasswordResult({
+        username: user.username,
+        email: user.email,
+        password: temporaryPassword,
+      });
+      notify(`Contraseña temporal asignada a @${user.username}.`, 'success');
+      loadUsers();
+    } catch (error) {
+      console.error('Error assigning temporary password:', error);
+      notify('Error al asignar contraseña temporal: ' + error.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const startEditUser = (user) => {
     setEditingUser(user);
     setFormData({
@@ -513,6 +581,26 @@ function UsersAdminPanel() {
                       }}
                     >
                       <Key size={16} color="#64748b" />
+                    </button>
+                    <button
+                      onClick={() => handleAssignTemporaryPassword(user)}
+                      title="Asignar contraseña temporal"
+                      style={{
+                        padding: '0.5rem 0.75rem',
+                        borderRadius: '6px',
+                        border: '1px solid #fed7aa',
+                        background: '#fff7ed',
+                        color: '#9a3412',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.35rem',
+                        fontSize: '0.8rem',
+                        fontWeight: '600'
+                      }}
+                    >
+                      <Key size={14} />
+                      Temporal
                     </button>
                     <button
                       onClick={() => handleDeleteUser(user)}
@@ -777,6 +865,86 @@ function UsersAdminPanel() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Contraseña temporal asignada */}
+      {temporaryPasswordResult && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(15,23,42,0.55)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '1rem'
+        }}>
+          <div className="card fade-in" style={{ width: '90%', maxWidth: '520px', padding: '2rem' }}>
+            <h2 style={{ margin: '0 0 0.75rem', fontSize: '1.35rem' }}>Contraseña temporal creada</h2>
+            <p style={{ margin: '0 0 1rem', color: '#64748b', lineHeight: 1.5 }}>
+              Entrega esta contraseña a @{temporaryPasswordResult.username}. Se muestra aqui una sola vez; no se guarda en texto claro.
+            </p>
+
+            <div style={{
+              padding: '1rem',
+              borderRadius: '10px',
+              background: '#f8fafc',
+              border: '1px solid #e2e8f0',
+              marginBottom: '1rem'
+            }}>
+              <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.35rem' }}>
+                Email
+              </div>
+              <div style={{ fontWeight: '700', marginBottom: '0.85rem' }}>
+                {temporaryPasswordResult.email}
+              </div>
+              <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.35rem' }}>
+                Contraseña temporal
+              </div>
+              <code style={{
+                display: 'block',
+                padding: '0.85rem',
+                borderRadius: '8px',
+                background: '#0f172a',
+                color: '#f8fafc',
+                fontSize: '1rem',
+                letterSpacing: '0.04em',
+                userSelect: 'all',
+                overflowX: 'auto'
+              }}>
+                {temporaryPasswordResult.password}
+              </code>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="btn"
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(temporaryPasswordResult.password);
+                    notify('Contraseña temporal copiada.', 'success');
+                  } catch (error) {
+                    console.error('Error copying temporary password:', error);
+                    notify('No se pudo copiar automaticamente.', 'warning');
+                  }
+                }}
+              >
+                Copiar contraseña
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => setTemporaryPasswordResult(null)}
+              >
+                Cerrar
+              </button>
+            </div>
           </div>
         </div>
       )}

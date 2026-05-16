@@ -24,6 +24,7 @@
     "cheerio": "^1.2.0",
     "csv-parse": "^6.1.0",
     "firebase": "^12.9.0",
+    "firebase-admin": "^13.10.0",
     "html2canvas": "^1.4.1",
     "lucide-react": "^0.562.0",
     "pdf-parse": "^1.1.4",

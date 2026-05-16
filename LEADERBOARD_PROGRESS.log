@@ -551,3 +551,23 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
   PRÓXIMO PASO: PASO 3.4 — Clasificaciones por ronda
 ==========================================================================
   Siguiente: Añadir filtros por ronda (D1, D2, Total) en el componente TournamentLeaderboard.jsx.
+
+[COMPLETADO] ADMIN — Contraseñas temporales seguras
+  Archivos modificados:
+    - api/set_temp_password.js
+    - src/components/admin/UsersAdminPanel.jsx
+    - package.json
+    - package-lock.json
+  Resumen:
+    - Añadido endpoint serverless protegido con Firebase Admin SDK para cambiar la contraseña de un usuario por UID.
+    - El endpoint verifica el ID token del solicitante y exige `role: admin` en `users/{uid}` antes de ejecutar `updateUser()`.
+    - El panel de usuarios ahora incluye accion "Temporal" que genera una contraseña fuerte, la asigna y la muestra una sola vez para entregarla a la usuaria.
+    - Se marca el perfil con `must_change_password: true` y metadatos de auditoria (`temporary_password_assigned_at/by`).
+    - Verificado `npm run build` y que no se reintroducen `alert()` ni `window.confirm()`.
+  Nota operativa:
+    - Vercel necesita configurar `FIREBASE_SERVICE_ACCOUNT_JSON` o `FIREBASE_SERVICE_ACCOUNT_BASE64` (o `FIREBASE_CLIENT_EMAIL` + `FIREBASE_PRIVATE_KEY`) del proyecto `golfscorings-e4338` para que el endpoint pueda ejecutar Firebase Admin.
+
+=========================================================================
+  PRÓXIMO PASO: OPERACIÓN — Configurar service account Firebase Admin en Vercel
+=========================================================================
+  Siguiente: Añadir el service account correcto de `golfscorings-e4338` a Vercel y probar la accion "Temporal" con un usuario interno.
