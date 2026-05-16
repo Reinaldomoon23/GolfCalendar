@@ -153,7 +153,7 @@ export default function CalendarView({
 
     // --- NEW: Editing Tournament Details State ---
     const [editingDetails, setEditingDetails] = useState({});
-    const [mobileMode, setMobileMode] = useState(() => {
+    const readSavedMobileMode = () => {
         try {
             const saved = localStorage.getItem('golf_tracker_mobile_mode');
             if (saved) {
@@ -164,7 +164,8 @@ export default function CalendarView({
             }
         } catch (e) { }
         return null; // { cardIdx, holeIdx }
-    });
+    };
+    const [mobileMode, setMobileMode] = useState(readSavedMobileMode);
     const [isEditing, setIsEditing] = useState(false);
 
     useEffect(() => {
@@ -174,11 +175,33 @@ export default function CalendarView({
                 holeIdx: mobileMode.holeIdx,
                 tournamentId: id
             }));
-        } else if (!mobileMode && id) {
-            // Only remove if they are explicitly on the tournament page and closed it
-            localStorage.removeItem('golf_tracker_mobile_mode');
         }
     }, [mobileMode, id]);
+
+    useEffect(() => {
+        const restoreMobileMode = () => {
+            if (document.visibilityState && document.visibilityState !== 'visible') return;
+            if (mobileMode || !id) return;
+            const savedMode = readSavedMobileMode();
+            if (savedMode) {
+                setIsEditingResults(true);
+                setMobileMode(savedMode);
+            }
+        };
+
+        window.addEventListener('pageshow', restoreMobileMode);
+        document.addEventListener('visibilitychange', restoreMobileMode);
+
+        return () => {
+            window.removeEventListener('pageshow', restoreMobileMode);
+            document.removeEventListener('visibilitychange', restoreMobileMode);
+        };
+    }, [id, mobileMode]);
+
+    const closeMobileMode = () => {
+        localStorage.removeItem('golf_tracker_mobile_mode');
+        setMobileMode(null);
+    };
 
     useEffect(() => {
         if (selectedTournament) {
@@ -2891,7 +2914,7 @@ export default function CalendarView({
                             if (lastStroke) {
                                 handleSaveResults();
                             }
-                            setMobileMode(null);
+                            closeMobileMode();
                         }}
                         onNext={() => {
                             const lastStroke = formData.scorecards?.[mobileMode.cardIdx]?.strokes?.[mobileMode.holeIdx];
@@ -2901,7 +2924,7 @@ export default function CalendarView({
                             const nextHole = mobileMode.holeIdx + 1;
                             if (nextHole < 18) setMobileMode(prev => ({ ...prev, holeIdx: nextHole }));
                             else {
-                                setMobileMode(null);
+                                closeMobileMode();
                             }
                         }}
                         onPrev={() => {
@@ -3496,11 +3519,11 @@ export default function CalendarView({
                         if (lastStroke) handleSaveResults();
                         setMobileMode(prev => ({ ...prev, holeIdx: hIdx }));
                     }}
-                    onClose={() => setMobileMode(null)}
+                    onClose={() => closeMobileMode()}
                     onNext={() => {
                         const nextHole = mobileMode.holeIdx + 1;
                         if (nextHole < 18) setMobileMode(prev => ({ ...prev, holeIdx: nextHole }));
-                        else setMobileMode(null);
+                        else closeMobileMode();
                     }}
                     onPrev={() => {
                         const prevHole = mobileMode.holeIdx - 1;

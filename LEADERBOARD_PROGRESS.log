@@ -216,6 +216,15 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
     - Se eliminaron escrituras duplicadas desde `App.jsx` y `UserDataContext.jsx`; el servicio de resultados queda como única puerta de sincronización.
     - Build verificado con `npm run build`.
 
+[COMPLETADO] HOTFIX — Persistencia reforzada del modo móvil de marcar
+  Archivos modificados:
+    - src/components/CalendarView.jsx
+  Resumen:
+    - El modo móvil de marcar ya no borra su estado de `localStorage` cuando React desmonta o remonta temporalmente el overlay.
+    - Al volver desde otra app en iPhone, `pageshow`/`visibilitychange` restaura automáticamente torneo, ronda y hoyo si había una sesión activa.
+    - El estado persistido solo se limpia al cerrar explícitamente el editor o terminar la ronda.
+    - Build verificado con `npm run build`.
+
 [COMPLETADO] HOTFIX — Fotos de perfil en clasificación del modo vivo
   Archivos modificados:
     - src/components/PublicScorecardView.jsx
