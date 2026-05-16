@@ -591,3 +591,16 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
     - Verificado `/api/set_temp_password`: ya no falla por falta de Firebase Admin y devuelve `401 Falta token de autenticacion` cuando se llama sin token, que es el comportamiento seguro esperado.
   Siguiente:
     - Probar desde el panel admin real el boton `Temporal` con una cuenta interna si hace falta validar flujo end-to-end con ID token de administrador.
+
+[COMPLETADO] OPERACIÓN ADMIN — Alta batch de Itziar y Paula Albadalejo
+  Datos creados/modificados:
+    - Firebase Auth: `itziar@golfteam.app` (`nfAPpZ2WXlMkNPDAKAiAvUTSG2K3`)
+    - Firebase Auth: `paulaalbadalejo@golfteam.app` (`tdD3UbBr0WeR0ydBxJMJPqGQlMy2`)
+    - Firestore: `users/{uid}`, `usernames/{username}`
+    - Firestore: `custom_tournaments` y `subscribed_tournaments` copiados desde Nicole excluyendo Camiral.
+    - Firestore: `tournaments/{id}/participants/{username}` creado como participante pendiente para cada torneo suscrito.
+  Resumen:
+    - Itziar creada con 10 torneos personalizados y 10 suscripciones copiadas desde Nicole.
+    - Paula Albadalejo creada con 10 torneos personalizados y 10 suscripciones copiadas desde Nicole.
+    - No se detectaron documentos de Nicole con `Camiral` en las colecciones copiadas, por lo que no hubo exclusiones aplicadas.
+    - Verificado login correcto de ambas cuentas y mapeo `usernames` correcto.
