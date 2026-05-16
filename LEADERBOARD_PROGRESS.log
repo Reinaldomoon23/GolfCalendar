@@ -225,6 +225,23 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
     - El estado persistido solo se limpia al cerrar explícitamente el editor o terminar la ronda.
     - Build verificado con `npm run build`.
 
+[COMPLETADO] HARDENING — Sustitución de alert/confirm en flujos principales
+  Archivos modificados:
+    - src/components/CalendarView.jsx
+    - src/components/TournamentsCentralView.jsx
+    - src/App.jsx
+    - src/contexts/ProfileContext.jsx
+  Resumen:
+    - Eliminados `alert()` y `window.confirm()` de calendario, central de torneos, perfil, foto, reset/cache y herramientas principales de usuario.
+    - Añadidos toasts no bloqueantes y modales de confirmación propios con estilos inline.
+    - "Ver quién" en la central ahora despliega la lista inline en lugar de usar un alert nativo.
+    - Build verificado con `npm run build`.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Sustituir alert/confirm en paneles secundarios/admin
+==========================================================================
+  Siguiente: Reemplazar los usos restantes en `ResultsView.jsx`, `TournamentsAdminPanel.jsx`, `UsersAdminPanel.jsx`, `SystemAdminPanel.jsx` y `SecurityAdminPanel.jsx`.
+
 [COMPLETADO] HOTFIX — Fotos de perfil en clasificación del modo vivo
   Archivos modificados:
     - src/components/PublicScorecardView.jsx

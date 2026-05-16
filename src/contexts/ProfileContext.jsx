@@ -34,6 +34,17 @@ export function ProfileProvider({ children }) {
   const [editFederationId, setEditFederationId] = useState('');
   const [editEmail, setEditEmail] = useState('');
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+  const [feedback, setFeedback] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState(null);
+
+  const notify = (message, type = 'info') => {
+    setFeedback({ message, type });
+    setTimeout(() => setFeedback(null), 3600);
+  };
+
+  const askConfirm = (dialog) => new Promise((resolve) => {
+    setConfirmDialog({ ...dialog, resolve });
+  });
 
   // ── Photo upload handler ─────────────────────────────────────────────────
   const handlePhotoUpload = async (e) => {
@@ -46,10 +57,10 @@ export function ProfileProvider({ children }) {
       setUser(updatedUser);
       writeSavedUser(updatedUser);
       setPhotoVersion(Date.now());
-      alert('¡Foto actualizada en Cloudflare R2!');
+      notify('Foto actualizada en Cloudflare R2.', 'success');
     } catch (err) {
       console.error('R2 Upload error:', err);
-      alert(`Error al subir a Cloudflare R2: ${err.message || 'Error desconocido'}`);
+      notify(`Error al subir a Cloudflare R2: ${err.message || 'Error desconocido'}`, 'error');
     } finally {
       setIsUploadingPhoto(false);
     }
@@ -79,10 +90,10 @@ export function ProfileProvider({ children }) {
       setUser(updatedUser);
       if (IS_MULTI) writeSavedUser(updatedUser);
       setIsProfileModalOpen(false);
-      alert('Perfil actualizado correctamente');
+      notify('Perfil actualizado correctamente.', 'success');
     } catch (err) {
       console.error(err);
-      alert('Error al actualizar perfil');
+      notify('Error al actualizar perfil.', 'error');
     } finally {
       setIsUpdatingProfile(false);
     }
@@ -98,22 +109,23 @@ export function ProfileProvider({ children }) {
       setPhotoVersion(Date.now());
       setEditFullName(updated.full_name);
       setEditFederationId(updated.federation_id || '');
-      alert('✅ Perfil restaurado correctamente desde la base de datos.');
+      notify('Perfil restaurado correctamente desde la base de datos.', 'success');
     } catch (e) {
       console.error(e);
-      alert(e.message || 'Error al recuperar datos.');
+      notify(e.message || 'Error al recuperar datos.', 'error');
     } finally {
       setIsUpdatingProfile(false);
     }
   };
 
-  const handleHardReset = () => {
-    if (
-      !window.confirm(
-        '¿Estás seguro? Esto cerrará la sesión y limpiará TODA la caché del móvil. Tendrás que volver a entrar.'
-      )
-    )
-      return;
+  const handleHardReset = async () => {
+    const shouldReset = await askConfirm({
+      title: 'Limpiar cache del movil',
+      message: 'Esto cerrara la sesion y limpiara toda la cache del movil. Tendras que volver a entrar.',
+      confirmText: 'Limpiar cache',
+      cancelText: 'Cancelar',
+    });
+    if (!shouldReset) return;
     localStorage.clear();
     if (navigator.serviceWorker) {
       navigator.serviceWorker.getRegistrations().then((regs) => {
@@ -199,7 +211,92 @@ export function ProfileProvider({ children }) {
     handleHardReset,
   };
 
-  return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>;
+  return (
+    <ProfileContext.Provider value={value}>
+      {children}
+      {feedback && (
+        <div
+          role="status"
+          style={{
+            position: 'fixed',
+            left: '50%',
+            bottom: '22px',
+            transform: 'translateX(-50%)',
+            zIndex: 10020,
+            maxWidth: 'min(520px, calc(100vw - 32px))',
+            padding: '12px 16px',
+            borderRadius: '999px',
+            color: feedback.type === 'error' ? '#7f1d1d' : '#064e3b',
+            background: feedback.type === 'error' ? '#fee2e2' : '#dcfce7',
+            border: feedback.type === 'error' ? '1px solid #fecaca' : '1px solid #bbf7d0',
+            boxShadow: '0 18px 40px rgba(15, 23, 42, 0.18)',
+            fontWeight: '800',
+            fontSize: '0.9rem',
+            textAlign: 'center'
+          }}
+        >
+          {feedback.message}
+        </div>
+      )}
+      {confirmDialog && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 10010,
+            background: 'rgba(15, 23, 42, 0.48)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px'
+          }}
+          onClick={() => {
+            confirmDialog.resolve(false);
+            setConfirmDialog(null);
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: 'min(440px, 100%)',
+              background: 'white',
+              borderRadius: '18px',
+              padding: '22px',
+              boxShadow: '0 24px 70px rgba(15, 23, 42, 0.32)',
+              border: '1px solid #e2e8f0'
+            }}
+          >
+            <h3 style={{ margin: '0 0 10px', color: '#0f172a', fontSize: '1.15rem' }}>{confirmDialog.title}</h3>
+            <p style={{ margin: '0 0 20px', color: '#64748b', lineHeight: 1.5, fontWeight: '600' }}>{confirmDialog.message}</p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  confirmDialog.resolve(false);
+                  setConfirmDialog(null);
+                }}
+                style={{ padding: '10px 16px', borderRadius: '999px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#334155', fontWeight: '900', cursor: 'pointer' }}
+              >
+                {confirmDialog.cancelText}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  confirmDialog.resolve(true);
+                  setConfirmDialog(null);
+                }}
+                style={{ padding: '10px 16px', borderRadius: '999px', border: 'none', background: '#dc2626', color: 'white', fontWeight: '900', cursor: 'pointer' }}
+              >
+                {confirmDialog.confirmText}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </ProfileContext.Provider>
+  );
 }
 
 export function useProfile() {

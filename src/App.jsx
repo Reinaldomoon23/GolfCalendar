@@ -186,6 +186,106 @@ function AppContent() {
   // ── Photo upload state ───────────────────────────────────────────────────
   const [photoVersion, setPhotoVersion] = useState(Date.now());
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [appNotification, setAppNotification] = useState(null);
+  const appNotificationTimer = useRef(null);
+  const [appConfirmDialog, setAppConfirmDialog] = useState(null);
+  const appConfirmResolver = useRef(null);
+
+  const notifyApp = (message, type = 'info') => {
+    if (appNotificationTimer.current) clearTimeout(appNotificationTimer.current);
+    setAppNotification({ message, type });
+    appNotificationTimer.current = setTimeout(() => setAppNotification(null), 3600);
+  };
+
+  const askAppConfirm = ({ title = 'Confirmar accion', message, confirmText = 'Aceptar', cancelText = 'Cancelar', danger = false }) => (
+    new Promise((resolve) => {
+      appConfirmResolver.current = resolve;
+      setAppConfirmDialog({ title, message, confirmText, cancelText, danger });
+    })
+  );
+
+  const resolveAppConfirm = (value) => {
+    if (appConfirmResolver.current) appConfirmResolver.current(value);
+    appConfirmResolver.current = null;
+    setAppConfirmDialog(null);
+  };
+
+  const renderAppFeedback = () => (
+    <>
+      {appNotification && (
+        <div
+          role="status"
+          style={{
+            position: 'fixed',
+            left: '50%',
+            bottom: '22px',
+            transform: 'translateX(-50%)',
+            zIndex: 10020,
+            maxWidth: 'min(520px, calc(100vw - 32px))',
+            padding: '12px 16px',
+            borderRadius: '999px',
+            color: appNotification.type === 'error' ? '#7f1d1d' : appNotification.type === 'warning' ? '#78350f' : '#064e3b',
+            background: appNotification.type === 'error' ? '#fee2e2' : appNotification.type === 'warning' ? '#fef3c7' : '#dcfce7',
+            border: appNotification.type === 'error' ? '1px solid #fecaca' : appNotification.type === 'warning' ? '1px solid #fde68a' : '1px solid #bbf7d0',
+            boxShadow: '0 18px 40px rgba(15, 23, 42, 0.18)',
+            fontWeight: '800',
+            fontSize: '0.9rem',
+            textAlign: 'center'
+          }}
+        >
+          {appNotification.message}
+        </div>
+      )}
+      {appConfirmDialog && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 10010,
+            background: 'rgba(15, 23, 42, 0.48)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px'
+          }}
+          onClick={() => resolveAppConfirm(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: 'min(440px, 100%)',
+              background: 'white',
+              borderRadius: '18px',
+              padding: '22px',
+              boxShadow: '0 24px 70px rgba(15, 23, 42, 0.32)',
+              border: '1px solid #e2e8f0'
+            }}
+          >
+            <h3 style={{ margin: '0 0 10px', color: '#0f172a', fontSize: '1.15rem' }}>{appConfirmDialog.title}</h3>
+            <p style={{ margin: '0 0 20px', color: '#64748b', lineHeight: 1.5, fontWeight: '600' }}>{appConfirmDialog.message}</p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => resolveAppConfirm(false)}
+                style={{ padding: '10px 16px', borderRadius: '999px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#334155', fontWeight: '900', cursor: 'pointer' }}
+              >
+                {appConfirmDialog.cancelText}
+              </button>
+              <button
+                type="button"
+                onClick={() => resolveAppConfirm(true)}
+                style={{ padding: '10px 16px', borderRadius: '999px', border: 'none', background: appConfirmDialog.danger ? '#dc2626' : 'var(--color-primary)', color: 'white', fontWeight: '900', cursor: 'pointer' }}
+              >
+                {appConfirmDialog.confirmText}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
 
   const handlePhotoUpload = async (e) => {
     const file = e.target.files[0];
@@ -197,10 +297,10 @@ function AppContent() {
       setUser(updatedUser);
       writeSavedUser(updatedUser);
       setPhotoVersion(Date.now());
-      alert('¡Foto actualizada en Cloudflare R2!');
+      notifyApp('Foto actualizada en Cloudflare R2.', 'success');
     } catch (err) {
       console.error('R2 Upload error:', err);
-      alert(`Error al subir a Cloudflare R2: ${err.message || 'Error desconocido'}`);
+      notifyApp(`Error al subir a Cloudflare R2: ${err.message || 'Error desconocido'}`, 'error');
     } finally {
       setIsUploadingPhoto(false);
     }
@@ -238,11 +338,11 @@ function AppContent() {
       setUser(updatedUser);
       if (IS_MULTI) writeSavedUser(updatedUser);
       setIsProfileModalOpen(false);
-      alert('Perfil actualizado correctamente');
+      notifyApp('Perfil actualizado correctamente.', 'success');
       setHandicap(editHandicap);
     } catch (err) {
       console.error(err);
-      alert('Aviso: Algunos datos pueden no haberse guardado en el servidor, pero se han asimilado localmente.');
+      notifyApp('Aviso: algunos datos pueden no haberse guardado en el servidor, pero se han asimilado localmente.', 'warning');
       
       // Optimistic local update so they aren't blocked from seeing the handicap
       const fallbackUser = {
@@ -271,17 +371,24 @@ function AppContent() {
       setPhotoVersion(Date.now());
       setEditFullName(updated.full_name);
       setEditFederationId(updated.federation_id || '');
-      alert('✅ Perfil restaurado correctamente desde la base de datos.');
+      notifyApp('Perfil restaurado correctamente desde la base de datos.', 'success');
     } catch (e) {
       console.error(e);
-      alert(e.message || 'Error al recuperar datos.');
+      notifyApp(e.message || 'Error al recuperar datos.', 'error');
     } finally {
       setIsUpdatingProfile(false);
     }
   };
 
-  const handleHardReset = () => {
-    if (!window.confirm('¿Estás seguro? Esto cerrará la sesión y limpiará TODA la caché del móvil. Tendrás que volver a entrar.')) return;
+  const handleHardReset = async () => {
+    const shouldReset = await askAppConfirm({
+      title: 'Limpiar cache del movil',
+      message: 'Esto cerrara la sesion y limpiara toda la cache del movil. Tendras que volver a entrar.',
+      confirmText: 'Limpiar cache',
+      cancelText: 'Cancelar',
+      danger: true,
+    });
+    if (!shouldReset) return;
     localStorage.clear();
     if (navigator.serviceWorker) {
       navigator.serviceWorker.getRegistrations().then((regs) => {
@@ -395,8 +502,14 @@ function AppContent() {
   useEffect(() => {
     window.nukeUserData = async () => {
       if (!user) return console.error('No user logged in');
-      const confirm = window.confirm(`ATENCIÓN: Esto borrará TODOS los torneos y resultados de ${user.full_name}. ¿Estás seguro?`);
-      if (!confirm) return;
+      const shouldNuke = await askAppConfirm({
+        title: 'Borrar todos los datos',
+        message: `Esto borrara TODOS los torneos y resultados de ${user.full_name}.`,
+        confirmText: 'Borrar todo',
+        cancelText: 'Cancelar',
+        danger: true,
+      });
+      if (!shouldNuke) return;
       console.log('🔥 Starting Nuke Process for', user.username);
       try {
         const { getDocs, writeBatch } = await import('firebase/firestore');
@@ -409,14 +522,14 @@ function AppContent() {
         customSnap.forEach(doc => { batch.delete(doc.ref); count++; });
         if (count > 0) {
           await batch.commit();
-          alert('Todos los datos han sido borrados.');
+          notifyApp('Todos los datos han sido borrados.', 'success');
           window.location.reload();
         } else {
-          alert('No había datos para borrar.');
+          notifyApp('No habia datos para borrar.', 'info');
         }
       } catch (e) {
         console.error('Nuke failed', e);
-        alert('Error al borrar datos: ' + e.message);
+        notifyApp('Error al borrar datos: ' + e.message, 'error');
       }
     };
   }, [user]);
@@ -642,6 +755,7 @@ function AppContent() {
         onRecoverProfile={handleRecoverProfile}
         onHardReset={handleHardReset}
       />
+      {renderAppFeedback()}
     </div>
   );
 }

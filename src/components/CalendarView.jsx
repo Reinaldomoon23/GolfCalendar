@@ -294,7 +294,7 @@ export default function CalendarView({
 
         if (onUpdateTournament) {
             onUpdateTournament(updated);
-            alert(hasConflict ? '¡Guardado! ⚠️ Se ha detectado un conflicto de fechas.' : '¡Configuración guardada!');
+            notify(hasConflict ? 'Guardado. Se ha detectado un conflicto de fechas.' : 'Configuracion guardada.', hasConflict ? 'warning' : 'success');
         }
     };
 
@@ -313,6 +313,39 @@ export default function CalendarView({
     // --- CONTEXT MENU STATE & LOGIC ---
     const [contextMenu, setContextMenu] = useState(null); // { x, y, tournament }
     const longPressTimer = useRef(null);
+    const [notification, setNotification] = useState(null);
+    const notificationTimer = useRef(null);
+    const [confirmDialog, setConfirmDialog] = useState(null);
+    const confirmResolver = useRef(null);
+
+    const notify = (message, type = 'info') => {
+        if (notificationTimer.current) clearTimeout(notificationTimer.current);
+        setNotification({ message, type });
+        notificationTimer.current = setTimeout(() => setNotification(null), 3600);
+    };
+
+    const askConfirm = ({ title = 'Confirmar acción', message, confirmText = 'Aceptar', cancelText = 'Cancelar', danger = false }) => (
+        new Promise((resolve) => {
+            confirmResolver.current = resolve;
+            setConfirmDialog({ title, message, confirmText, cancelText, danger });
+        })
+    );
+
+    const resolveConfirm = (value) => {
+        if (confirmResolver.current) confirmResolver.current(value);
+        confirmResolver.current = null;
+        setConfirmDialog(null);
+    };
+
+    const copyToClipboard = async (text, successMessage) => {
+        try {
+            await navigator.clipboard.writeText(text);
+            notify(successMessage, 'success');
+        } catch (err) {
+            console.warn('[share] Clipboard unavailable:', err);
+            notify('No se pudo copiar automaticamente. Usa el menu de compartir si esta disponible.', 'warning');
+        }
+    };
 
     const handleContextMenu = (e, tournament) => {
         if (!e) return;
@@ -366,9 +399,19 @@ export default function CalendarView({
         setContextMenu(null);
     };
 
-    const handleDeleteFromMenu = (t) => {
+    const handleDeleteFromMenu = async (t) => {
+        const shouldDelete = await askConfirm({
+            title: 'Borrar torneo',
+            message: `Se borrara el torneo "${t.name}". Esta accion no se puede deshacer.`,
+            confirmText: 'Borrar torneo',
+            cancelText: 'Cancelar',
+            danger: true,
+        });
+        if (!shouldDelete) return;
+
         if (onDeleteTournament) onDeleteTournament(t.id);
         setContextMenu(null);
+        notify('Torneo borrado.', 'success');
     };
 
 
@@ -482,7 +525,7 @@ export default function CalendarView({
 
     const handleAddTournament = async () => {
         if (!newTournament.name || !newTournament.startDate) {
-            alert("Nombre y fecha de inicio son obligatorios");
+            notify('Nombre y fecha de inicio son obligatorios.', 'warning');
             return;
         }
 
@@ -519,7 +562,14 @@ export default function CalendarView({
         });
 
         if (conflict) {
-            if (!window.confirm(`⚠️ ¡Conflicto de Fechas Detectado!\n\nEste nuevo torneo coincide con:\n"${conflict.name}"\n📅 ${conflict.dates}\n\n¿Estás seguro de que quieres crearlo de todas formas esto generará una coincidencia?`)) {
+            const shouldCreate = await askConfirm({
+                title: 'Conflicto de fechas',
+                message: `Este nuevo torneo coincide con "${conflict.name}" (${conflict.dates}). Si lo creas igualmente puede generar una coincidencia.`,
+                confirmText: 'Crear igualmente',
+                cancelText: 'Cancelar',
+                danger: true,
+            });
+            if (!shouldCreate) {
                 return;
             }
         }
@@ -544,8 +594,13 @@ export default function CalendarView({
         const existing = allAvailableTournaments.find(at => at.id === detId || (at.name === t.name && at.dates === t.dates));
 
         if (existing && !existing.custom) {
-            const confirmMsg = `Hemos detectado que el torneo "${existing.name}" ya existe en el catálogo. \n\n¿Deseas apuntarte al torneo oficial en lugar de crear uno nuevo? (Esto te conectará con el resto de jugadores)`;
-            if (window.confirm(confirmMsg)) {
+            const shouldJoinExisting = await askConfirm({
+                title: 'Torneo ya existente',
+                message: `Hemos detectado que "${existing.name}" ya existe en el catalogo. Puedes apuntarte al torneo oficial para conectarte con el resto de jugadoras.`,
+                confirmText: 'Apuntarme al oficial',
+                cancelText: 'Crear el mio',
+            });
+            if (shouldJoinExisting) {
                 // User chose to join existing one
                 const joinedTournament = {
                     ...existing,
@@ -556,11 +611,13 @@ export default function CalendarView({
                 };
                 if (onAddTournament) await onAddTournament(joinedTournament, false);
                 setShowAddForm(false);
+                notify('Te has apuntado al torneo oficial.', 'success');
                 return;
             }
         }
 
         if (onAddTournament) onAddTournament(t, newTournament.publishToCommunity);
+        notify('Torneo creado.', 'success');
 
         // UX Improvement: If adding a past tournament, switch filter to 'all' so it doesn't "disappear"
         const tDate = parseDate(dateString);
@@ -632,8 +689,15 @@ export default function CalendarView({
         });
     };
 
-    const handleResetCard = (roundIdx) => {
-        if (!window.confirm('¿Seguro que quieres borrar todos los datos de esta tarjeta?')) return;
+    const handleResetCard = async (roundIdx) => {
+        const shouldReset = await askConfirm({
+            title: 'Borrar tarjeta',
+            message: 'Se borraran todos los datos de esta tarjeta.',
+            confirmText: 'Borrar tarjeta',
+            cancelText: 'Cancelar',
+            danger: true,
+        });
+        if (!shouldReset) return;
 
         setIsEditingResults(true); // Track edit mode so autosave works
         setFormData(prev => {
@@ -735,7 +799,7 @@ export default function CalendarView({
             setSharingRound(null);
         } catch (err) {
             console.error('Error generating image:', err);
-            alert('Error al generar la imagen.');
+            notify('Error al generar la imagen.', 'error');
             setSharingRound(null);
         }
     };
@@ -826,26 +890,42 @@ export default function CalendarView({
         // Do NOT close/deselect. Stay in detail/edit view.
     };
 
-    const handleDeleteResult = () => {
+    const handleDeleteResult = async () => {
         if (!selectedTournament) return;
-        if (window.confirm('¿Seguro que quieres borrar estos resultados?')) {
-            if (onDeleteResult) {
-                onDeleteResult(selectedTournament.id);
-            } else {
-                const newResults = { ...results };
-                delete newResults[selectedTournament.id];
-                if (onUpdateResults) onUpdateResults(newResults);
-            }
-            // Stay in detail view
+        const shouldDelete = await askConfirm({
+            title: 'Borrar resultados',
+            message: 'Se borraran los resultados guardados de este torneo.',
+            confirmText: 'Borrar resultados',
+            cancelText: 'Cancelar',
+            danger: true,
+        });
+        if (!shouldDelete) return;
+
+        if (onDeleteResult) {
+            onDeleteResult(selectedTournament.id);
+        } else {
+            const newResults = { ...results };
+            delete newResults[selectedTournament.id];
+            if (onUpdateResults) onUpdateResults(newResults);
         }
+        notify('Resultados borrados.', 'success');
+        // Stay in detail view
     };
 
-    const handleDeleteTournamentClick = () => {
+    const handleDeleteTournamentClick = async () => {
         if (!selectedTournament) return;
-        if (window.confirm(`¿Seguro que quieres borrar el torneo "${selectedTournament.name}"? Esta acción no se puede deshacer.`)) {
-            if (onDeleteTournament) onDeleteTournament(selectedTournament.id);
-            navigate('/');
-        }
+        const shouldDelete = await askConfirm({
+            title: 'Borrar torneo',
+            message: `Se borrara el torneo "${selectedTournament.name}". Esta accion no se puede deshacer.`,
+            confirmText: 'Borrar torneo',
+            cancelText: 'Cancelar',
+            danger: true,
+        });
+        if (!shouldDelete) return;
+
+        if (onDeleteTournament) onDeleteTournament(selectedTournament.id);
+        notify('Torneo borrado.', 'success');
+        navigate('/');
     };
 
     // Helper function to parse dates, considering multi-day events
@@ -1056,7 +1136,7 @@ export default function CalendarView({
         // Copy to clipboard/memory
         localStorage.setItem('golf_tracker_copied_theme', JSON.stringify(theme));
         setContextMenu(null);
-        alert('🎨 Color copiado');
+        notify('Color copiado.', 'success');
     };
 
     const handlePasteColor = (targetT) => {
@@ -1167,6 +1247,104 @@ export default function CalendarView({
             document.body
         );
     };
+
+    const renderFeedbackUi = () => ReactDOM.createPortal(
+        <>
+            {notification && (
+                <div
+                    role="status"
+                    style={{
+                        position: 'fixed',
+                        left: '50%',
+                        bottom: '22px',
+                        transform: 'translateX(-50%)',
+                        zIndex: 10020,
+                        maxWidth: 'min(520px, calc(100vw - 32px))',
+                        padding: '12px 16px',
+                        borderRadius: '999px',
+                        color: notification.type === 'error' ? '#7f1d1d' : notification.type === 'warning' ? '#78350f' : '#064e3b',
+                        background: notification.type === 'error' ? '#fee2e2' : notification.type === 'warning' ? '#fef3c7' : '#dcfce7',
+                        border: notification.type === 'error' ? '1px solid #fecaca' : notification.type === 'warning' ? '1px solid #fde68a' : '1px solid #bbf7d0',
+                        boxShadow: '0 18px 40px rgba(15, 23, 42, 0.18)',
+                        fontWeight: '800',
+                        fontSize: '0.9rem',
+                        textAlign: 'center'
+                    }}
+                >
+                    {notification.message}
+                </div>
+            )}
+            {confirmDialog && (
+                <div
+                    role="dialog"
+                    aria-modal="true"
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        zIndex: 10010,
+                        background: 'rgba(15, 23, 42, 0.48)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '20px'
+                    }}
+                    onClick={() => resolveConfirm(false)}
+                >
+                    <div
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                            width: 'min(440px, 100%)',
+                            background: 'white',
+                            borderRadius: '18px',
+                            padding: '22px',
+                            boxShadow: '0 24px 70px rgba(15, 23, 42, 0.32)',
+                            border: '1px solid #e2e8f0'
+                        }}
+                    >
+                        <h3 style={{ margin: '0 0 10px', color: '#0f172a', fontSize: '1.15rem' }}>
+                            {confirmDialog.title}
+                        </h3>
+                        <p style={{ margin: '0 0 20px', color: '#64748b', lineHeight: 1.5, fontWeight: '600' }}>
+                            {confirmDialog.message}
+                        </p>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', flexWrap: 'wrap' }}>
+                            <button
+                                type="button"
+                                onClick={() => resolveConfirm(false)}
+                                style={{
+                                    padding: '10px 16px',
+                                    borderRadius: '999px',
+                                    border: '1px solid #cbd5e1',
+                                    background: '#f8fafc',
+                                    color: '#334155',
+                                    fontWeight: '900',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                {confirmDialog.cancelText}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => resolveConfirm(true)}
+                                style={{
+                                    padding: '10px 16px',
+                                    borderRadius: '999px',
+                                    border: 'none',
+                                    background: confirmDialog.danger ? '#dc2626' : 'var(--color-primary)',
+                                    color: 'white',
+                                    fontWeight: '900',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                {confirmDialog.confirmText}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>,
+        document.body
+    );
 
     // ...
 
@@ -2356,8 +2534,7 @@ export default function CalendarView({
                                                             console.log('Error sharing:', err);
                                                         }
                                                     } else {
-                                                        navigator.clipboard.writeText(fullMessage);
-                                                        alert(`Enlace generado y copiado al portapapeles:\n\n` + fullMessage);
+                                                        await copyToClipboard(fullMessage, 'Enlace en vivo copiado al portapapeles.');
                                                     }
                                                 }}
                                                 style={{
@@ -2399,8 +2576,7 @@ export default function CalendarView({
                                                                 console.log('Error sharing:', err);
                                                             }
                                                         } else {
-                                                            navigator.clipboard.writeText(fullMessage);
-                                                            alert('Enlace de MULTI-LIVE copiado al portapapeles:\n\n' + fullMessage);
+                                                            await copyToClipboard(fullMessage, 'Enlace multi-live copiado al portapapeles.');
                                                         }
                                                     }}
                                                     style={{
@@ -2939,6 +3115,7 @@ export default function CalendarView({
                     document.body
                 )}
                 {renderContextMenu()}
+                {renderFeedbackUi()}
             </div >
         );
     }
@@ -3535,6 +3712,7 @@ export default function CalendarView({
             )}
 
             {renderContextMenu()}
+            {renderFeedbackUi()}
 
             <CommunityExplorerModal
                 isOpen={isCommunityModalOpen}

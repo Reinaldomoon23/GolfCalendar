@@ -23,6 +23,7 @@ export default function TournamentsCentralView({ user, allTournaments = [], acti
   const [filterCategory, setFilterCategory] = useState('Todos');
   const [filterType, setFilterType] = useState('Todos');
   const [participantMeta, setParticipantMeta] = useState({});
+  const [expandedRosterId, setExpandedRosterId] = useState(null);
 
   // Emergency Rescue for ID 12 (Sub16) - If it's missing from the database, we INJECT it
   const finalTournaments = useMemo(() => {
@@ -210,6 +211,7 @@ export default function TournamentsCentralView({ user, allTournaments = [], acti
                 const isJoined = (subscribedIds || []).some(id => String(id) === String(t.id));
                 const isOfficial = !t.isShared && !t.custom;
                 const roster = participantMeta[String(t.id)] || { count: 0, names: [] };
+                const isRosterOpen = expandedRosterId === String(t.id);
                 
                 return (
                   <div key={t.id} className={`tournament-card card ${isOfficial ? 'official' : ''}`}>
@@ -234,13 +236,31 @@ export default function TournamentsCentralView({ user, allTournaments = [], acti
                             className="btn-inline-chip"
                             onClick={(e) => {
                               e.stopPropagation();
-                              alert(`Jugadoras inscritas en ${t.name}:\n${roster.names.join(', ') || 'Nadie todavía'}`);
+                              setExpandedRosterId(isRosterOpen ? null : String(t.id));
                             }}
                           >
-                            Ver quién
+                            {isRosterOpen ? 'Ocultar' : 'Ver quién'}
                           </button>
                         )}
                       </div>
+                      {user?.role === 'admin' && isRosterOpen && (
+                        <div
+                          className="t-roster-inline"
+                          onClick={(e) => e.stopPropagation()}
+                          style={{
+                            marginTop: '10px',
+                            padding: '10px 12px',
+                            borderRadius: '12px',
+                            background: '#f8fafc',
+                            border: '1px solid #e2e8f0',
+                            color: '#334155',
+                            fontWeight: 700,
+                            fontSize: '0.9rem'
+                          }}
+                        >
+                          {roster.names.length > 0 ? roster.names.join(', ') : 'Nadie todavía'}
+                        </div>
+                      )}
                     </div>
                     <div className="t-card-actions">
                       {isJoined ? (
