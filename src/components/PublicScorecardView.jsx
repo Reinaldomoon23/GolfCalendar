@@ -120,6 +120,8 @@ function summarizeResultForLeaderboard(profile, resultData, fallbackUsername) {
         vspar: total > 0 ? total - totalPar : null,
         rounds,
         hasScore: total > 0,
+        scorecards: resultData?.scorecards || null,
+        tournamentPar: resultData?.tournamentPar || resultData?.par || null,
         status: progress.status,
         currentRound: progress.currentRound,
         currentHole: progress.currentHole,
@@ -150,6 +152,8 @@ function mergeParticipants(primaryParticipants, discoveredParticipants) {
             vspar: participant.hasScore ? participant.vspar : (previous.vspar ?? participant.vspar ?? null),
             hasScore: Boolean(previous.hasScore || participant.hasScore),
             photo_url: previous.photo_url || participant.photo_url || null,
+            scorecards: participant.scorecards || previous.scorecards || null,
+            tournamentPar: participant.tournamentPar || previous.tournamentPar || null,
             status: participant.status || previous.status || 'pending',
             currentRound: participant.currentRound ?? previous.currentRound ?? null,
             currentHole: participant.currentHole ?? previous.currentHole ?? null,
@@ -193,6 +197,7 @@ export default function PublicScorecardView() {
     const [leaderboardLoading, setLeaderboardLoading] = useState(true);
     const [discoveredParticipants, setDiscoveredParticipants] = useState([]);
     const [leaderboardProfiles, setLeaderboardProfiles] = useState({});
+    const [expandedParticipant, setExpandedParticipant] = useState(null);
 
     const i18n = {
         es: {
@@ -860,6 +865,110 @@ export default function PublicScorecardView() {
                 photo_url: participant.photo_url || profile.photo_url || getKnownCloudflareProfilePhoto(enrichedParticipant),
             };
         });
+    const renderParticipantHoleScores = (participant) => {
+        const scorecards = participant?.scorecards || {};
+        const roundEntries = Object.keys(scorecards)
+            .sort((a, b) => Number(a) - Number(b))
+            .map((roundKey) => [roundKey, scorecards[roundKey]])
+            .filter(([, card]) => Array.isArray(card?.strokes) && card.strokes.some((stroke) => {
+                const value = String(stroke || '');
+                return value !== '' && value !== '-' && value !== '0';
+            }));
+
+        if (roundEntries.length === 0) {
+            return (
+                <div style={{ padding: '18px 16px', color: '#94a3b8', fontWeight: '700' }}>
+                    Todavia no hay puntuacion por hoyos para esta jugadora.
+                </div>
+            );
+        }
+
+        return (
+            <div style={{ padding: '14px', background: '#111827', borderTop: '1px solid #334155', borderBottom: '1px solid #334155' }}>
+                {roundEntries.map(([roundKey, card]) => {
+                    let totalStrokes = 0;
+                    let totalPar = 0;
+                    let holesPlayed = 0;
+
+                    for (let i = 0; i < 18; i += 1) {
+                        const stroke = parseInt(card.strokes?.[i], 10);
+                        if (!Number.isFinite(stroke) || stroke <= 0) continue;
+                        const par = parseInt(card.pars?.[i], 10);
+                        totalStrokes += stroke;
+                        totalPar += Number.isFinite(par) && par > 0 ? par : 4;
+                        holesPlayed += 1;
+                    }
+
+                    const diff = holesPlayed > 0 ? totalStrokes - totalPar : null;
+                    const diffLabel = diff === null ? '-' : diff > 0 ? `+${diff}` : diff === 0 ? 'E' : String(diff);
+                    const diffColor = diff === null ? '#94a3b8' : diff <= 0 ? '#10b981' : '#ef4444';
+
+                    return (
+                        <div key={roundKey} style={{ marginBottom: '12px' }}>
+                            <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                color: '#e2e8f0',
+                                fontWeight: '900',
+                                marginBottom: '8px',
+                                letterSpacing: '0.04em',
+                                textTransform: 'uppercase',
+                                fontSize: '0.72rem'
+                            }}>
+                                <span>Ronda {Number(roundKey) + 1} · {holesPlayed} hoyo{holesPlayed === 1 ? '' : 's'}</span>
+                                <span>{totalStrokes || '-'} <span style={{ color: diffColor }}>({diffLabel})</span></span>
+                            </div>
+
+                            <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                                <div style={{ minWidth: '720px', border: '1px solid #334155', borderRadius: '8px', overflow: 'hidden' }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '64px repeat(18, 1fr)', background: '#0f172a', color: '#94a3b8', fontSize: '0.68rem', fontWeight: '900' }}>
+                                        <div style={{ padding: '8px', borderRight: '1px solid #334155' }}>HOYO</div>
+                                        {Array.from({ length: 18 }, (_, i) => (
+                                            <div key={i} style={{ padding: '8px 4px', textAlign: 'center', borderRight: i < 17 ? '1px solid #334155' : 'none' }}>{i + 1}</div>
+                                        ))}
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '64px repeat(18, 1fr)', background: '#1e293b', color: '#cbd5e1', fontSize: '0.72rem' }}>
+                                        <div style={{ padding: '8px', borderTop: '1px solid #334155', borderRight: '1px solid #334155', fontWeight: '900' }}>PAR</div>
+                                        {Array.from({ length: 18 }, (_, i) => (
+                                            <div key={i} style={{ padding: '8px 4px', textAlign: 'center', borderTop: '1px solid #334155', borderRight: i < 17 ? '1px solid #334155' : 'none' }}>{card.pars?.[i] || '-'}</div>
+                                        ))}
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '64px repeat(18, 1fr)', background: '#24324a', color: 'white', fontSize: '0.82rem', fontWeight: '900' }}>
+                                        <div style={{ padding: '8px', borderTop: '1px solid #1e293b', borderRight: '1px solid #1e293b' }}>GOLPES</div>
+                                        {Array.from({ length: 18 }, (_, i) => {
+                                            const stroke = card.strokes?.[i] || '';
+                                            const par = parseInt(card.pars?.[i], 10) || 0;
+                                            const scoreNum = parseInt(stroke, 10);
+                                            const isValidScore = stroke !== '' && stroke !== '-' && Number.isFinite(scoreNum) && scoreNum > 0;
+                                            const bgColor = isValidScore ? getScoreColor(scoreNum, par) : 'transparent';
+
+                                            return (
+                                                <div key={i} style={{ padding: '6px 2px', textAlign: 'center', borderTop: '1px solid #1e293b', borderRight: i < 17 ? '1px solid #1e293b' : 'none', display: 'flex', justifyContent: 'center' }}>
+                                                    <span style={{
+                                                        width: '24px',
+                                                        height: '24px',
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        borderRadius: bgColor !== 'transparent' && scoreNum - par <= 0 ? '50%' : '4px',
+                                                        background: bgColor,
+                                                        color: isValidScore ? 'white' : '#64748b'
+                                                    }}>
+                                                        {stroke === '-' ? '' : stroke}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        );
+    };
     // Once tournamentInfo is available, render immediately.
     // This ensures users always see the scorecard structure right away.
     if (!tournamentInfo && !error) {
@@ -1634,11 +1743,7 @@ export default function PublicScorecardView() {
                                     ? '#94a3b8'
                                     : relative <= 0 ? '#10b981' : '#ef4444';
                                 const isCurrent = participant.username === username;
-                                const detailParams = new URLSearchParams();
-                                if (queryRIdx !== null) detailParams.set('r', queryRIdx);
-                                detailParams.set('view', 'scorecard');
-                                const detailSearch = `?${detailParams.toString()}`;
-                                const detailUrl = `/live/${participant.username}/${eventId || canonicalEventId}${detailSearch}`;
+                                const isExpanded = expandedParticipant === participant.username;
                                 const progressLabel = participant.progressLabel || (participant.hasScore ? 'Finalizada' : 'Pendiente');
                                 const progressColor = participant.status === 'in_progress'
                                     ? '#60a5fa'
@@ -1648,89 +1753,100 @@ export default function PublicScorecardView() {
                                     : participant.roundsPlayed > 0 ? `${participant.roundsPlayed} vuelta${participant.roundsPlayed === 1 ? '' : 's'}` : 'Pendiente';
 
                                 return (
-                                    <Link
-                                        key={participant.id || participant.username}
-                                        to={detailUrl}
-                                        style={{
-                                            display: 'grid',
-                                            gridTemplateColumns: '44px minmax(0, 1fr) 86px 72px 72px',
-                                            alignItems: 'center',
-                                            borderBottom: '1px solid #334155',
-                                            background: isCurrent ? '#1e3a8a44' : 'transparent',
-                                            color: 'inherit',
-                                            textDecoration: 'none',
-                                            cursor: 'pointer'
-                                        }}
-                                        title={`Ver puntuacion por hoyos de ${participant.fullName || participant.username}`}
-                                    >
-                                        <div style={{
-                                            padding: '14px 10px',
-                                            fontWeight: '900',
-                                            color: idx === 0 ? '#eab308' : (idx === 1 ? '#cbd5e1' : (idx === 2 ? '#f97316' : '#64748b'))
-                                        }}>
-                                            {idx + 1}
-                                        </div>
-                                        <div style={{ padding: '12px 10px', minWidth: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                            {participant.photo_url ? (
-                                                <ProfileImage
-                                                    photoPath={participant.photo_url}
-                                                    displayName={participant.fullName || participant.username}
-                                                    alt={participant.fullName || participant.username}
-                                                    style={{
-                                                        width: '34px',
-                                                        height: '34px',
-                                                        borderRadius: '50%',
-                                                        objectFit: 'cover',
-                                                        border: isCurrent ? '2px solid #3b82f6' : '1px solid #334155',
-                                                        flexShrink: 0
-                                                    }}
-                                                />
-                                            ) : (
-                                                <div
-                                                    aria-hidden="true"
-                                                    style={{
-                                                        width: '34px',
-                                                        height: '34px',
-                                                        borderRadius: '50%',
-                                                        border: '1px solid #334155',
-                                                        background: '#0f172a',
-                                                        flexShrink: 0
-                                                    }}
-                                                />
-                                            )}
-                                            <div style={{ minWidth: 0 }}>
-                                                <div style={{
-                                                    fontWeight: '800',
-                                                    color: isCurrent ? '#bfdbfe' : 'white',
-                                                    whiteSpace: 'nowrap',
-                                                    overflow: 'hidden',
-                                                    textOverflow: 'ellipsis'
-                                                }}>
-                                                    {participant.fullName || participant.username}
-                                                </div>
-                                                <div style={{ fontSize: '0.65rem', color: '#94a3b8', textTransform: 'uppercase' }}>
-                                                    {secondaryLabel}
+                                    <React.Fragment key={participant.id || participant.username}>
+                                        <div
+                                            role="button"
+                                            tabIndex={0}
+                                            onClick={() => setExpandedParticipant(isExpanded ? null : participant.username)}
+                                            onKeyDown={(event) => {
+                                                if (event.key === 'Enter' || event.key === ' ') {
+                                                    event.preventDefault();
+                                                    setExpandedParticipant(isExpanded ? null : participant.username);
+                                                }
+                                            }}
+                                            style={{
+                                                display: 'grid',
+                                                gridTemplateColumns: '44px minmax(0, 1fr) 86px 72px 72px',
+                                                alignItems: 'center',
+                                                borderBottom: isExpanded ? '1px solid #1d4ed8' : '1px solid #334155',
+                                                background: isExpanded ? '#1d4ed855' : (isCurrent ? '#1e3a8a44' : 'transparent'),
+                                                color: 'inherit',
+                                                textDecoration: 'none',
+                                                cursor: 'pointer',
+                                                outline: 'none'
+                                            }}
+                                            title={`Ver puntuacion por hoyos de ${participant.fullName || participant.username}`}
+                                        >
+                                            <div style={{
+                                                padding: '14px 10px',
+                                                fontWeight: '900',
+                                                color: idx === 0 ? '#eab308' : (idx === 1 ? '#cbd5e1' : (idx === 2 ? '#f97316' : '#64748b'))
+                                            }}>
+                                                {idx + 1}
+                                            </div>
+                                            <div style={{ padding: '12px 10px', minWidth: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                {participant.photo_url ? (
+                                                    <ProfileImage
+                                                        photoPath={participant.photo_url}
+                                                        displayName={participant.fullName || participant.username}
+                                                        alt={participant.fullName || participant.username}
+                                                        style={{
+                                                            width: '34px',
+                                                            height: '34px',
+                                                            borderRadius: '50%',
+                                                            objectFit: 'cover',
+                                                            border: isExpanded || isCurrent ? '2px solid #3b82f6' : '1px solid #334155',
+                                                            flexShrink: 0
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <div
+                                                        aria-hidden="true"
+                                                        style={{
+                                                            width: '34px',
+                                                            height: '34px',
+                                                            borderRadius: '50%',
+                                                            border: isExpanded ? '2px solid #3b82f6' : '1px solid #334155',
+                                                            background: '#0f172a',
+                                                            flexShrink: 0
+                                                        }}
+                                                    />
+                                                )}
+                                                <div style={{ minWidth: 0 }}>
+                                                    <div style={{
+                                                        fontWeight: '800',
+                                                        color: isCurrent || isExpanded ? '#bfdbfe' : 'white',
+                                                        whiteSpace: 'nowrap',
+                                                        overflow: 'hidden',
+                                                        textOverflow: 'ellipsis'
+                                                    }}>
+                                                        {participant.fullName || participant.username}
+                                                    </div>
+                                                    <div style={{ fontSize: '0.65rem', color: '#94a3b8', textTransform: 'uppercase' }}>
+                                                        {isExpanded ? 'Ocultar hoyos' : secondaryLabel}
+                                                    </div>
                                                 </div>
                                             </div>
+                                            <div style={{
+                                                padding: '14px 8px',
+                                                textAlign: 'center',
+                                                fontWeight: '900',
+                                                color: progressColor,
+                                                fontSize: '0.72rem',
+                                                textTransform: 'uppercase',
+                                                letterSpacing: '0.03em'
+                                            }}>
+                                                {progressLabel}
+                                            </div>
+                                            <div style={{ padding: '14px 10px', textAlign: 'center', fontWeight: '900', color: '#e2e8f0' }}>
+                                                {participant.total || '-'}
+                                            </div>
+                                            <div style={{ padding: '14px 10px', textAlign: 'right', fontWeight: '900', color: relativeColor }}>
+                                                {relativeStr}
+                                            </div>
                                         </div>
-                                        <div style={{
-                                            padding: '14px 8px',
-                                            textAlign: 'center',
-                                            fontWeight: '900',
-                                            color: progressColor,
-                                            fontSize: '0.72rem',
-                                            textTransform: 'uppercase',
-                                            letterSpacing: '0.03em'
-                                        }}>
-                                            {progressLabel}
-                                        </div>
-                                        <div style={{ padding: '14px 10px', textAlign: 'center', fontWeight: '900', color: '#e2e8f0' }}>
-                                            {participant.total || '-'}
-                                        </div>
-                                        <div style={{ padding: '14px 10px', textAlign: 'right', fontWeight: '900', color: relativeColor }}>
-                                            {relativeStr}
-                                        </div>
-                                    </Link>
+                                        {isExpanded && renderParticipantHoleScores(participant)}
+                                    </React.Fragment>
                                 );
                             })
                         )}

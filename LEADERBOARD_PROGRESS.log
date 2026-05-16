@@ -194,6 +194,15 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
     - Se conserva el mismo torneo y el parámetro de ronda `r` cuando existe.
     - Verificado en preview: click en Nicole desde Catalunya Infantil navega a `/live/nicole/{Catalunya Infantil ID}`.
 
+[COMPLETADO] UX — Leaderboard desplegable con hoyos inline
+  Archivos modificados:
+    - src/components/PublicScorecardView.jsx
+  Resumen:
+    - Las filas de la clasificación pública ahora expanden/contraen el detalle por hoyos debajo de la jugadora en lugar de navegar a otra ruta.
+    - El detalle muestra por ronda los hoyos 1-18, par y golpes, con colores de resultado.
+    - Se conserva soporte de teclado Enter/Espacio y estado visual "Ocultar hoyos".
+    - Verificado en preview: click en Nicole despliega la Ronda 1 con sus golpes por hoyo debajo de su fila.
+
 [COMPLETADO] HOTFIX — Fotos de perfil en clasificación del modo vivo
   Archivos modificados:
     - src/components/PublicScorecardView.jsx
