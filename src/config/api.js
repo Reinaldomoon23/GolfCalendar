@@ -5,6 +5,7 @@
 export const API_ENDPOINTS = {
   // Handicap service (Vercel Serverless proxy) - Absolute URL ensures it works regardless of PWA hosting domain
   handicap: "https://golf-calendar-v3.vercel.app/api/get_handicap",
+  setTempPassword: "https://golf-calendar-v3.vercel.app/api/set_temp_password",
 
   // Legacy PHP endpoints (fallback)
   updateUser: "/api/update_user.php",

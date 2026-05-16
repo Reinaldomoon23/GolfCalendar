@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { db, auth, firebaseConfig } from '../../firebase';
 import { collection, getDocs, doc, getDoc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { dedupeAdminUsers } from '../../utils/adminUserRecords';
+import { API_ENDPOINTS } from '../../config/api';
 import {
   createUserWithEmailAndPassword,
   deleteUser,
@@ -364,7 +365,7 @@ function UsersAdminPanel() {
 
     try {
       const token = await auth.currentUser.getIdToken();
-      const response = await fetch('/api/set_temp_password', {
+      const response = await fetch(API_ENDPOINTS.setTempPassword, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
