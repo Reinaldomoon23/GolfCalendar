@@ -11,6 +11,55 @@ import {
   getUserSubcollectionRef,
   getUserSubdocRef,
 } from '../utils/userProfiles';
+import {
+  isSharedTournamentId,
+  resetParticipantScore,
+  updateParticipantScore,
+} from './leaderboard.service';
+import { resolveCanonicalTournamentId } from '../utils/tournamentIds';
+
+function getLeaderboardSyncId(tournamentId) {
+  const canonicalId = resolveCanonicalTournamentId(tournamentId);
+  if (!canonicalId) return null;
+
+  const idChanged = String(canonicalId) !== String(tournamentId);
+  return idChanged || isSharedTournamentId(canonicalId) ? String(canonicalId) : null;
+}
+
+const syncedParticipantScores = new Map();
+
+function getResultSyncSignature(resultData) {
+  return JSON.stringify({
+    rounds: resultData?.rounds || [],
+    scorecards: resultData?.scorecards || {},
+    tournamentName: resultData?.tournamentName || null,
+    tournamentCourse: resultData?.tournamentCourse || null,
+    tournamentDates: resultData?.tournamentDates || null,
+    tournamentPar: resultData?.tournamentPar || resultData?.par || null,
+  });
+}
+
+async function syncParticipantScoreForResult(user, tournamentId, resultData) {
+  const leaderboardId = getLeaderboardSyncId(tournamentId);
+  if (!leaderboardId || !resultData) return;
+
+  const syncKey = `${user.username || 'user'}::${leaderboardId}`;
+  const signature = getResultSyncSignature(resultData);
+  if (syncedParticipantScores.get(syncKey) === signature) return;
+
+  await updateParticipantScore(user, leaderboardId, resultData);
+  syncedParticipantScores.set(syncKey, signature);
+}
+
+function backfillParticipantScores(user, resultsMap) {
+  if (!user?.username || !resultsMap) return;
+
+  Object.entries(resultsMap).forEach(([tournamentId, resultData]) => {
+    syncParticipantScoreForResult(user, tournamentId, resultData).catch((err) => {
+      console.warn('[results] Could not backfill participant score:', err);
+    });
+  });
+}
 
 // ─── Subscriptions ────────────────────────────────────────────────────────────
 
@@ -32,6 +81,7 @@ export function subscribeToResults(user, onUpdate) {
     });
     console.log('[results] Synced from Firebase:', Object.keys(newResults).length);
     onUpdate(newResults);
+    backfillParticipantScores(user, newResults);
   });
 
   return unsubscribe;
@@ -50,6 +100,10 @@ export async function saveResult(user, tournamentId, resultData) {
   if (!user || !tournamentId) throw new Error('User and tournamentId are required');
   const ref = getUserSubdocRef(db, user, 'results', String(tournamentId));
   await setDoc(ref, resultData);
+
+  syncParticipantScoreForResult(user, tournamentId, resultData).catch((err) => {
+    console.warn('[results] Could not backfill participant score:', err);
+  });
 }
 
 /**
@@ -76,6 +130,13 @@ export async function deleteResult(user, tournamentId) {
   if (!user || !tournamentId) throw new Error('User and tournamentId are required');
   const ref = getUserSubdocRef(db, user, 'results', String(tournamentId));
   await deleteDoc(ref);
+
+  const leaderboardId = getLeaderboardSyncId(tournamentId);
+  if (leaderboardId) {
+    resetParticipantScore(user, leaderboardId).catch((err) => {
+      console.warn('[results] Could not reset participant score:', err);
+    });
+  }
 }
 
 /**

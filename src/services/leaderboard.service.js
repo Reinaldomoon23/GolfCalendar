@@ -248,6 +248,43 @@ export async function updateParticipantScore(user, tournamentId, resultData) {
 }
 
 /**
+ * Clears a participant's public score while keeping their roster entry.
+ * Used when a private result is deleted but the player remains joined.
+ *
+ * @param {object} user - Current user profile
+ * @param {string} tournamentId - The centralized tournament ID
+ * @returns {Promise<void>}
+ */
+export async function resetParticipantScore(user, tournamentId) {
+  if (!user?.username || !tournamentId) return;
+
+  const participantRef = doc(
+    db,
+    'tournaments',
+    String(tournamentId),
+    'participants',
+    user.username
+  );
+
+  await setDoc(participantRef, {
+    username: user.username,
+    fullName: user.full_name || user.username,
+    photo_url: user.photo_url || null,
+    total: null,
+    roundsPlayed: 0,
+    vspar: null,
+    rounds: [],
+    hasScore: false,
+    status: 'pending',
+    currentRound: null,
+    currentHole: null,
+    holesPlayed: 0,
+    progressLabel: 'Pendiente',
+    updatedAt: serverTimestamp(),
+  }, { merge: true });
+}
+
+/**
  * Subscribes to real-time leaderboard updates for a tournament.
  * Returns participants sorted by total strokes (ascending), with non-scorers at the bottom.
  *

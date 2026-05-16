@@ -20,10 +20,6 @@ import {
   deleteResult,
   savePreferences
 } from '../services/results.service';
-import {
-  updateParticipantScore,
-  isSharedTournamentId,
-} from '../services/leaderboard.service';
 
 const UserDataContext = createContext(null);
 
@@ -99,12 +95,6 @@ export function UserDataProvider({ children }) {
     if (!user) return;
     setResults((prev) => ({ ...prev, [id]: data }));
     await saveResult(user, id, data);
-    // Silently sync to centralized leaderboard for shared tournaments
-    if (isSharedTournamentId(id)) {
-      updateParticipantScore(user, id, data).catch((err) =>
-        console.warn('[leaderboard] Could not update participant score:', err)
-      );
-    }
   };
 
   const handleDeleteResult = async (id) => {
