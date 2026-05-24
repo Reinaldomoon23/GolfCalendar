@@ -44,6 +44,40 @@ const getRoundDates = (dateStr) => {
     return dates;
 };
 
+const LEGACY_SANT_CUGAT_PARS = [
+    4, 3, 5, 4, 4, 3, 5, 4, 4,
+    4, 4, 4, 4, 4, 3, 4, 3, 4
+];
+
+const normalizeCourseName = (value = '') => value.toLowerCase().trim();
+
+const findCourseData = (courseName) => {
+    const normalizedCourse = normalizeCourseName(courseName);
+    if (!normalizedCourse) return null;
+
+    return spanishCourses.find(c => normalizeCourseName(c.name) === normalizedCourse) ||
+        spanishCourses.find(c => {
+            const normalizedCatalogName = normalizeCourseName(c.name);
+            return normalizedCatalogName.includes(normalizedCourse) || normalizedCourse.includes(normalizedCatalogName);
+        });
+};
+
+const normalizeParArray = (pars = []) => pars.map(p => String(p || '').trim());
+
+const samePars = (a = [], b = []) => {
+    const normalizedA = normalizeParArray(a);
+    const normalizedB = normalizeParArray(b);
+    return normalizedA.length === normalizedB.length && normalizedA.every((value, index) => value === normalizedB[index]);
+};
+
+const shouldReplaceSavedPars = (t, savedPars, defaultPars) => {
+    const courseName = normalizeCourseName(t?.course);
+    if (!Array.isArray(savedPars) || !Array.isArray(defaultPars) || defaultPars.length !== 18) return false;
+    if (samePars(savedPars, defaultPars)) return false;
+
+    return courseName.includes('sant cugat') && samePars(savedPars, LEGACY_SANT_CUGAT_PARS);
+};
+
 
 
 const getTournamentPar = (t, result, spanishCourses) => {
@@ -54,11 +88,7 @@ const getTournamentPar = (t, result, spanishCourses) => {
     // 3. Perform a course lookup if possible
     if (t?.course && spanishCourses) {
         const courseName = t.course.toLowerCase();
-        const courseData = spanishCourses.find(c => 
-            c.name.toLowerCase() === courseName ||
-            c.name.toLowerCase().includes(courseName) ||
-            courseName.includes(c.name.toLowerCase())
-        );
+        const courseData = findCourseData(t.course);
         if (courseData && courseData.pars) {
             const sum = courseData.pars.reduce((a, b) => a + (parseInt(b) || 0), 0);
             if (sum > 0) {
@@ -213,8 +243,7 @@ export default function CalendarView({
             // Calculate default par from course data if not set
             let calculatedPar = 72;
             if (selectedTournament.course) {
-                const courseData = spanishCourses.find(c => c.name === selectedTournament.course) ||
-                    spanishCourses.find(c => c.name.toLowerCase().includes(selectedTournament.course.toLowerCase()) || selectedTournament.course.toLowerCase().includes(c.name.toLowerCase()));
+                const courseData = findCourseData(selectedTournament.course);
 
                 if (courseData && courseData.pars) {
                     const sum = courseData.pars.reduce((a, b) => a + (parseInt(b) || 0), 0);
@@ -255,7 +284,7 @@ export default function CalendarView({
 
         // Auto-calculate par if course changes
         if (field === 'course') {
-            const courseData = spanishCourses.find(c => c.name === value);
+            const courseData = findCourseData(value);
             if (courseData && courseData.pars) {
                 const sum = courseData.pars.reduce((a, b) => a + (parseInt(b) || 0), 0);
                 if (sum > 0) updates.par = sum;
@@ -435,8 +464,7 @@ export default function CalendarView({
             const calculatedPars = roundDates.map(() => Array(18).fill(''));
 
             // Lookup course pars (Loose matching)
-            const courseData = spanishCourses.find(c => c.name === t.course) ||
-                spanishCourses.find(c => c.name.toLowerCase().includes(t.course.toLowerCase()) || t.course.toLowerCase().includes(c.name.toLowerCase()));
+            const courseData = findCourseData(t.course);
             const defaultPars = courseData?.pars || Array(18).fill('');
 
             // Helper to get initial scorecard for a round
@@ -450,9 +478,11 @@ export default function CalendarView({
                     const card = savedCard;
                     const currentPars = card.pars || Array(18).fill('');
 
-                    // If all pars are empty (or we want to force fill missing ones), merge defaultPars
-                    // Safe-fill: only fill empty slots, but for Salamanca Forum Golf hole 15, we force update if it's 5
+                    const replaceSavedPars = shouldReplaceSavedPars(t, currentPars, defaultPars);
+
+                    // Safe-fill: fill empty slots. Known stale cards are refreshed without touching strokes/putts.
                     const mergedPars = currentPars.map((p, i) => {
+                        if (replaceSavedPars) return defaultPars[i] || '';
                         if (t.course?.toLowerCase().includes('salamanca forum') && i === 14 && p === 5) return 4;
                         return p || defaultPars[i] || '';
                     });
@@ -706,8 +736,7 @@ export default function CalendarView({
             newRounds[roundIdx] = ''; // Reset total strokes
 
             // Re-derive defaults to reset nicely
-            const courseData = spanishCourses.find(c => c.name === selectedTournament.course) ||
-                spanishCourses.find(c => c.name.toLowerCase().includes(selectedTournament.course.toLowerCase()) || selectedTournament.course.toLowerCase().includes(c.name.toLowerCase()));
+            const courseData = findCourseData(selectedTournament.course);
             const defaultPars = courseData?.pars || Array(18).fill('');
 
             const newCardInfo = {

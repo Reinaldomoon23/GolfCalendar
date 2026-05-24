@@ -675,6 +675,15 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
     - Verificado que la tarjeta suma par 70 y 4522 metros.
     - Validado con `node check_courses.cjs` y `npm run build`.
 
+[COMPLETADO] HOTFIX — Refresco de tarjetas antiguas de Sant Cugat
+  Archivos modificados:
+    - src/components/CalendarView.jsx
+  Resumen:
+    - Los resultados ya inicializados con la tarjeta antigua de Sant Cugat ahora se refrescan a la tarjeta roja vigente.
+    - La corrección sustituye solo los pares guardados cuando coinciden con la firma antigua conocida; conserva golpes, putts y GIR.
+    - Unificado el lookup flexible de campos para par del torneo, edición, inicialización y reset de tarjeta.
+    - Validado con `node check_courses.cjs` y `npm run build`.
+
 ==========================================================================
   PRÓXIMO PASO: HARDENING — Revisión de ordenación acumulada multi-ronda
 ==========================================================================
