@@ -683,6 +683,8 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
     - La corrección sustituye solo los pares guardados cuando coinciden con la firma antigua conocida; conserva golpes, putts y GIR.
     - Unificado el lookup flexible de campos para par del torneo, edición, inicialización y reset de tarjeta.
     - Validado con `node check_courses.cjs` y `npm run build`.
+    - Despliegue completo ejecutado con `npm run deploy:all`.
+    - Verificado en producción que `/GolfTeam/assets/CalendarView-D_VrXvTR.js` contiene la tarjeta correcta.
 
 ==========================================================================
   PRÓXIMO PASO: HARDENING — Revisión de ordenación acumulada multi-ronda
