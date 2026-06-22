@@ -781,3 +781,16 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
   PRÓXIMO PASO: HARDENING — Revisión de ordenación acumulada multi-ronda
 ==========================================================================
   Siguiente: Validar con datos reales de torneo de varios días que el acumulado mantiene la clasificación correcta cuando varias jugadoras empiezan la ronda activa en momentos distintos.
+
+[COMPLETADO] HOTFIX UX — Evitar `RNAN` en leaderboard público
+  Archivos modificados:
+    - src/components/PublicScorecardView.jsx
+  Resumen:
+    - Corregida la etiqueta secundaria de participantes sin resultado cuando la ronda activa no es numérica.
+    - Si no hay ronda válida, ahora muestra `Sin resultados` en lugar de `Sin resultados RNaN`.
+    - Build verificado con `npm run build`.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Revisión de ordenación acumulada multi-ronda
+==========================================================================
+  Siguiente: Validar con datos reales de torneo de varios días que el acumulado mantiene la clasificación correcta cuando varias jugadoras empiezan la ronda activa en momentos distintos.

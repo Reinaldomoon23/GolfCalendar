@@ -884,7 +884,7 @@ export default function PublicScorecardView() {
         return String(Math.floor((today - start) / (24 * 60 * 60 * 1000)));
     };
     const todayRoundIndex = getTodayRoundIndex(activeResult?.tournamentDates || tournament?.dates);
-    const activeLeaderboardRound = queryRIdx !== null
+    const rawActiveLeaderboardRound = queryRIdx !== null
         ? String(queryRIdx)
         : activeRoundTab !== null
             ? String(activeRoundTab)
@@ -893,6 +893,10 @@ export default function PublicScorecardView() {
                 : foundActiveRIdx !== null && foundActiveRIdx !== undefined
                     ? String(foundActiveRIdx)
                     : null;
+    const activeLeaderboardRoundNumber = rawActiveLeaderboardRound !== null ? Number(rawActiveLeaderboardRound) : null;
+    const activeLeaderboardRound = Number.isFinite(activeLeaderboardRoundNumber)
+        ? String(activeLeaderboardRoundNumber)
+        : null;
     const displayedLeaderboardParticipants = mergeParticipants(leaderboardParticipants, discoveredParticipants)
         .map((participant) => {
             const profile = leaderboardProfiles[participant.username] || {};
@@ -1804,8 +1808,11 @@ export default function PublicScorecardView() {
                                 const progressColor = participant.status === 'in_progress'
                                     ? '#60a5fa'
                                     : participant.status === 'finished' && hasActiveRoundResult ? '#10b981' : '#94a3b8';
+                                const activeRoundLabel = activeLeaderboardRound === null
+                                    ? null
+                                    : `R${Number(activeLeaderboardRound) + 1}`;
                                 const secondaryLabel = !hasActiveRoundResult
-                                    ? (activeLeaderboardRound === null ? 'Sin resultados' : `Sin resultados R${Number(activeLeaderboardRound) + 1}`)
+                                    ? (activeRoundLabel ? `Sin resultados ${activeRoundLabel}` : 'Sin resultados')
                                     : participant.status === 'in_progress' && Number(participant.holesPlayed) > 0
                                     ? `${participant.holesPlayed} hoyo${participant.holesPlayed === 1 ? '' : 's'} jugado${participant.holesPlayed === 1 ? '' : 's'}`
                                     : participant.roundsPlayed > 0 ? `${participant.roundsPlayed} vuelta${participant.roundsPlayed === 1 ? '' : 's'}` : 'Pendiente';
