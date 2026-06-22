@@ -747,3 +747,18 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
   PRÓXIMO PASO: HARDENING — Revisión de ordenación acumulada multi-ronda
 ==========================================================================
   Siguiente: Validar con datos reales de torneo de varios días que el acumulado mantiene la clasificación correcta cuando varias jugadoras empiezan la ronda activa en momentos distintos.
+
+[COMPLETADO] OPERACIÓN ADMIN — Alta de Maria Ros en Campeonato de España Infantil
+  Firestore actualizado:
+    - users/{Maria Ros UID}/subscribed_tournaments/{Campeonato de España Infantil ID}
+    - tournaments/{Campeonato de España Infantil ID}/participants/{mariaros}
+  Resumen:
+    - Se comprobó que `mariaros` no tenía suscripción, resultado ni documento `participants` para el campeonato.
+    - Creada la suscripción al torneo en `La Manga Campo Sur`.
+    - Creado el participante pendiente `mariaros` para que aparezca en el leaderboard.
+    - Verificado después de aplicar: roster público contiene `itziardeormaechea`, `mariaros`, `nicole`, `ona`, `paulaalbadalejo`, `txell`.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Revisión de ordenación acumulada multi-ronda
+==========================================================================
+  Siguiente: Validar con datos reales de torneo de varios días que el acumulado mantiene la clasificación correcta cuando varias jugadoras empiezan la ronda activa en momentos distintos.
