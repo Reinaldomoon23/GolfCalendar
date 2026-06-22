@@ -762,3 +762,22 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
   PRÓXIMO PASO: HARDENING — Revisión de ordenación acumulada multi-ronda
 ==========================================================================
   Siguiente: Validar con datos reales de torneo de varios días que el acumulado mantiene la clasificación correcta cuando varias jugadoras empiezan la ronda activa en momentos distintos.
+
+[COMPLETADO] OPERACIÓN ADMIN — Alta de Ion Lage
+  Archivos modificados:
+    - scratch/create_iona_user.mjs
+  Datos creados:
+    - Firebase Auth: `iona@golfteam.app`
+    - Firestore: `users/{os0a0zq8gyPFyKa3T9H81hfgD8i2}`
+    - Firestore: `usernames/iona`
+    - Firestore: `users/{uid}/subscribed_tournaments/{Campeonato de España Infantil ID}`
+    - Firestore: `tournaments/{Campeonato de España Infantil ID}/participants/iona`
+  Resumen:
+    - Creada usuaria `iona` con nombre completo `Ion Lage`.
+    - Alta en Campeonato de España Infantil en `La Manga Campo Sur` como participante pendiente.
+    - Verificado login correcto con `iona@golfteam.app` y que el roster público contiene `iona`, `itziardeormaechea`, `mariaros`, `nicole`, `ona`, `paulaalbadalejo`, `txell`.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Revisión de ordenación acumulada multi-ronda
+==========================================================================
+  Siguiente: Validar con datos reales de torneo de varios días que el acumulado mantiene la clasificación correcta cuando varias jugadoras empiezan la ronda activa en momentos distintos.
