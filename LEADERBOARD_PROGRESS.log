@@ -708,3 +708,23 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
   PRÓXIMO PASO: HARDENING — Revisión de ordenación acumulada multi-ronda
 ==========================================================================
   Siguiente: Validar con datos reales de torneo de varios días que el acumulado mantiene la clasificación correcta cuando varias jugadoras empiezan la ronda activa en momentos distintos.
+
+[COMPLETADO] DATOS — Campeonato de España Infantil en La Manga Campo Sur
+  Archivos modificados:
+    - src/data/tournaments.json
+    - src/data/seasons/tournaments_2026.json
+    - src/data/spanish_courses.json
+    - scratch/update_la_manga_campo_sur.mjs
+  Firestore actualizado:
+    - tournaments/{Campeonato de España Infantil ID}
+    - 3 documentos subscribed_tournaments existentes
+    - 1 resultado existente con `tournamentCourse`
+  Resumen:
+    - El torneo `Campeonato de España Infantil, Alevín y Benjamín 2026 "Memorial Juan Antonio Andreu"` queda asignado a `La Manga Campo Sur`.
+    - Añadida tarjeta `La Manga Campo Sur` como alias de `La Manga Club`, par 73, para que el scorecard resuelva correctamente los pares.
+    - Actualizados 5 documentos existentes en Firestore con `scratch/update_la_manga_campo_sur.mjs --apply`.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Revisión de ordenación acumulada multi-ronda
+==========================================================================
+  Siguiente: Validar con datos reales de torneo de varios días que el acumulado mantiene la clasificación correcta cuando varias jugadoras empiezan la ronda activa en momentos distintos.
