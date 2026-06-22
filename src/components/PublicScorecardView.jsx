@@ -1760,7 +1760,7 @@ export default function PublicScorecardView() {
                     <div style={{ background: '#1e293b', borderRadius: '12px', overflow: 'hidden', border: '1px solid #334155', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.5)' }}>
                         <div style={{
                             display: 'grid',
-                            gridTemplateColumns: '44px minmax(0, 1fr) 86px 72px 72px',
+                            gridTemplateColumns: '34px minmax(136px, 1fr) 52px 44px 48px',
                             background: '#0f172a',
                             color: '#94a3b8',
                             textTransform: 'uppercase',
@@ -1768,11 +1768,11 @@ export default function PublicScorecardView() {
                             letterSpacing: '0.1em',
                             fontWeight: '800'
                         }}>
-                            <div style={{ padding: '14px 10px' }}>POS</div>
-                            <div style={{ padding: '14px 10px' }}>JUGADORA</div>
-                            <div style={{ padding: '14px 10px', textAlign: 'center' }}>HOYO</div>
-                            <div style={{ padding: '14px 10px', textAlign: 'center' }}>TOTAL</div>
-                            <div style={{ padding: '14px 10px', textAlign: 'right' }}>VS PAR</div>
+                            <div style={{ padding: '12px 6px' }}>POS</div>
+                            <div style={{ padding: '12px 8px' }}>JUGADORA</div>
+                            <div style={{ padding: '12px 4px', textAlign: 'center' }}>HOYO</div>
+                            <div style={{ padding: '12px 4px', textAlign: 'center' }}>TOT</div>
+                            <div style={{ padding: '12px 6px', textAlign: 'right' }}>PAR</div>
                         </div>
 
                         {leaderboardLoading ? (
@@ -1809,7 +1809,7 @@ export default function PublicScorecardView() {
                                     : participant.status === 'in_progress' && Number(participant.holesPlayed) > 0
                                     ? `${participant.holesPlayed} hoyo${participant.holesPlayed === 1 ? '' : 's'} jugado${participant.holesPlayed === 1 ? '' : 's'}`
                                     : participant.roundsPlayed > 0 ? `${participant.roundsPlayed} vuelta${participant.roundsPlayed === 1 ? '' : 's'}` : 'Pendiente';
-                                const displayedProgressLabel = hasActiveRoundResult ? progressLabel : 'Sin resultados';
+                                const displayedProgressLabel = hasActiveRoundResult ? progressLabel : '—';
 
                                 return (
                                     <React.Fragment key={participant.id || participant.username}>
@@ -1825,7 +1825,7 @@ export default function PublicScorecardView() {
                                             }}
                                             style={{
                                                 display: 'grid',
-                                                gridTemplateColumns: '44px minmax(0, 1fr) 86px 72px 72px',
+                                                gridTemplateColumns: '34px minmax(136px, 1fr) 52px 44px 48px',
                                                 alignItems: 'center',
                                                 borderBottom: isExpanded ? '1px solid #1d4ed8' : '1px solid #334155',
                                                 background: isExpanded ? '#1d4ed855' : (isCurrent ? '#1e3a8a44' : 'transparent'),
@@ -1837,21 +1837,21 @@ export default function PublicScorecardView() {
                                             title={`Ver puntuacion por hoyos de ${participant.fullName || participant.username}`}
                                         >
                                             <div style={{
-                                                padding: '14px 10px',
+                                                padding: '14px 6px',
                                                 fontWeight: '900',
                                                 color: !hasActiveRoundResult ? '#64748b' : (position === 1 ? '#eab308' : (position === 2 ? '#cbd5e1' : (position === 3 ? '#f97316' : '#64748b')))
                                             }}>
                                                 {hasActiveRoundResult ? position : '—'}
                                             </div>
-                                            <div style={{ padding: '12px 10px', minWidth: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <div style={{ padding: '12px 8px', minWidth: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                 {participant.photo_url ? (
                                                     <ProfileImage
                                                         photoPath={participant.photo_url}
                                                         displayName={participant.fullName || participant.username}
                                                         alt={participant.fullName || participant.username}
                                                         style={{
-                                                            width: '34px',
-                                                            height: '34px',
+                                                            width: '30px',
+                                                            height: '30px',
                                                             borderRadius: '50%',
                                                             objectFit: 'cover',
                                                             border: isExpanded || isCurrent ? '2px solid #3b82f6' : '1px solid #334155',
@@ -1862,8 +1862,8 @@ export default function PublicScorecardView() {
                                                     <div
                                                         aria-hidden="true"
                                                         style={{
-                                                            width: '34px',
-                                                            height: '34px',
+                                                            width: '30px',
+                                                            height: '30px',
                                                             borderRadius: '50%',
                                                             border: isExpanded ? '2px solid #3b82f6' : '1px solid #334155',
                                                             background: '#0f172a',
@@ -1871,36 +1871,42 @@ export default function PublicScorecardView() {
                                                         }}
                                                     />
                                                 )}
-                                                <div style={{ minWidth: 0 }}>
+                                                <div style={{ minWidth: 0, flex: '1 1 auto' }}>
                                                     <div style={{
                                                         fontWeight: '800',
                                                         color: isCurrent || isExpanded ? '#bfdbfe' : 'white',
-                                                        whiteSpace: 'nowrap',
+                                                        whiteSpace: 'normal',
                                                         overflow: 'hidden',
-                                                        textOverflow: 'ellipsis'
+                                                        display: '-webkit-box',
+                                                        WebkitLineClamp: 2,
+                                                        WebkitBoxOrient: 'vertical',
+                                                        lineHeight: 1.05,
+                                                        fontSize: '0.92rem'
                                                     }}>
                                                         {participant.fullName || participant.username}
                                                     </div>
-                                                    <div style={{ fontSize: '0.65rem', color: '#94a3b8', textTransform: 'uppercase' }}>
+                                                    <div style={{ fontSize: '0.62rem', color: '#94a3b8', textTransform: 'uppercase', lineHeight: 1.15, marginTop: '3px' }}>
                                                         {isExpanded ? 'Ocultar hoyos' : secondaryLabel}
                                                     </div>
                                                 </div>
                                             </div>
                                             <div style={{
-                                                padding: '14px 8px',
+                                                padding: '14px 4px',
                                                 textAlign: 'center',
                                                 fontWeight: '900',
                                                 color: hasActiveRoundResult ? progressColor : '#94a3b8',
-                                                fontSize: '0.72rem',
+                                                fontSize: hasActiveRoundResult ? '0.68rem' : '0.9rem',
                                                 textTransform: 'uppercase',
-                                                letterSpacing: '0.03em'
+                                                letterSpacing: '0.02em',
+                                                lineHeight: 1.05,
+                                                overflowWrap: 'anywhere'
                                             }}>
                                                 {displayedProgressLabel}
                                             </div>
-                                            <div style={{ padding: '14px 10px', textAlign: 'center', fontWeight: '900', color: '#e2e8f0' }}>
+                                            <div style={{ padding: '14px 4px', textAlign: 'center', fontWeight: '900', color: '#e2e8f0' }}>
                                                 {hasActiveRoundResult ? (participant.total || '-') : '-'}
                                             </div>
-                                            <div style={{ padding: '14px 10px', textAlign: 'right', fontWeight: '900', color: relativeColor }}>
+                                            <div style={{ padding: '14px 6px', textAlign: 'right', fontWeight: '900', color: relativeColor }}>
                                                 {hasActiveRoundResult ? relativeStr : '-'}
                                             </div>
                                         </div>
