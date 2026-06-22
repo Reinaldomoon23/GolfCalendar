@@ -728,3 +728,22 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
   PRÓXIMO PASO: HARDENING — Revisión de ordenación acumulada multi-ronda
 ==========================================================================
   Siguiente: Validar con datos reales de torneo de varios días que el acumulado mantiene la clasificación correcta cuando varias jugadoras empiezan la ronda activa en momentos distintos.
+
+[COMPLETADO] OPERACIÓN ADMIN — Alta de Ona y Txell en Campeonato de España Infantil
+  Archivos modificados:
+    - scratch/check_campeonato_espana_roster.mjs
+  Firestore actualizado:
+    - users/{Ona UID}/subscribed_tournaments/{Campeonato de España Infantil ID}
+    - users/{Txell UID}/subscribed_tournaments/{Campeonato de España Infantil ID}
+    - tournaments/{Campeonato de España Infantil ID}/participants/{ona}
+    - tournaments/{Campeonato de España Infantil ID}/participants/{txell}
+  Resumen:
+    - Se comprobó que el roster público solo tenía `itziardeormaechea`, `nicole` y `paulaalbadalejo`.
+    - Ona Martinez Cucco y Txell Alós no tenían suscripción ni documento `participants`.
+    - Creadas ambas suscripciones y participantes pendientes para que aparezcan en el leaderboard.
+    - Verificado después de aplicar: roster público contiene `itziardeormaechea`, `nicole`, `ona`, `paulaalbadalejo`, `txell`.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Revisión de ordenación acumulada multi-ronda
+==========================================================================
+  Siguiente: Validar con datos reales de torneo de varios días que el acumulado mantiene la clasificación correcta cuando varias jugadoras empiezan la ronda activa en momentos distintos.
