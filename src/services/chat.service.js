@@ -59,6 +59,7 @@ export async function getOrCreateChat(currentUser, friend) {
   } else {
     await setDoc(chatRef, {
       member_profiles: memberProfiles,
+      hidden_for: arrayRemove(currentUid),
       updated_at: serverTimestamp(),
     }, { merge: true });
   }
@@ -75,14 +76,18 @@ export function subscribeToChats(user, onUpdate) {
     const chats = snapshot.docs.map((chatDoc) => {
       const data = chatDoc.data();
       const friendUid = otherMemberId(data, uid);
+      const blockedBy = data.blocked_by || [];
       return {
+        ...data,
         id: chatDoc.id,
         friend_uid: friendUid,
         friend: data.member_profiles?.[friendUid] || { uid: friendUid },
         unread: (data.unread_by || []).includes(uid),
-        ...data,
+        blocked_by_me: blockedBy.includes(uid),
+        blocked_by_friend: blockedBy.includes(friendUid),
+        is_blocked: blockedBy.length > 0,
       };
-    });
+    }).filter((chat) => !(chat.hidden_for || []).includes(uid));
 
     chats.sort((a, b) => {
       const aTime = a.last_message_at?.toMillis?.() || a.updated_at?.toMillis?.() || 0;
@@ -128,6 +133,11 @@ export async function sendChatMessage(currentUser, friend, text) {
   const friendUid = friend?.uid || getUserDocId(friend);
   const chatId = await getOrCreateChat(currentUser, friend);
   const chatRef = doc(db, 'chats', chatId);
+  const chatSnap = await getDoc(chatRef);
+  const blockedBy = chatSnap.data()?.blocked_by || [];
+  if (blockedBy.length > 0) {
+    throw new Error('Este chat está bloqueado.');
+  }
 
   await addDoc(collection(db, 'chats', chatId, 'messages'), {
     text: cleanText,
@@ -145,6 +155,7 @@ export async function sendChatMessage(currentUser, friend, text) {
     last_message_at: serverTimestamp(),
     updated_at: serverTimestamp(),
     unread_by: arrayUnion(friendUid),
+    hidden_for: arrayRemove(currentUid, friendUid),
   }, { merge: true });
 }
 
@@ -155,6 +166,47 @@ export async function markChatRead(currentUser, chatId) {
   await updateDoc(doc(db, 'chats', chatId), {
     [`read_at.${uid}`]: serverTimestamp(),
     unread_by: arrayRemove(uid),
+    updated_at: serverTimestamp(),
+  });
+}
+
+export async function hideChatForUser(currentUser, chatId) {
+  const uid = getUserDocId(currentUser);
+  if (!uid || !chatId) return;
+
+  await updateDoc(doc(db, 'chats', chatId), {
+    hidden_for: arrayUnion(uid),
+    unread_by: arrayRemove(uid),
+    updated_at: serverTimestamp(),
+  });
+}
+
+export async function blockChatUser(currentUser, chat) {
+  const uid = getUserDocId(currentUser);
+  if (!uid || !chat?.id) return;
+
+  await updateDoc(doc(db, 'chats', chat.id), {
+    blocked_by: arrayUnion(uid),
+    unread_by: arrayRemove(uid),
+    updated_at: serverTimestamp(),
+  });
+}
+
+export async function reportChat(currentUser, chat, reason = 'Reporte desde chat') {
+  const uid = getUserDocId(currentUser);
+  if (!uid || !chat?.id) throw new Error('Faltan datos para reportar el chat.');
+
+  await addDoc(collection(db, 'chat_reports'), {
+    chat_id: chat.id,
+    chat_members: chat.members || [],
+    reporter_uid: uid,
+    reported_uid: chat.friend_uid || '',
+    reporter_user: profileSummary(currentUser),
+    reported_user: chat.friend || {},
+    reason: String(reason || 'Reporte desde chat').trim().slice(0, 500),
+    last_message: chat.last_message || null,
+    status: 'open',
+    created_at: serverTimestamp(),
     updated_at: serverTimestamp(),
   });
 }

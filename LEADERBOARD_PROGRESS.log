@@ -1010,3 +1010,23 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
   PRÓXIMO PASO: COMUNIDAD FASE 2.1 — Pulir chat y notificaciones
 ==========================================================================
   Siguiente: Probar chat con dos cuentas reales, ajustar UX móvil si hace falta y decidir si añadimos notificaciones push o moderación/admin.
+
+[COMPLETADO] COMUNIDAD FASE 2.1 — UX móvil, gestión y seguridad del chat
+  Archivos modificados:
+    - src/services/chat.service.js
+    - src/components/FriendsView.jsx
+    - firestore.rules
+  Resumen:
+    - En móvil, el chat pasa a navegación lista → conversación con botón de volver.
+    - Añadidas acciones de conversación: ocultar, reportar y bloquear.
+    - Las conversaciones ocultas desaparecen para la usuaria y reaparecen si se abre de nuevo o llega un mensaje nuevo.
+    - Los chats bloqueados impiden enviar nuevos mensajes y muestran estado bloqueado.
+    - Añadido botón Chat en la agenda de amigas, con borrador inicial sobre el torneo seleccionado.
+    - Añadida colección `chat_reports` restringida: las usuarias solo pueden crear reportes y solo admin puede leer/moderar.
+  Verificación:
+    - npm run build
+
+==========================================================================
+  PRÓXIMO PASO: COMUNIDAD FASE 2.2 — Notificaciones reales y moderación admin
+==========================================================================
+  Siguiente: Probar con dos cuentas reales en producción, decidir Web Push/Firebase Messaging y crear vista admin para revisar `chat_reports`.

@@ -1,8 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
+  ArrowLeft,
+  Ban,
   CalendarDays,
   Check,
+  EyeOff,
+  Flag,
   MessageCircle,
   Clock,
   Search,
@@ -30,8 +34,11 @@ import {
   subscribeToOutgoingFriendRequests,
 } from '../services/friends.service';
 import {
+  blockChatUser,
   getOrCreateChat,
+  hideChatForUser,
   markChatRead,
+  reportChat,
   sendChatMessage,
   subscribeToChatMessages,
   subscribeToChats,
@@ -184,20 +191,29 @@ function ChatPanel({
   messages,
   draft,
   sending,
+  compact,
   onSelectChat,
   onStartChat,
+  onBackToList,
   onDraftChange,
+  onHideChat,
+  onReportChat,
+  onBlockChat,
   onSend,
 }) {
   const hasFriends = friends.length > 0;
+  const showList = !compact || !selectedFriend;
+  const showConversation = !compact || selectedFriend;
+  const chatBlocked = selectedChat?.is_blocked;
 
   return (
     <div style={{
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+      display: compact ? 'block' : 'grid',
+      gridTemplateColumns: compact ? '1fr' : 'minmax(260px, 0.8fr) minmax(320px, 1.2fr)',
       gap: '1rem',
       alignItems: 'start',
     }}>
+      {showList && (
       <div className="card" style={{ padding: '1rem', display: 'grid', gap: '0.75rem' }}>
         <div style={{ fontWeight: 900, color: '#0f172a' }}>Conversaciones</div>
         {!hasFriends ? (
@@ -267,11 +283,32 @@ function ChatPanel({
           </div>
         )}
       </div>
+      )}
 
+      {showConversation && (
       <div className="card" style={{ padding: 0, minHeight: '520px', display: 'grid', gridTemplateRows: 'auto 1fr auto', overflow: 'hidden' }}>
         {selectedFriend ? (
           <>
-            <div style={{ padding: '1rem', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{ padding: '1rem', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+              {compact && (
+                <button
+                  type="button"
+                  onClick={onBackToList}
+                  title="Volver a conversaciones"
+                  style={{
+                    border: '1px solid #e2e8f0',
+                    background: '#fff',
+                    color: '#334155',
+                    borderRadius: '8px',
+                    padding: '0.5rem',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                  }}
+                >
+                  <ArrowLeft size={18} />
+                </button>
+              )}
               <ProfileImage
                 photoPath={selectedFriend.photo_url}
                 displayName={selectedFriend.full_name || selectedFriend.username}
@@ -284,9 +321,76 @@ function ChatPanel({
                 </div>
                 <div style={{ color: '#64748b', fontSize: '0.85rem' }}>@{selectedFriend.username}</div>
               </div>
+              <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.4rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  onClick={() => onHideChat(selectedChat)}
+                  title="Ocultar conversación"
+                  style={{
+                    border: '1px solid #e2e8f0',
+                    background: '#fff',
+                    color: '#475569',
+                    borderRadius: '8px',
+                    padding: '0.5rem',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                  }}
+                >
+                  <EyeOff size={17} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onReportChat(selectedChat)}
+                  title="Reportar conversación"
+                  style={{
+                    border: '1px solid #fed7aa',
+                    background: '#fff7ed',
+                    color: '#c2410c',
+                    borderRadius: '8px',
+                    padding: '0.5rem',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Flag size={17} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onBlockChat(selectedChat)}
+                  title="Bloquear chat"
+                  disabled={selectedChat?.blocked_by_me}
+                  style={{
+                    border: '1px solid #fecaca',
+                    background: selectedChat?.blocked_by_me ? '#f1f5f9' : '#fef2f2',
+                    color: selectedChat?.blocked_by_me ? '#94a3b8' : '#dc2626',
+                    borderRadius: '8px',
+                    padding: '0.5rem',
+                    cursor: selectedChat?.blocked_by_me ? 'not-allowed' : 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Ban size={17} />
+                </button>
+              </div>
             </div>
 
             <div style={{ padding: '1rem', display: 'grid', gap: '0.75rem', alignContent: 'start', overflowY: 'auto', background: '#f8fafc' }}>
+              {chatBlocked && (
+                <div style={{
+                  padding: '0.75rem 0.9rem',
+                  borderRadius: '8px',
+                  border: '1px solid #fecaca',
+                  background: '#fef2f2',
+                  color: '#991b1b',
+                  fontWeight: 800,
+                  fontSize: '0.9rem',
+                }}>
+                  {selectedChat?.blocked_by_me ? 'Has bloqueado esta conversación.' : 'La otra jugadora ha bloqueado esta conversación.'}
+                </div>
+              )}
               {messages.length === 0 ? (
                 <div style={{ color: '#64748b', textAlign: 'center', padding: '2rem 1rem' }}>Todavía no hay mensajes.</div>
               ) : (
@@ -321,9 +425,10 @@ function ChatPanel({
                 onChange={(event) => onDraftChange(event.target.value)}
                 placeholder="Escribe un mensaje"
                 maxLength={1000}
+                disabled={chatBlocked}
                 style={{ flex: 1 }}
               />
-              <button type="submit" className="btn btn-primary" disabled={sending || !draft.trim()}>
+              <button type="submit" className="btn btn-primary" disabled={sending || !draft.trim() || chatBlocked}>
                 <Send size={16} />
                 Enviar
               </button>
@@ -335,6 +440,7 @@ function ChatPanel({
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }
@@ -479,11 +585,26 @@ export default function FriendsView({ user, activeCalendarTournaments = [], subs
   const [chatMessages, setChatMessages] = useState([]);
   const [chatDraft, setChatDraft] = useState('');
   const [isSendingChat, setIsSendingChat] = useState(false);
+  const [isCompactChat, setIsCompactChat] = useState(() => (
+    typeof window !== 'undefined' ? window.innerWidth < 720 : false
+  ));
   const communityProfileStatus = getCommunityProfileStatus(localUser);
 
   useEffect(() => {
     setLocalUser(user);
   }, [user]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    const handleResize = () => {
+      setIsCompactChat(window.innerWidth < 720);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     if (!communityProfileStatus.isComplete) {
@@ -678,7 +799,7 @@ export default function FriendsView({ user, activeCalendarTournaments = [], subs
     }
   };
 
-  const handleOpenChat = async (friend) => {
+  const handleOpenChat = async (friend, initialDraft = '') => {
     if (!friend) return;
     setIsWorking(true);
     setMessage(null);
@@ -694,6 +815,7 @@ export default function FriendsView({ user, activeCalendarTournaments = [], subs
       };
       setSelectedChat(nextChat);
       setSelectedFriend(friend);
+      if (initialDraft) setChatDraft(initialDraft);
       setActiveTab('chat');
       await markChatRead(localUser, chatId).catch(() => {});
     } catch (error) {
@@ -710,6 +832,57 @@ export default function FriendsView({ user, activeCalendarTournaments = [], subs
     await markChatRead(localUser, chat.id).catch((error) => {
       console.warn('[chat] Could not mark selected chat as read:', error);
     });
+  };
+
+  const handleBackToChatList = () => {
+    setSelectedChat(null);
+    setSelectedFriend(null);
+    setChatMessages([]);
+    setChatDraft('');
+  };
+
+  const handleHideChat = async (chat) => {
+    if (!chat?.id) return;
+    setIsWorking(true);
+    setMessage(null);
+    try {
+      await hideChatForUser(localUser, chat.id);
+      handleBackToChatList();
+      setMessage({ type: 'success', text: 'Conversación ocultada.' });
+    } catch (error) {
+      setMessage({ type: 'error', text: error.message || 'No se pudo ocultar la conversación.' });
+    } finally {
+      setIsWorking(false);
+    }
+  };
+
+  const handleReportChat = async (chat) => {
+    if (!chat?.id) return;
+    setIsWorking(true);
+    setMessage(null);
+    try {
+      await reportChat(localUser, chat);
+      setMessage({ type: 'success', text: 'Conversación reportada para revisión.' });
+    } catch (error) {
+      setMessage({ type: 'error', text: error.message || 'No se pudo reportar la conversación.' });
+    } finally {
+      setIsWorking(false);
+    }
+  };
+
+  const handleBlockChat = async (chat) => {
+    if (!chat?.id || chat.blocked_by_me) return;
+    setIsWorking(true);
+    setMessage(null);
+    try {
+      await blockChatUser(localUser, chat);
+      setSelectedChat((previous) => previous ? { ...previous, blocked_by_me: true, is_blocked: true } : previous);
+      setMessage({ type: 'success', text: 'Chat bloqueado.' });
+    } catch (error) {
+      setMessage({ type: 'error', text: error.message || 'No se pudo bloquear el chat.' });
+    } finally {
+      setIsWorking(false);
+    }
   };
 
   const handleSendChat = async (event) => {
@@ -852,9 +1025,14 @@ export default function FriendsView({ user, activeCalendarTournaments = [], subs
           messages={chatMessages}
           draft={chatDraft}
           sending={isSendingChat}
+          compact={isCompactChat}
           onSelectChat={handleSelectChat}
           onStartChat={handleOpenChat}
+          onBackToList={handleBackToChatList}
           onDraftChange={setChatDraft}
+          onHideChat={handleHideChat}
+          onReportChat={handleReportChat}
+          onBlockChat={handleBlockChat}
           onSend={handleSendChat}
         />
       )}
@@ -990,6 +1168,11 @@ export default function FriendsView({ user, activeCalendarTournaments = [], subs
               const tournamentId = getTournamentId(item);
               const isMutual = myTournamentIds.has(String(tournamentId));
               const isShared = Boolean(tournamentId && String(tournamentId).includes('_'));
+              const agendaFriend = friends.find((friend) => friend.uid === item.friend_uid) || {
+                uid: item.friend_uid,
+                username: item.friend_username,
+                full_name: item.friend_name,
+              };
 
               return (
                 <div key={`${item.friend_uid}-${item.id}`} className="card" style={{ padding: '1rem', display: 'grid', gap: '0.75rem' }}>
@@ -1049,6 +1232,20 @@ export default function FriendsView({ user, activeCalendarTournaments = [], subs
                           Live
                         </button>
                       </Link>
+                    )}
+                    {agendaFriend?.uid && (
+                      <button
+                        type="button"
+                        className="btn card"
+                        onClick={() => handleOpenChat(
+                          agendaFriend,
+                          `Sobre ${item.name || item.tournament_name || 'este torneo'}: `
+                        )}
+                        disabled={isWorking}
+                      >
+                        <MessageCircle size={16} />
+                        Chat
+                      </button>
                     )}
                   </div>
                 </div>

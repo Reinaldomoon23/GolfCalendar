@@ -246,6 +246,17 @@ service cloud.firestore {
       }
     }
 
+    match /chat_reports/{reportId} {
+      allow create: if isAuthenticated() &&
+        request.resource.data.reporter_uid == request.auth.uid &&
+        request.resource.data.chat_id is string &&
+        request.resource.data.reason is string &&
+        request.resource.data.reason.size() > 0 &&
+        request.resource.data.reason.size() <= 500;
+
+      allow read, update, delete: if isAdmin();
+    }
+
     // =============================================================
     // TOURNAMENTS COLLECTION (Global)
     // =============================================================
