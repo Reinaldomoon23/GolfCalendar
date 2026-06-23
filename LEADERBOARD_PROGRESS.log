@@ -59,6 +59,18 @@ SESIÓN: 2026-06-23 | Codex
   Verificación:
     - npm run build
 
+[COMPLETADO] COMUNIDAD FASE 1.2 — Agenda de amigas accionable
+  Archivos modificados:
+    - src/App.jsx
+    - src/components/FriendsView.jsx
+  Resumen:
+    La agenda de amigas ahora permite filtrar por amiga, próximos 30 días
+    o torneos donde la usuaria también está apuntada. Cada torneo muestra
+    estado, etiqueta de coincidencia y acciones para abrir el torneo,
+    clasificación pública o live de la amiga cuando aplica.
+  Verificación:
+    - npm run build
+
 ==========================================================================
 SESIÓN: 2026-04-26 | Modelo: Antigravity (Google DeepMind)
 ==========================================================================

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   CalendarDays,
   Check,
@@ -12,6 +13,7 @@ import {
 } from 'lucide-react';
 import ProfileImage from './ProfileImage';
 import { parseDateHelper } from '../utils/dateHelpers';
+import { resolveCanonicalTournamentId } from '../services/tournaments.service';
 import {
   acceptFriendRequest,
   getCommunityProfileStatus,
@@ -44,6 +46,23 @@ function isFutureTournament(tournament) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   return end >= today;
+}
+
+function getAgendaRange(item) {
+  const { start } = parseDateHelper(item?.dates || '');
+  if (!start) return 'future';
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const in30 = new Date(today);
+  in30.setDate(today.getDate() + 30);
+
+  if (start <= in30) return 'next30';
+  return 'future';
+}
+
+function getTournamentId(item) {
+  return resolveCanonicalTournamentId(item?.tournamentId || item?.id || item?.tournament_id);
 }
 
 function StatusMessage({ message }) {
@@ -224,7 +243,7 @@ function CommunityProfileGate({ user, onCompleted }) {
   );
 }
 
-export default function FriendsView({ user }) {
+export default function FriendsView({ user, activeCalendarTournaments = [], subscribedIds = [] }) {
   const [localUser, setLocalUser] = useState(user);
   const [activeTab, setActiveTab] = useState('friends');
   const [friends, setFriends] = useState([]);
@@ -237,6 +256,8 @@ export default function FriendsView({ user }) {
   const [message, setMessage] = useState(null);
   const [agenda, setAgenda] = useState([]);
   const [agendaLoading, setAgendaLoading] = useState(false);
+  const [agendaFriendFilter, setAgendaFriendFilter] = useState('all');
+  const [agendaRangeFilter, setAgendaRangeFilter] = useState('all');
   const communityProfileStatus = getCommunityProfileStatus(localUser);
 
   useEffect(() => {
@@ -305,6 +326,23 @@ export default function FriendsView({ user }) {
   }, [outgoingRequests]);
 
   const friendUids = useMemo(() => new Set(friends.map((friend) => friend.uid)), [friends]);
+  const myTournamentIds = useMemo(() => {
+    const ids = new Set((subscribedIds || []).map((id) => String(resolveCanonicalTournamentId(id))));
+    (activeCalendarTournaments || []).forEach((tournament) => {
+      const id = resolveCanonicalTournamentId(tournament?.id);
+      if (id) ids.add(String(id));
+    });
+    return ids;
+  }, [activeCalendarTournaments, subscribedIds]);
+
+  const filteredAgenda = useMemo(() => (
+    agenda.filter((item) => {
+      if (agendaFriendFilter !== 'all' && item.friend_uid !== agendaFriendFilter) return false;
+      if (agendaRangeFilter === 'next30' && getAgendaRange(item) !== 'next30') return false;
+      if (agendaRangeFilter === 'mutual' && !myTournamentIds.has(String(getTournamentId(item)))) return false;
+      return true;
+    })
+  ), [agenda, agendaFriendFilter, agendaRangeFilter, myTournamentIds]);
 
   const handleSearch = async (event) => {
     event.preventDefault();
@@ -571,27 +609,103 @@ export default function FriendsView({ user }) {
 
       {activeTab === 'agenda' && (
         <div style={{ display: 'grid', gap: '0.75rem' }}>
+          {friends.length > 0 && (
+            <div className="card" style={{ padding: '1rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'end' }}>
+              <label style={{ display: 'grid', gap: '0.35rem', fontWeight: 800, flex: '1 1 220px' }}>
+                Amiga
+                <select value={agendaFriendFilter} onChange={(event) => setAgendaFriendFilter(event.target.value)}>
+                  <option value="all">Todas</option>
+                  {friends.map((friend) => (
+                    <option key={friend.uid} value={friend.uid}>
+                      {friend.full_name || friend.username}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label style={{ display: 'grid', gap: '0.35rem', fontWeight: 800, flex: '1 1 220px' }}>
+                Vista
+                <select value={agendaRangeFilter} onChange={(event) => setAgendaRangeFilter(event.target.value)}>
+                  <option value="all">Todos los futuros</option>
+                  <option value="next30">Próximos 30 días</option>
+                  <option value="mutual">También estoy apuntada</option>
+                </select>
+              </label>
+            </div>
+          )}
+
           {agendaLoading ? (
             <EmptyState title="Cargando agenda" text="Consultando torneos futuros de tus amigas." />
-          ) : agenda.length === 0 ? (
+          ) : filteredAgenda.length === 0 ? (
             <EmptyState title="Sin torneos futuros visibles" text="Cuando una amiga aceptada esté apuntada a un torneo futuro, aparecerá aquí." />
           ) : (
-            agenda.map((item) => (
-              <div key={`${item.friend_uid}-${item.id}`} className="card" style={{ padding: '1rem', display: 'grid', gap: '0.45rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
-                  <div>
-                    <div style={{ fontWeight: 900, color: '#0f172a' }}>{item.name || item.tournament_name || 'Torneo'}</div>
-                    <div style={{ color: '#64748b', fontSize: '0.9rem' }}>
-                      {item.course || 'Campo pendiente'} · {item.dates || 'Fecha pendiente'}
+            filteredAgenda.map((item) => {
+              const tournamentId = getTournamentId(item);
+              const isMutual = myTournamentIds.has(String(tournamentId));
+              const isShared = Boolean(tournamentId && String(tournamentId).includes('_'));
+
+              return (
+                <div key={`${item.friend_uid}-${item.id}`} className="card" style={{ padding: '1rem', display: 'grid', gap: '0.75rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+                    <div>
+                      <div style={{ fontWeight: 900, color: '#0f172a' }}>{item.name || item.tournament_name || 'Torneo'}</div>
+                      <div style={{ color: '#64748b', fontSize: '0.9rem' }}>
+                        {item.course || 'Campo pendiente'} · {item.dates || 'Fecha pendiente'}
+                      </div>
                     </div>
+                    <div style={{ color: '#2563eb', fontWeight: 900 }}>@{item.friend_username}</div>
                   </div>
-                  <div style={{ color: '#2563eb', fontWeight: 900 }}>@{item.friend_username}</div>
+
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <span style={{
+                      padding: '0.35rem 0.65rem',
+                      borderRadius: '999px',
+                      background: '#ecfdf5',
+                      color: '#166534',
+                      fontWeight: 900,
+                      fontSize: '0.8rem',
+                    }}>
+                      Apuntada
+                    </span>
+                    {isMutual && (
+                      <span style={{
+                        padding: '0.35rem 0.65rem',
+                        borderRadius: '999px',
+                        background: '#eff6ff',
+                        color: '#1d4ed8',
+                        fontWeight: 900,
+                        fontSize: '0.8rem',
+                      }}>
+                        También estás apuntada
+                      </span>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    {tournamentId && (
+                      <Link to={`/event/${tournamentId}`} style={{ textDecoration: 'none' }}>
+                        <button type="button" className="btn card">
+                          Ver torneo
+                        </button>
+                      </Link>
+                    )}
+                    {isShared && (
+                      <Link to={`/leaderboard/${tournamentId}`} style={{ textDecoration: 'none' }}>
+                        <button type="button" className="btn btn-primary">
+                          Clasificación
+                        </button>
+                      </Link>
+                    )}
+                    {tournamentId && item.friend_username && (
+                      <Link to={`/live/${item.friend_username}/${tournamentId}`} style={{ textDecoration: 'none' }}>
+                        <button type="button" className="btn card">
+                          Live
+                        </button>
+                      </Link>
+                    )}
+                  </div>
                 </div>
-                <div style={{ color: '#64748b', fontSize: '0.9rem' }}>
-                  Estado: apuntada
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       )}

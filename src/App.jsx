@@ -726,7 +726,13 @@ function AppContent() {
               onLeaveTournament={handleLeaveTournament}
             />
           } />
-          <Route path="/friends" element={<FriendsView user={user} />} />
+          <Route path="/friends" element={
+            <FriendsView
+              user={user}
+              activeCalendarTournaments={tournaments}
+              subscribedIds={subscribedIds}
+            />
+          } />
           <Route path="/admin" element={
             <AdminRoute user={sessionOwner || user}>
               <AdminDashboardView user={sessionOwner || user} />
