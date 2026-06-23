@@ -1030,3 +1030,21 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
   PRÓXIMO PASO: COMUNIDAD FASE 2.2 — Notificaciones reales y moderación admin
 ==========================================================================
   Siguiente: Probar con dos cuentas reales en producción, decidir Web Push/Firebase Messaging y crear vista admin para revisar `chat_reports`.
+
+[COMPLETADO] COMUNIDAD FASE 2.2 — Moderación admin de reportes de chat
+  Archivos modificados:
+    - src/components/admin/AdminDashboardView.jsx
+    - src/components/admin/ChatReportsAdminPanel.jsx
+  Resumen:
+    - Añadida pestaña `Chat` dentro del panel de administración.
+    - Los administradores pueden listar reportes de `chat_reports`, filtrarlos por abiertos/revisados/descartados y refrescar la lista.
+    - Cada reporte muestra denunciante, usuaria reportada, motivo, último mensaje guardado y estado de revisión.
+    - Añadidas acciones admin: marcar revisado, descartar y bloquear el chat reportado.
+    - Confirmado que el reset de contraseña admin ya existe en `UsersAdminPanel`: email de recuperación y contraseña temporal generada desde `/api/set_temp_password`.
+  Verificación:
+    - npm run build
+
+==========================================================================
+  PRÓXIMO PASO: COMUNIDAD FASE 2.3 — Prueba real y notificaciones
+==========================================================================
+  Siguiente: Probar chat/reportes con dos cuentas reales en producción y decidir si se activa Web Push/Firebase Messaging para notificaciones fuera de la app.

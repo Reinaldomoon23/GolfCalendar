@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Users, Trophy, BarChart3, Lock, Flag, Settings } from 'lucide-react';
+import { Users, Trophy, BarChart3, Lock, Flag, Settings, MessageSquareWarning } from 'lucide-react';
 import UsersAdminPanel from './UsersAdminPanel';
 import TournamentsAdminPanel from './TournamentsAdminPanel';
 import FeatureFlagsPanel from './FeatureFlagsPanel';
 import AnalyticsAdminPanel from './AnalyticsAdminPanel';
 import SecurityAdminPanel from './SecurityAdminPanel';
 import SystemAdminPanel from './SystemAdminPanel';
+import ChatReportsAdminPanel from './ChatReportsAdminPanel';
 
 /**
  * AdminDashboardView - Panel principal de administración
@@ -15,6 +16,7 @@ import SystemAdminPanel from './SystemAdminPanel';
  * - Torneos
  * - Feature Flags
  * - Analytics
+ * - Moderación de chat
  * - Seguridad (Firestore rules + índices)
  * - Sistema (utilidades)
  */
@@ -26,6 +28,7 @@ function AdminDashboardView({ user }) {
     { id: 'tournaments', label: 'Torneos', icon: Trophy },
     { id: 'flags', label: 'Feature Flags', icon: Flag },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+    { id: 'chat-reports', label: 'Chat', icon: MessageSquareWarning },
     { id: 'security', label: 'Seguridad', icon: Lock },
     { id: 'system', label: 'Sistema', icon: Settings },
   ];
@@ -89,6 +92,7 @@ function AdminDashboardView({ user }) {
           {activeTab === 'tournaments' && <TournamentsAdminPanel user={user} />}
           {activeTab === 'flags' && <FeatureFlagsPanel user={user} />}
           {activeTab === 'analytics' && <AnalyticsAdminPanel user={user} />}
+          {activeTab === 'chat-reports' && <ChatReportsAdminPanel user={user} />}
           {activeTab === 'security' && <SecurityAdminPanel user={user} />}
           {activeTab === 'system' && <SystemAdminPanel user={user} />}
         </div>
