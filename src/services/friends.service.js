@@ -16,6 +16,7 @@ import { db } from '../firebase';
 import {
   fetchUserProfileByUsername,
   getUserDocId,
+  getUserProfileRef,
   getUserSubcollectionRef,
 } from '../utils/userProfiles';
 
@@ -38,6 +39,64 @@ function profileSummary(profile) {
     username: profile?.username || '',
     full_name: profile?.full_name || profile?.displayName || profile?.username || '',
     photo_url: profile?.photo_url || '',
+  };
+}
+
+function normalizeNamePart(value = '') {
+  return String(value).trim().replace(/\s+/g, ' ');
+}
+
+function normalizeFederationId(value = '') {
+  return String(value).trim().replace(/\s+/g, '').toUpperCase();
+}
+
+export function getCommunityProfileStatus(user) {
+  const firstName = normalizeNamePart(user?.first_name);
+  const lastName1 = normalizeNamePart(user?.last_name_1);
+  const lastName2 = normalizeNamePart(user?.last_name_2);
+  const federationId = normalizeFederationId(user?.federation_id);
+
+  return {
+    isComplete: Boolean(firstName && lastName1 && lastName2 && federationId.length >= 4),
+    firstName,
+    lastName1,
+    lastName2,
+    federationId,
+  };
+}
+
+export async function saveCommunityProfile(user, fields) {
+  const firstName = normalizeNamePart(fields?.first_name);
+  const lastName1 = normalizeNamePart(fields?.last_name_1);
+  const lastName2 = normalizeNamePart(fields?.last_name_2);
+  const federationId = normalizeFederationId(fields?.federation_id);
+
+  if (!firstName || !lastName1 || !lastName2) {
+    throw new Error('Nombre y dos apellidos son obligatorios.');
+  }
+  if (federationId.length < 4) {
+    throw new Error('La licencia federativa debe tener al menos 4 caracteres.');
+  }
+
+  const fullName = `${firstName} ${lastName1} ${lastName2}`;
+  const searchText = normalizeSearchText(`${fullName} ${user?.username || ''} ${federationId}`);
+  const payload = {
+    first_name: firstName,
+    last_name_1: lastName1,
+    last_name_2: lastName2,
+    full_name: fullName,
+    federation_id: federationId,
+    profile_completed: true,
+    profile_completed_at: new Date().toISOString(),
+    search_text: searchText,
+    updated_at: new Date().toISOString(),
+  };
+
+  await setDoc(getUserProfileRef(db, user), payload, { merge: true });
+
+  return {
+    ...user,
+    ...payload,
   };
 }
 
@@ -88,8 +147,14 @@ export async function searchUsersForFriendship(currentUser, searchTerm) {
     const uid = getUserDocId(profile);
     const username = normalizeUsername(profile.username);
     const fullName = normalizeSearchText(profile.full_name || profile.displayName || '');
+    const structuredName = normalizeSearchText([
+      profile.first_name,
+      profile.last_name_1,
+      profile.last_name_2,
+    ].filter(Boolean).join(' '));
     const federationId = normalizeSearchText(profile.federation_id || '');
-    const haystack = `${username} ${fullName} ${federationId}`.trim();
+    const searchText = normalizeSearchText(profile.search_text || '');
+    const haystack = `${username} ${fullName} ${structuredName} ${federationId} ${searchText}`.trim();
 
     if (
       uid &&

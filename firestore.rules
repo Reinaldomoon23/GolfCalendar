@@ -72,6 +72,9 @@ service cloud.firestore {
              request.resource.data.managed_users == resource.data.managed_users &&
              request.resource.data.diff(resource.data).affectedKeys().hasOnly([
                'full_name',
+               'first_name',
+               'last_name_1',
+               'last_name_2',
                'federation_id',
                'email',
                'photo_url',
@@ -80,6 +83,9 @@ service cloud.firestore {
                'handicap_pdf_url',
                'handicap_fetched_at',
                'club',
+               'profile_completed',
+               'profile_completed_at',
+               'search_text',
                'updated_at'
              ]);
     }

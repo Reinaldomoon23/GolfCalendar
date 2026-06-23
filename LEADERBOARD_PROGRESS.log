@@ -46,6 +46,19 @@ SESIÓN: 2026-06-23 | Codex
   Verificación:
     - npm run build
 
+[COMPLETADO] COMUNIDAD FASE 1.1 — Perfil mínimo obligatorio
+  Archivos modificados:
+    - src/services/friends.service.js
+    - src/components/FriendsView.jsx
+    - firestore.rules
+  Resumen:
+    La sección Amigas ahora exige completar nombre, primer apellido,
+    segundo apellido y licencia federativa antes de buscar/enviar solicitudes
+    o ver agenda de amigas. Se guardan campos estructurados y `full_name`
+    sincronizado para mantener compatibilidad con el resto de la app.
+  Verificación:
+    - npm run build
+
 ==========================================================================
 SESIÓN: 2026-04-26 | Modelo: Antigravity (Google DeepMind)
 ==========================================================================

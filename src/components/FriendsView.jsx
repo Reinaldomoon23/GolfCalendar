@@ -14,9 +14,11 @@ import ProfileImage from './ProfileImage';
 import { parseDateHelper } from '../utils/dateHelpers';
 import {
   acceptFriendRequest,
+  getCommunityProfileStatus,
   loadFriendSchedule,
   rejectFriendRequest,
   removeFriend,
+  saveCommunityProfile,
   searchUsersForFriendship,
   sendFriendRequest,
   subscribeToFriends,
@@ -112,7 +114,118 @@ function EmptyState({ title, text }) {
   );
 }
 
+function CommunityProfileGate({ user, onCompleted }) {
+  const status = getCommunityProfileStatus(user);
+  const [form, setForm] = useState({
+    first_name: status.firstName,
+    last_name_1: status.lastName1,
+    last_name_2: status.lastName2,
+    federation_id: status.federationId,
+  });
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState(null);
+
+  const updateField = (field, value) => {
+    setForm((previous) => ({ ...previous, [field]: value }));
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setSaving(true);
+    setMessage(null);
+
+    try {
+      const updatedProfile = await saveCommunityProfile(user, form);
+      onCompleted(updatedProfile);
+    } catch (error) {
+      setMessage({ type: 'error', text: error.message || 'No se pudo guardar el perfil.' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div style={{ padding: '1rem', maxWidth: '760px', margin: '0 auto' }}>
+      <div className="card" style={{ padding: '1.25rem' }}>
+        <h1 style={{ margin: '0 0 0.35rem', color: '#0f172a', fontSize: '1.55rem' }}>
+          Completa tu perfil de comunidad
+        </h1>
+        <p style={{ margin: '0 0 1rem', color: '#64748b', lineHeight: 1.5 }}>
+          Para que otras jugadoras puedan encontrarte sin confusiones necesitamos nombre, dos apellidos y licencia federativa.
+        </p>
+
+        <StatusMessage message={message} />
+
+        <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '0.9rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.85rem' }}>
+            <label style={{ display: 'grid', gap: '0.35rem', fontWeight: 800 }}>
+              Nombre
+              <input
+                type="text"
+                value={form.first_name}
+                onChange={(event) => updateField('first_name', event.target.value)}
+                placeholder="Ej: Nicole"
+                required
+              />
+            </label>
+            <label style={{ display: 'grid', gap: '0.35rem', fontWeight: 800 }}>
+              Primer apellido
+              <input
+                type="text"
+                value={form.last_name_1}
+                onChange={(event) => updateField('last_name_1', event.target.value)}
+                placeholder="Ej: Likhomanova"
+                required
+              />
+            </label>
+            <label style={{ display: 'grid', gap: '0.35rem', fontWeight: 800 }}>
+              Segundo apellido
+              <input
+                type="text"
+                value={form.last_name_2}
+                onChange={(event) => updateField('last_name_2', event.target.value)}
+                placeholder="Ej: Garcia"
+                required
+              />
+            </label>
+          </div>
+
+          <label style={{ display: 'grid', gap: '0.35rem', fontWeight: 800 }}>
+            Licencia federativa
+            <input
+              type="text"
+              value={form.federation_id}
+              onChange={(event) => updateField('federation_id', event.target.value)}
+              placeholder="Ej: CB123456"
+              required
+              minLength={4}
+              style={{ textTransform: 'uppercase' }}
+            />
+          </label>
+
+          <div style={{
+            padding: '0.85rem 1rem',
+            borderRadius: '8px',
+            background: '#f8fafc',
+            border: '1px solid #e2e8f0',
+            color: '#475569',
+            fontSize: '0.9rem',
+            lineHeight: 1.45,
+          }}>
+            Estos datos se usan para búsqueda dentro de Comunidad y para evitar duplicados. El usuario de acceso no cambia.
+          </div>
+
+          <button type="submit" className="btn btn-primary" disabled={saving} style={{ justifyContent: 'center' }}>
+            {saving ? 'Guardando...' : 'Guardar y continuar'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 export default function FriendsView({ user }) {
+  const [localUser, setLocalUser] = useState(user);
   const [activeTab, setActiveTab] = useState('friends');
   const [friends, setFriends] = useState([]);
   const [incomingRequests, setIncomingRequests] = useState([]);
@@ -124,18 +237,30 @@ export default function FriendsView({ user }) {
   const [message, setMessage] = useState(null);
   const [agenda, setAgenda] = useState([]);
   const [agendaLoading, setAgendaLoading] = useState(false);
+  const communityProfileStatus = getCommunityProfileStatus(localUser);
 
   useEffect(() => {
-    const unsubFriends = subscribeToFriends(user, setFriends);
-    const unsubIncoming = subscribeToIncomingFriendRequests(user, setIncomingRequests);
-    const unsubOutgoing = subscribeToOutgoingFriendRequests(user, setOutgoingRequests);
+    setLocalUser(user);
+  }, [user]);
+
+  useEffect(() => {
+    if (!communityProfileStatus.isComplete) {
+      setFriends([]);
+      setIncomingRequests([]);
+      setOutgoingRequests([]);
+      return undefined;
+    }
+
+    const unsubFriends = subscribeToFriends(localUser, setFriends);
+    const unsubIncoming = subscribeToIncomingFriendRequests(localUser, setIncomingRequests);
+    const unsubOutgoing = subscribeToOutgoingFriendRequests(localUser, setOutgoingRequests);
 
     return () => {
       unsubFriends();
       unsubIncoming();
       unsubOutgoing();
     };
-  }, [user?.uid, user?.docId, user?.username]);
+  }, [localUser?.uid, localUser?.docId, localUser?.username, communityProfileStatus.isComplete]);
 
   useEffect(() => {
     let cancelled = false;
@@ -188,7 +313,7 @@ export default function FriendsView({ user }) {
     setIsSearching(true);
 
     try {
-      const results = await searchUsersForFriendship(user, search);
+      const results = await searchUsersForFriendship(localUser, search);
       setSearchResults(results);
       if (results.length === 0) {
         setMessage({ type: 'error', text: 'No se ha encontrado ninguna jugadora con ese nombre o usuario.' });
@@ -206,7 +331,7 @@ export default function FriendsView({ user }) {
     setMessage(null);
 
     try {
-      await sendFriendRequest(user, targetProfile);
+      await sendFriendRequest(localUser, targetProfile);
       setMessage({ type: 'success', text: `Solicitud enviada a @${targetProfile.username}.` });
       setSearchResults((previousResults) => previousResults.filter((result) => result.uid !== targetProfile.uid));
       setSearch('');
@@ -221,7 +346,7 @@ export default function FriendsView({ user }) {
     setIsWorking(true);
     setMessage(null);
     try {
-      await acceptFriendRequest(user, request);
+      await acceptFriendRequest(localUser, request);
       setMessage({ type: 'success', text: `Ahora eres amiga de @${request.from_user?.username}.` });
     } catch (error) {
       setMessage({ type: 'error', text: error.message || 'No se pudo aceptar la solicitud.' });
@@ -234,7 +359,7 @@ export default function FriendsView({ user }) {
     setIsWorking(true);
     setMessage(null);
     try {
-      await rejectFriendRequest(user, request);
+      await rejectFriendRequest(localUser, request);
       setMessage({ type: 'success', text: 'Solicitud rechazada.' });
     } catch (error) {
       setMessage({ type: 'error', text: error.message || 'No se pudo rechazar la solicitud.' });
@@ -247,7 +372,7 @@ export default function FriendsView({ user }) {
     setIsWorking(true);
     setMessage(null);
     try {
-      await removeFriend(user, friend);
+      await removeFriend(localUser, friend);
       setMessage({ type: 'success', text: `@${friend.username} ya no está en tu lista de amigas.` });
     } catch (error) {
       setMessage({ type: 'error', text: error.message || 'No se pudo eliminar la amistad.' });
@@ -272,6 +397,18 @@ export default function FriendsView({ user }) {
       </button>
     );
   };
+
+  if (!communityProfileStatus.isComplete) {
+    return (
+      <CommunityProfileGate
+        user={localUser}
+        onCompleted={(updatedProfile) => {
+          setLocalUser(updatedProfile);
+          setMessage({ type: 'success', text: 'Perfil de comunidad completado.' });
+        }}
+      />
+    );
+  }
 
   return (
     <div style={{ padding: '1rem', maxWidth: '980px', margin: '0 auto' }}>
