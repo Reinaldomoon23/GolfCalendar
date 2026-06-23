@@ -935,3 +935,43 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
   PRÓXIMO PASO: HARDENING — Revisión de ordenación acumulada multi-ronda
 ==========================================================================
   Siguiente: Validar con datos reales de torneo de varios días que el acumulado mantiene la clasificación correcta cuando varias jugadoras empiezan la ronda activa en momentos distintos.
+
+[COMPLETADO] HOTFIX — Actualización de hándicap con IDs RFEG que empiezan por cero
+  Archivos modificados:
+    - api/get_handicap.js
+    - src/services/handicap.service.js
+    - src/components/AppHeader.jsx
+    - public/api/get_handicap.php
+    - public/api/debug_pdf_text.php
+    - public/api/get_handicap_history_pdf.php
+  Resumen:
+    - Corregida la generación de URLs `summaryhandicap` para conservar los ceros iniciales del ID RFEG.
+    - Itziar (`CB04067410`) necesita `067410.pdf`; antes se generaba `67410.pdf`, que RFEG devuelve con error 500.
+    - Verificado que `https://api.rfeg.es/files/summaryhandicap/067410.pdf` descarga como PDF válido y parsea `NUEVO HÁNDICAP: 3.6`.
+    - Verificado el handler local `api/get_handicap.js` con licencia `CB04067410`.
+    - Build verificado con `npm run build`.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Revisión de ordenación acumulada multi-ronda
+==========================================================================
+  Siguiente: Validar con datos reales de torneo de varios días que el acumulado mantiene la clasificación correcta cuando varias jugadoras empiezan la ronda activa en momentos distintos.
+
+[COMPLETADO] OPERACIÓN ADMIN — Ocultar Orden de Mérito a todos salvo Nicole y Jordi
+  Firestore actualizado:
+    - users/{0pszHtoDzIfPfanqSZH3G3hM6bG3}/settings/preferences
+    - users/{JKilWPzF04bdRzZ3M1IebTEKEAC2}/settings/preferences
+    - users/{M16d05z59jOHh036bhOJUDeNJAO2}/settings/preferences
+    - users/{mjY4pgCQY2gpvTBhzfZqBTiq8fj2}/settings/preferences
+    - users/{nfAPpZ2WXlMkNPDAKAiAvUTSG2K3}/settings/preferences
+    - users/{os0a0zq8gyPFyKa3T9H81hfgD8i2}/settings/preferences
+    - users/{tdD3UbBr0WeR0ydBxJMJPqGQlMy2}/settings/preferences
+  Resumen:
+    - Añadidos a `hiddenIds` los 12 torneos `ORDEN DE MERITO` para todos los usuarios salvo `nicole` y `jordi`.
+    - Perfiles actualizados: `sofia`, `maria`, `adriana`, `david`, `itziardeormaechea`, `iona`, `paulaalbadalejo`.
+    - Perfiles ya correctos sin cambios: `juliacarrera`, `mariaros`, `ona`, `txell`.
+    - Verificado por lectura de Firestore: no falta ningún ID de Orden de Mérito en usuarios no excluidos.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Revisión de ordenación acumulada multi-ronda
+==========================================================================
+  Siguiente: Validar con datos reales de torneo de varios días que el acumulado mantiene la clasificación correcta cuando varias jugadoras empiezan la ronda activa en momentos distintos.

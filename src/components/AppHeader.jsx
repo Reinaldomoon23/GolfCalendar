@@ -254,7 +254,7 @@ export default function AppHeader({
               if (!targetUrl && user?.federation_id) {
                 const match = user.federation_id.match(/(\d+)$/);
                 if (match) {
-                  const shortId = parseInt(match[1].slice(-6), 10);
+                  const shortId = match[1].slice(-6);
                   targetUrl = `https://api.rfeg.es/files/summaryhandicap/${shortId}.pdf`;
                 }
               }

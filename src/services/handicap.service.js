@@ -329,7 +329,7 @@ export function buildPdfUrl(username, federationId) {
   const matches = federationId.match(/(\d+)$/);
   if (matches && matches[1]) {
     const shortId = matches[1].slice(-6);
-    return `https://api.rfeg.es/files/summaryhandicap/${parseInt(shortId, 10)}.pdf`;
+    return `https://api.rfeg.es/files/summaryhandicap/${shortId}.pdf`;
   }
   return '';
 }

@@ -105,7 +105,7 @@ $pdfUrl = '';
 if (!empty($passedLicense)) {
     if (preg_match('/(\d+)$/', $passedLicense, $matches)) {
         $shortId = substr($matches[1], -6); // Get last 6 digits
-        $pdfUrl = 'https://api.rfeg.es/files/summaryhandicap/' . ltrim($shortId, '0') . '.pdf';
+        $pdfUrl = 'https://api.rfeg.es/files/summaryhandicap/' . $shortId . '.pdf';
     }
 }
 
@@ -117,7 +117,7 @@ if (empty($pdfUrl) && file_exists($usersFile)) {
         if (!empty($userData['federation_id'])) {
             if (preg_match('/(\d+)$/', $userData['federation_id'], $matches)) {
                 $shortId = substr($matches[1], -6);
-                $pdfUrl = 'https://api.rfeg.es/files/summaryhandicap/' . ltrim($shortId, '0') . '.pdf';
+                $pdfUrl = 'https://api.rfeg.es/files/summaryhandicap/' . $shortId . '.pdf';
             }
         } elseif (!empty($userData['handicap_url'])) {
             $pdfUrl = $userData['handicap_url'];

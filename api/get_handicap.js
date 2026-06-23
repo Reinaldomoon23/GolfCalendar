@@ -98,7 +98,7 @@ export default async function handler(req, res) {
     const matches = license.match(/(\d+)$/);
     if (matches && matches[1]) {
       const shortId = matches[1].slice(-6); // Last 6 digits
-      pdfUrl = `https://api.rfeg.es/files/summaryhandicap/${parseInt(shortId, 10)}.pdf`;
+      pdfUrl = `https://api.rfeg.es/files/summaryhandicap/${shortId}.pdf`;
     }
   }
 

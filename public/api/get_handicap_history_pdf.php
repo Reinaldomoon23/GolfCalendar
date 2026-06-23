@@ -56,7 +56,7 @@ function saveHistory($file, $history) {
 
 function buildPdfUrl($license) {
     if (preg_match('/(\d+)$/', $license, $m)) {
-        $shortId = ltrim(substr($m[1], -6), '0');
+        $shortId = substr($m[1], -6);
         return 'https://api.rfeg.es/files/summaryhandicap/' . $shortId . '.pdf';
     }
     return null;
