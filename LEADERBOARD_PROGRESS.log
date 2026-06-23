@@ -33,6 +33,19 @@ SESIÓN: 2026-06-23 | Codex
   Verificación:
     - npm run build
 
+[COMPLETADO] HOTFIX — Borrado persistente de torneos oficiales
+  Archivos modificados:
+    - src/hooks/useTournaments.js
+    - src/components/CalendarView.jsx
+  Resumen:
+    Se corrigió el borrado de torneos oficiales/suscritos para que el ID
+    canónico se calcule antes de buscar torneos custom, no se limpie
+    `hiddenIds` por existir resultados y la UI espere el borrado real antes
+    de mostrar éxito. Esto evita que torneos como el Orden de Mérito de
+    Nicole del 19/07/2026 reaparezcan tras confirmar el borrado.
+  Verificación:
+    - npm run build
+
 ==========================================================================
 SESIÓN: 2026-04-26 | Modelo: Antigravity (Google DeepMind)
 ==========================================================================

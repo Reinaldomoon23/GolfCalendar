@@ -141,9 +141,6 @@ export function useTournaments(user, preferences, handleUpdatePreferences, resul
     }
 
     const cleanPreferences = { ...preferences };
-    if (results && cleanPreferences.hiddenIds) {
-      cleanPreferences.hiddenIds = cleanPreferences.hiddenIds.filter(id => !results[id] && !results[String(id)]);
-    }
 
     let merged = mergeTournaments(baseTournaments, customTournaments, cleanPreferences, user);
     const hiddenIds = cleanPreferences?.hiddenIds || [];
@@ -235,23 +232,31 @@ export function useTournaments(user, preferences, handleUpdatePreferences, resul
   };
 
   const handleDeleteTournament = async (id) => {
+    const canonicalId = resolveCanonicalTournamentId(id);
     const customTournament = customTournaments.find((t) =>
       String(t.id) === String(id) || String(t.id) === String(canonicalId)
     );
-    const canonicalId = resolveCanonicalTournamentId(id);
+
     if (customTournament) {
       if (user) await deleteCustomTournament(user, canonicalId);
       // DO NOT hide official tournaments if we just deleted a custom one with the same ID
     } else {
-      const newHidden = [...(preferences.hiddenIds || []), canonicalId];
-      handleUpdatePreferences(null, newHidden);
+      const nextHidden = new Set((preferences.hiddenIds || []).map(String));
+      nextHidden.add(String(canonicalId));
+      if (id) nextHidden.add(String(id));
+      await Promise.resolve(handleUpdatePreferences(null, Array.from(nextHidden)));
     }
+
     // Also remove from subscribed_tournaments to completely remove any duplicate link
     if (user && canonicalId) {
       await leaveTournament(user, canonicalId);
     }
+
     if ((results[id] || results[canonicalId]) && user) {
       await deleteResult(user, canonicalId);
+      if (String(id) !== String(canonicalId) && results[id]) {
+        await deleteResult(user, id);
+      }
     }
   };
 

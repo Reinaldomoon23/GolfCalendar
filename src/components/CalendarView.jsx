@@ -952,9 +952,14 @@ export default function CalendarView({
         });
         if (!shouldDelete) return;
 
-        if (onDeleteTournament) onDeleteTournament(selectedTournament.id);
-        notify('Torneo borrado.', 'success');
-        navigate('/');
+        try {
+            if (onDeleteTournament) await onDeleteTournament(selectedTournament.id);
+            notify('Torneo borrado.', 'success');
+            navigate('/');
+        } catch (error) {
+            console.error('[CalendarView] Error deleting tournament:', error);
+            notify(error?.message || 'No se pudo borrar el torneo.', 'error');
+        }
     };
 
     // Helper function to parse dates, considering multi-day events
