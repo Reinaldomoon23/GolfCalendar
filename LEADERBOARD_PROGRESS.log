@@ -3,6 +3,37 @@
 # Actualizar este archivo cada vez que se complete un paso del roadmap
 
 ==========================================================================
+SESIÓN: 2026-06-23 | Codex
+==========================================================================
+
+[COMPLETADO] DOCUMENTACIÓN — Manual de uso RoundTracker
+  Archivos creados:
+    - manual/manual_roundtracker.docx
+    - manual/manual_roundtracker.pdf
+    - scratch/create_manual_roundtracker.py
+  Resumen:
+    Se creó una primera versión del manual de uso para jugadoras/familias con
+    ilustraciones tipo móvil, pasos de login, torneos, resultados, modo móvil,
+    clasificación, compartir, perfil y recuperación de contraseña.
+    Se renderizó el DOCX a PNG/PDF y se revisó visualmente la maquetación.
+
+[COMPLETADO] COMUNIDAD FASE 1 — Amigas y agenda futura
+  Archivos modificados:
+    - src/services/friends.service.js
+    - src/components/FriendsView.jsx
+    - src/components/NavTabs.jsx
+    - src/App.jsx
+    - firestore.rules
+  Resumen:
+    Se añadió una pestaña "Amigas" con búsqueda de jugadoras, solicitudes
+    entrantes/salientes, aceptar/rechazar, eliminar amistad y agenda futura
+    de amigas aceptadas basada en sus torneos suscritos.
+    La búsqueda permite encontrar usuarias por username, nombre completo,
+    apellidos o licencia federativa, para no depender de recordar el usuario.
+  Verificación:
+    - npm run build
+
+==========================================================================
 SESIÓN: 2026-04-26 | Modelo: Antigravity (Google DeepMind)
 ==========================================================================
 
@@ -651,6 +682,19 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
 ==========================================================================
   Siguiente: Validar con datos reales de torneo de varios días que el acumulado mantiene la clasificación correcta cuando varias jugadoras empiezan la ronda activa en momentos distintos.
 
+[COMPLETADO] HOTFIX UX — Evitar `RNAN` en leaderboard público
+  Archivos modificados:
+    - src/components/PublicScorecardView.jsx
+  Resumen:
+    - Corregida la etiqueta secundaria de participantes sin resultado cuando la ronda activa no es numérica.
+    - Si no hay ronda válida, ahora muestra `Sin resultados` en lugar de `Sin resultados RNaN`.
+    - Build verificado con `npm run build`.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Revisión de ordenación acumulada multi-ronda
+==========================================================================
+  Siguiente: Validar con datos reales de torneo de varios días que el acumulado mantiene la clasificación correcta cuando varias jugadoras empiezan la ronda activa en momentos distintos.
+
 [COMPLETADO] HOTFIX — Contraseñas temporales desde dominio Hostinger
   Archivos modificados:
     - src/config/api.js
@@ -776,19 +820,6 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
     - Creada usuaria `iona` con nombre completo `Ion Lage`.
     - Alta en Campeonato de España Infantil en `La Manga Campo Sur` como participante pendiente.
     - Verificado login correcto con `iona@golfteam.app` y que el roster público contiene `iona`, `itziardeormaechea`, `mariaros`, `nicole`, `ona`, `paulaalbadalejo`, `txell`.
-
-==========================================================================
-  PRÓXIMO PASO: HARDENING — Revisión de ordenación acumulada multi-ronda
-==========================================================================
-  Siguiente: Validar con datos reales de torneo de varios días que el acumulado mantiene la clasificación correcta cuando varias jugadoras empiezan la ronda activa en momentos distintos.
-
-[COMPLETADO] HOTFIX UX — Evitar `RNAN` en leaderboard público
-  Archivos modificados:
-    - src/components/PublicScorecardView.jsx
-  Resumen:
-    - Corregida la etiqueta secundaria de participantes sin resultado cuando la ronda activa no es numérica.
-    - Si no hay ronda válida, ahora muestra `Sin resultados` en lugar de `Sin resultados RNaN`.
-    - Build verificado con `npm run build`.
 
 ==========================================================================
   PRÓXIMO PASO: HARDENING — Revisión de ordenación acumulada multi-ronda

@@ -1,0 +1,463 @@
+import { useEffect, useMemo, useState } from 'react';
+import {
+  CalendarDays,
+  Check,
+  Clock,
+  Search,
+  Send,
+  Trash2,
+  UserPlus,
+  Users,
+  X,
+} from 'lucide-react';
+import ProfileImage from './ProfileImage';
+import { parseDateHelper } from '../utils/dateHelpers';
+import {
+  acceptFriendRequest,
+  loadFriendSchedule,
+  rejectFriendRequest,
+  removeFriend,
+  searchUsersForFriendship,
+  sendFriendRequest,
+  subscribeToFriends,
+  subscribeToIncomingFriendRequests,
+  subscribeToOutgoingFriendRequests,
+} from '../services/friends.service';
+
+const tabs = [
+  { id: 'friends', label: 'Amigas', icon: Users },
+  { id: 'requests', label: 'Solicitudes', icon: UserPlus },
+  { id: 'search', label: 'Buscar', icon: Search },
+  { id: 'agenda', label: 'Agenda', icon: CalendarDays },
+];
+
+function getTournamentDateValue(tournament) {
+  const { start, end } = parseDateHelper(tournament?.dates || '');
+  return (start || end || new Date(8640000000000000)).getTime();
+}
+
+function isFutureTournament(tournament) {
+  const { end } = parseDateHelper(tournament?.dates || '');
+  if (!end) return true;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return end >= today;
+}
+
+function StatusMessage({ message }) {
+  if (!message?.text) return null;
+
+  const palette = message.type === 'error'
+    ? { bg: '#fef2f2', border: '#fecaca', color: '#991b1b' }
+    : { bg: '#ecfdf5', border: '#bbf7d0', color: '#166534' };
+
+  return (
+    <div style={{
+      padding: '0.85rem 1rem',
+      borderRadius: '8px',
+      background: palette.bg,
+      border: `1px solid ${palette.border}`,
+      color: palette.color,
+      fontWeight: 700,
+      fontSize: '0.9rem',
+      marginBottom: '1rem',
+    }}>
+      {message.text}
+    </div>
+  );
+}
+
+function FriendCard({ friend, onRemove }) {
+  return (
+    <div className="card" style={{ padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+      <ProfileImage
+        photoPath={friend.photo_url}
+        displayName={friend.full_name || friend.username}
+        username={friend.username}
+        style={{ width: 46, height: 46, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+      />
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <div style={{ fontWeight: 900, color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {friend.full_name || friend.username}
+        </div>
+        <div style={{ color: '#64748b', fontSize: '0.9rem' }}>@{friend.username}</div>
+      </div>
+      <button
+        type="button"
+        onClick={() => onRemove(friend)}
+        title="Eliminar amistad"
+        style={{
+          border: '1px solid #fee2e2',
+          background: '#fff',
+          color: '#dc2626',
+          borderRadius: '8px',
+          padding: '0.55rem',
+          cursor: 'pointer',
+          display: 'inline-flex',
+          alignItems: 'center',
+        }}
+      >
+        <Trash2 size={18} />
+      </button>
+    </div>
+  );
+}
+
+function EmptyState({ title, text }) {
+  return (
+    <div className="card" style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>
+      <div style={{ fontWeight: 900, color: '#334155', marginBottom: '0.35rem' }}>{title}</div>
+      <div>{text}</div>
+    </div>
+  );
+}
+
+export default function FriendsView({ user }) {
+  const [activeTab, setActiveTab] = useState('friends');
+  const [friends, setFriends] = useState([]);
+  const [incomingRequests, setIncomingRequests] = useState([]);
+  const [outgoingRequests, setOutgoingRequests] = useState([]);
+  const [search, setSearch] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isWorking, setIsWorking] = useState(false);
+  const [message, setMessage] = useState(null);
+  const [agenda, setAgenda] = useState([]);
+  const [agendaLoading, setAgendaLoading] = useState(false);
+
+  useEffect(() => {
+    const unsubFriends = subscribeToFriends(user, setFriends);
+    const unsubIncoming = subscribeToIncomingFriendRequests(user, setIncomingRequests);
+    const unsubOutgoing = subscribeToOutgoingFriendRequests(user, setOutgoingRequests);
+
+    return () => {
+      unsubFriends();
+      unsubIncoming();
+      unsubOutgoing();
+    };
+  }, [user?.uid, user?.docId, user?.username]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadAgenda() {
+      if (activeTab !== 'agenda' || friends.length === 0) {
+        setAgenda([]);
+        return;
+      }
+
+      setAgendaLoading(true);
+      try {
+        const scheduleGroups = await Promise.all(friends.map(loadFriendSchedule));
+        if (cancelled) return;
+
+        const rows = scheduleGroups
+          .flat()
+          .filter(isFutureTournament)
+          .sort((a, b) => getTournamentDateValue(a) - getTournamentDateValue(b));
+
+        setAgenda(rows);
+      } catch (error) {
+        console.error('[friends] Could not load friend agenda:', error);
+        if (!cancelled) {
+          setMessage({ type: 'error', text: 'No se pudo cargar la agenda de amigas.' });
+        }
+      } finally {
+        if (!cancelled) setAgendaLoading(false);
+      }
+    }
+
+    loadAgenda();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, friends]);
+
+  const outgoingByUid = useMemo(() => {
+    const map = new Set();
+    outgoingRequests.forEach((request) => map.add(request.to_uid));
+    return map;
+  }, [outgoingRequests]);
+
+  const friendUids = useMemo(() => new Set(friends.map((friend) => friend.uid)), [friends]);
+
+  const handleSearch = async (event) => {
+    event.preventDefault();
+    setMessage(null);
+    setSearchResults([]);
+    setIsSearching(true);
+
+    try {
+      const results = await searchUsersForFriendship(user, search);
+      setSearchResults(results);
+      if (results.length === 0) {
+        setMessage({ type: 'error', text: 'No se ha encontrado ninguna jugadora con ese nombre o usuario.' });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: error.message || 'No se pudo buscar la jugadora.' });
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleSendRequest = async (targetProfile) => {
+    if (!targetProfile) return;
+    setIsWorking(true);
+    setMessage(null);
+
+    try {
+      await sendFriendRequest(user, targetProfile);
+      setMessage({ type: 'success', text: `Solicitud enviada a @${targetProfile.username}.` });
+      setSearchResults((previousResults) => previousResults.filter((result) => result.uid !== targetProfile.uid));
+      setSearch('');
+    } catch (error) {
+      setMessage({ type: 'error', text: error.message || 'No se pudo enviar la solicitud.' });
+    } finally {
+      setIsWorking(false);
+    }
+  };
+
+  const handleAccept = async (request) => {
+    setIsWorking(true);
+    setMessage(null);
+    try {
+      await acceptFriendRequest(user, request);
+      setMessage({ type: 'success', text: `Ahora eres amiga de @${request.from_user?.username}.` });
+    } catch (error) {
+      setMessage({ type: 'error', text: error.message || 'No se pudo aceptar la solicitud.' });
+    } finally {
+      setIsWorking(false);
+    }
+  };
+
+  const handleReject = async (request) => {
+    setIsWorking(true);
+    setMessage(null);
+    try {
+      await rejectFriendRequest(user, request);
+      setMessage({ type: 'success', text: 'Solicitud rechazada.' });
+    } catch (error) {
+      setMessage({ type: 'error', text: error.message || 'No se pudo rechazar la solicitud.' });
+    } finally {
+      setIsWorking(false);
+    }
+  };
+
+  const handleRemoveFriend = async (friend) => {
+    setIsWorking(true);
+    setMessage(null);
+    try {
+      await removeFriend(user, friend);
+      setMessage({ type: 'success', text: `@${friend.username} ya no está en tu lista de amigas.` });
+    } catch (error) {
+      setMessage({ type: 'error', text: error.message || 'No se pudo eliminar la amistad.' });
+    } finally {
+      setIsWorking(false);
+    }
+  };
+
+  const renderSearchResultAction = (targetProfile) => {
+    if (!targetProfile) return null;
+    if (friendUids.has(targetProfile.uid)) {
+      return <span style={{ color: '#16a34a', fontWeight: 800 }}>Ya sois amigas</span>;
+    }
+    if (outgoingByUid.has(targetProfile.uid)) {
+      return <span style={{ color: '#64748b', fontWeight: 800 }}>Solicitud enviada</span>;
+    }
+
+    return (
+      <button type="button" className="btn btn-primary" onClick={() => handleSendRequest(targetProfile)} disabled={isWorking}>
+        <Send size={16} />
+        Enviar solicitud
+      </button>
+    );
+  };
+
+  return (
+    <div style={{ padding: '1rem', maxWidth: '980px', margin: '0 auto' }}>
+      <div style={{ marginBottom: '1.25rem' }}>
+        <h1 style={{ margin: 0, color: '#0f172a', fontSize: '1.9rem' }}>Comunidad</h1>
+        <p style={{ margin: '0.35rem 0 0', color: '#64748b' }}>
+          Añade amigas y consulta su agenda futura cuando la amistad esté aceptada.
+        </p>
+      </div>
+
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+        gap: '0.75rem',
+        marginBottom: '1rem',
+      }}>
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={`btn ${isActive ? 'btn-primary' : 'card'}`}
+              style={{ justifyContent: 'center' }}
+            >
+              <Icon size={18} />
+              {tab.label}
+              {tab.id === 'requests' && incomingRequests.length > 0 && (
+                <span style={{
+                  minWidth: '1.35rem',
+                  height: '1.35rem',
+                  borderRadius: '999px',
+                  background: isActive ? '#fff' : '#2563eb',
+                  color: isActive ? '#2563eb' : '#fff',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.75rem',
+                  fontWeight: 900,
+                }}>
+                  {incomingRequests.length}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      <StatusMessage message={message} />
+
+      {activeTab === 'friends' && (
+        <div style={{ display: 'grid', gap: '0.75rem' }}>
+          {friends.length === 0 ? (
+            <EmptyState title="Todavía no tienes amigas" text="Busca una jugadora por su usuario y envía una solicitud." />
+          ) : (
+            friends.map((friend) => (
+              <FriendCard key={friend.uid} friend={friend} onRemove={handleRemoveFriend} />
+            ))
+          )}
+        </div>
+      )}
+
+      {activeTab === 'requests' && (
+        <div style={{ display: 'grid', gap: '1rem' }}>
+          <section>
+            <h2 style={{ fontSize: '1rem', color: '#334155', margin: '0 0 0.75rem' }}>Recibidas</h2>
+            {incomingRequests.length === 0 ? (
+              <EmptyState title="Sin solicitudes pendientes" text="Cuando alguien quiera añadirte, aparecerá aquí." />
+            ) : (
+              <div style={{ display: 'grid', gap: '0.75rem' }}>
+                {incomingRequests.map((request) => (
+                  <div key={request.id} className="card" style={{ padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.85rem', flexWrap: 'wrap' }}>
+                    <ProfileImage
+                      photoPath={request.from_user?.photo_url}
+                      displayName={request.from_user?.full_name || request.from_user?.username}
+                      username={request.from_user?.username}
+                      style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+                    />
+                    <div style={{ flex: 1, minWidth: '180px' }}>
+                      <div style={{ fontWeight: 900 }}>{request.from_user?.full_name || request.from_user?.username}</div>
+                      <div style={{ color: '#64748b', fontSize: '0.9rem' }}>@{request.from_user?.username}</div>
+                    </div>
+                    <button type="button" className="btn btn-primary" onClick={() => handleAccept(request)} disabled={isWorking}>
+                      <Check size={16} />
+                      Aceptar
+                    </button>
+                    <button type="button" className="btn card" onClick={() => handleReject(request)} disabled={isWorking}>
+                      <X size={16} />
+                      Rechazar
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section>
+            <h2 style={{ fontSize: '1rem', color: '#334155', margin: '0 0 0.75rem' }}>Enviadas</h2>
+            {outgoingRequests.length === 0 ? (
+              <EmptyState title="No tienes solicitudes enviadas" text="Las solicitudes pendientes que envíes aparecerán aquí." />
+            ) : (
+              <div style={{ display: 'grid', gap: '0.75rem' }}>
+                {outgoingRequests.map((request) => (
+                  <div key={request.id} className="card" style={{ padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                    <Clock size={20} color="#64748b" />
+                    <div>
+                      <div style={{ fontWeight: 900 }}>{request.to_user?.full_name || request.to_user?.username}</div>
+                      <div style={{ color: '#64748b', fontSize: '0.9rem' }}>Pendiente de aceptación</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
+      )}
+
+      {activeTab === 'search' && (
+        <div className="card" style={{ padding: '1rem' }}>
+          <form onSubmit={handleSearch} style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <div style={{ flex: '1 1 240px' }}>
+              <label style={{ display: 'block', fontWeight: 800, marginBottom: '0.4rem' }}>Nombre, apellidos o usuario</label>
+              <input
+                type="text"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Ej: Nicole Likhomanova, Ona Martinez, iona"
+                style={{ width: '100%' }}
+              />
+            </div>
+            <button type="submit" className="btn btn-primary" disabled={isSearching} style={{ alignSelf: 'end' }}>
+              <Search size={16} />
+              {isSearching ? 'Buscando...' : 'Buscar'}
+            </button>
+          </form>
+
+          {searchResults.length > 0 && (
+            <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0', display: 'grid', gap: '0.75rem' }}>
+              {searchResults.map((searchResult) => (
+                <div key={searchResult.uid} style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexWrap: 'wrap' }}>
+                  <ProfileImage
+                    photoPath={searchResult.photo_url}
+                    displayName={searchResult.full_name || searchResult.username}
+                    username={searchResult.username}
+                    style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+                  />
+                  <div style={{ flex: 1, minWidth: '180px' }}>
+                    <div style={{ fontWeight: 900 }}>{searchResult.full_name || searchResult.username}</div>
+                    <div style={{ color: '#64748b' }}>@{searchResult.username}</div>
+                  </div>
+                  {renderSearchResultAction(searchResult)}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'agenda' && (
+        <div style={{ display: 'grid', gap: '0.75rem' }}>
+          {agendaLoading ? (
+            <EmptyState title="Cargando agenda" text="Consultando torneos futuros de tus amigas." />
+          ) : agenda.length === 0 ? (
+            <EmptyState title="Sin torneos futuros visibles" text="Cuando una amiga aceptada esté apuntada a un torneo futuro, aparecerá aquí." />
+          ) : (
+            agenda.map((item) => (
+              <div key={`${item.friend_uid}-${item.id}`} className="card" style={{ padding: '1rem', display: 'grid', gap: '0.45rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+                  <div>
+                    <div style={{ fontWeight: 900, color: '#0f172a' }}>{item.name || item.tournament_name || 'Torneo'}</div>
+                    <div style={{ color: '#64748b', fontSize: '0.9rem' }}>
+                      {item.course || 'Campo pendiente'} · {item.dates || 'Fecha pendiente'}
+                    </div>
+                  </div>
+                  <div style={{ color: '#2563eb', fontWeight: 900 }}>@{item.friend_username}</div>
+                </div>
+                <div style={{ color: '#64748b', fontSize: '0.9rem' }}>
+                  Estado: apuntada
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

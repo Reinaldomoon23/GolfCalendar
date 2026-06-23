@@ -1,11 +1,11 @@
 /**
  * NavTabs Component
  *
- * Bottom navigation tabs: Calendar, Stats, Handicap.
+ * Bottom navigation tabs: Calendar, Stats, Handicap, Tournaments, Friends.
  */
 
 import { Link, useLocation } from 'react-router-dom';
-import { Calendar as CalendarIcon, BarChart3, TrendingUp, Trophy } from 'lucide-react';
+import { Calendar as CalendarIcon, BarChart3, TrendingUp, Trophy, Users } from 'lucide-react';
 
 export default function NavTabs() {
   const { pathname } = useLocation();
@@ -14,6 +14,7 @@ export default function NavTabs() {
   const isStats = pathname === '/stats';
   const isHandicap = pathname === '/handicap';
   const isTournaments = pathname === '/tournaments';
+  const isFriends = pathname === '/friends';
 
   return (
     <nav className="nav-tabs">
@@ -39,6 +40,12 @@ export default function NavTabs() {
         <button className={`btn ${isTournaments ? 'btn-primary' : 'card'}`}>
           <Trophy size={20} />
           Torneos
+        </button>
+      </Link>
+      <Link to="/friends" style={{ textDecoration: 'none' }}>
+        <button className={`btn ${isFriends ? 'btn-primary' : 'card'}`}>
+          <Users size={20} />
+          Amigas
         </button>
       </Link>
     </nav>

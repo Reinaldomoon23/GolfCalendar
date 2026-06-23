@@ -156,6 +156,54 @@ service cloud.firestore {
     }
 
     // =============================================================
+    // FRIENDS / COMMUNITY
+    // =============================================================
+
+    match /friend_requests/{requestId} {
+      allow read: if isAdmin() || (
+        isAuthenticated() &&
+        (resource.data.from_uid == request.auth.uid || resource.data.to_uid == request.auth.uid)
+      );
+
+      allow create: if isAuthenticated() &&
+        request.resource.data.from_uid == request.auth.uid &&
+        request.resource.data.to_uid is string &&
+        request.resource.data.status == 'pending';
+
+      allow update: if isAdmin() || (
+        isAuthenticated() &&
+        resource.data.to_uid == request.auth.uid &&
+        request.resource.data.from_uid == resource.data.from_uid &&
+        request.resource.data.to_uid == resource.data.to_uid &&
+        request.resource.data.status in ['accepted', 'rejected']
+      );
+
+      allow delete: if isAdmin() || (
+        isAuthenticated() &&
+        (resource.data.from_uid == request.auth.uid || resource.data.to_uid == request.auth.uid)
+      );
+    }
+
+    match /friendships/{friendshipId} {
+      allow read: if isAdmin() || (
+        isAuthenticated() &&
+        request.auth.uid in resource.data.members
+      );
+
+      allow create: if isAuthenticated() &&
+        request.auth.uid in request.resource.data.members &&
+        request.resource.data.members is list &&
+        request.resource.data.members.size() == 2;
+
+      allow update: if false;
+
+      allow delete: if isAdmin() || (
+        isAuthenticated() &&
+        request.auth.uid in resource.data.members
+      );
+    }
+
+    // =============================================================
     // TOURNAMENTS COLLECTION (Global)
     // =============================================================
 

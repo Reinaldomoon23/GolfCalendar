@@ -12,6 +12,7 @@ const PublicScorecardView = lazy(() => import('./components/PublicScorecardView'
 const PublicLeaderboardView = lazy(() => import('./components/PublicLeaderboardView'));
 const TeamLiveScorecard = lazy(() => import('./components/TeamLiveScorecard'));
 const TournamentsCentralView = lazy(() => import('./components/TournamentsCentralView'));
+const FriendsView = lazy(() => import('./components/FriendsView'));
 const AdminDashboardView = lazy(() => import('./components/admin/AdminDashboardView'));
 const AdminRoute = lazy(() => import('./components/admin/AdminRoute'));
 
@@ -725,6 +726,7 @@ function AppContent() {
               onLeaveTournament={handleLeaveTournament}
             />
           } />
+          <Route path="/friends" element={<FriendsView user={user} />} />
           <Route path="/admin" element={
             <AdminRoute user={sessionOwner || user}>
               <AdminDashboardView user={sessionOwner || user} />
