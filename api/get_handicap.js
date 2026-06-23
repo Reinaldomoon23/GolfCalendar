@@ -147,20 +147,42 @@ async function fetchPdf(url) {
     headers: {
       'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       'Accept': 'application/pdf,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-      'Referer': 'https://www.rfegolf.es/'
+      'Referer': 'https://www.rfegolf.es/',
+      'Cache-Control': 'no-cache',
+      'Pragma': 'no-cache'
     }
   };
 
-  const res = await fetch(url, options);
+  let lastError = null;
 
-  if (res.status >= 300 && res.status < 400 && res.headers.get('location')) {
-    return fetchPdf(res.headers.get('location'));
-  }
-  
-  if (res.status !== 200) {
-    throw new Error(`HTTP Code: ${res.status} | Text: ${await res.text()}`);
+  for (let attempt = 1; attempt <= 5; attempt++) {
+    try {
+      const res = await fetch(url, options);
+
+      if (res.status >= 300 && res.status < 400 && res.headers.get('location')) {
+        return fetchPdf(res.headers.get('location'));
+      }
+
+      if (res.status !== 200) {
+        const text = await res.text();
+        lastError = new Error(`HTTP Code: ${res.status} | Text: ${text}`);
+      } else {
+        const arrayBuffer = await res.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        const isPdf = buffer.length > 1000 && buffer.subarray(0, 4).toString() === '%PDF';
+
+        if (isPdf) return buffer;
+
+        lastError = new Error(`Invalid PDF response: ${buffer.subarray(0, 80).toString('utf8')}`);
+      }
+    } catch (error) {
+      lastError = error;
+    }
+
+    if (attempt < 5) {
+      await new Promise(resolve => setTimeout(resolve, 500 * attempt));
+    }
   }
 
-  const arrayBuffer = await res.arrayBuffer();
-  return Buffer.from(arrayBuffer);
+  throw lastError || new Error('Failed to fetch PDF.');
 }

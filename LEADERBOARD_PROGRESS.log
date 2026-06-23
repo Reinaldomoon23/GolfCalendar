@@ -975,3 +975,19 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
   PRÓXIMO PASO: HARDENING — Revisión de ordenación acumulada multi-ronda
 ==========================================================================
   Siguiente: Validar con datos reales de torneo de varios días que el acumulado mantiene la clasificación correcta cuando varias jugadoras empiezan la ronda activa en momentos distintos.
+
+[COMPLETADO] HARDENING — Auditoría de hándicap RFEG para todos los usuarios
+  Archivos modificados:
+    - api/get_handicap.js
+  Resumen:
+    - Revisadas las 13 licencias federativas guardadas en Firestore.
+    - Detectados dos casos con ID PDF de 6 dígitos empezando por cero: `itziardeormaechea` (`067410.pdf`) y `sofia` (`036032.pdf`).
+    - Confirmado que todos los PDFs directos existen; varios usuarios reciben 500 intermitente de RFEG en el primer intento.
+    - Añadidos 5 reintentos con backoff corto en la API de Vercel y validación de cabecera `%PDF`.
+    - Verificado localmente el handler con `paulaalbadalejo`, `itziardeormaechea` y `sofia`.
+    - Build verificado con `npm run build`.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Revisión de ordenación acumulada multi-ronda
+==========================================================================
+  Siguiente: Validar con datos reales de torneo de varios días que el acumulado mantiene la clasificación correcta cuando varias jugadoras empiezan la ronda activa en momentos distintos.
