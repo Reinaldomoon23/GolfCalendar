@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   CalendarDays,
   Check,
+  MessageCircle,
   Clock,
   Search,
   Send,
@@ -13,6 +14,7 @@ import {
 } from 'lucide-react';
 import ProfileImage from './ProfileImage';
 import { parseDateHelper } from '../utils/dateHelpers';
+import { getUserDocId } from '../utils/userProfiles';
 import { resolveCanonicalTournamentId } from '../services/tournaments.service';
 import {
   acceptFriendRequest,
@@ -27,9 +29,17 @@ import {
   subscribeToIncomingFriendRequests,
   subscribeToOutgoingFriendRequests,
 } from '../services/friends.service';
+import {
+  getOrCreateChat,
+  markChatRead,
+  sendChatMessage,
+  subscribeToChatMessages,
+  subscribeToChats,
+} from '../services/chat.service';
 
 const tabs = [
   { id: 'friends', label: 'Amigas', icon: Users },
+  { id: 'chat', label: 'Chat', icon: MessageCircle },
   { id: 'requests', label: 'Solicitudes', icon: UserPlus },
   { id: 'search', label: 'Buscar', icon: Search },
   { id: 'agenda', label: 'Agenda', icon: CalendarDays },
@@ -88,7 +98,7 @@ function StatusMessage({ message }) {
   );
 }
 
-function FriendCard({ friend, onRemove }) {
+function FriendCard({ friend, onRemove, onOpenChat, unread }) {
   return (
     <div className="card" style={{ padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
       <ProfileImage
@@ -103,6 +113,36 @@ function FriendCard({ friend, onRemove }) {
         </div>
         <div style={{ color: '#64748b', fontSize: '0.9rem' }}>@{friend.username}</div>
       </div>
+      <button
+        type="button"
+        onClick={() => onOpenChat(friend)}
+        title="Abrir chat"
+        style={{
+          border: '1px solid #bfdbfe',
+          background: unread ? '#eff6ff' : '#fff',
+          color: '#2563eb',
+          borderRadius: '8px',
+          padding: '0.55rem',
+          cursor: 'pointer',
+          display: 'inline-flex',
+          alignItems: 'center',
+          position: 'relative',
+        }}
+      >
+        <MessageCircle size={18} />
+        {unread && (
+          <span style={{
+            position: 'absolute',
+            top: '-5px',
+            right: '-5px',
+            width: '0.7rem',
+            height: '0.7rem',
+            borderRadius: '999px',
+            background: '#ef4444',
+            border: '2px solid #fff',
+          }} />
+        )}
+      </button>
       <button
         type="button"
         onClick={() => onRemove(friend)}
@@ -120,6 +160,181 @@ function FriendCard({ friend, onRemove }) {
       >
         <Trash2 size={18} />
       </button>
+    </div>
+  );
+}
+
+function formatMessageTime(value) {
+  const date = value?.toDate?.();
+  if (!date) return '';
+  return new Intl.DateTimeFormat('es-ES', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+}
+
+function ChatPanel({
+  user,
+  friends,
+  chats,
+  selectedChat,
+  selectedFriend,
+  messages,
+  draft,
+  sending,
+  onSelectChat,
+  onStartChat,
+  onDraftChange,
+  onSend,
+}) {
+  const hasFriends = friends.length > 0;
+
+  return (
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+      gap: '1rem',
+      alignItems: 'start',
+    }}>
+      <div className="card" style={{ padding: '1rem', display: 'grid', gap: '0.75rem' }}>
+        <div style={{ fontWeight: 900, color: '#0f172a' }}>Conversaciones</div>
+        {!hasFriends ? (
+          <div style={{ color: '#64748b', lineHeight: 1.45 }}>Añade una amiga para empezar un chat.</div>
+        ) : chats.length === 0 ? (
+          <div style={{ color: '#64748b', lineHeight: 1.45 }}>Elige una amiga para iniciar la conversación.</div>
+        ) : (
+          chats.map((chat) => (
+            <button
+              key={chat.id}
+              type="button"
+              onClick={() => onSelectChat(chat)}
+              style={{
+                border: selectedChat?.id === chat.id ? '1px solid #2563eb' : '1px solid #e2e8f0',
+                background: selectedChat?.id === chat.id ? '#eff6ff' : '#fff',
+                borderRadius: '8px',
+                padding: '0.75rem',
+                cursor: 'pointer',
+                textAlign: 'left',
+                display: 'grid',
+                gap: '0.25rem',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+                <span style={{ fontWeight: 900, color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {chat.friend?.full_name || chat.friend?.username || 'Amiga'}
+                </span>
+                {chat.unread && (
+                  <span style={{
+                    width: '0.65rem',
+                    height: '0.65rem',
+                    borderRadius: '999px',
+                    background: '#ef4444',
+                    flexShrink: 0,
+                  }} />
+                )}
+              </div>
+              <div style={{ color: '#64748b', fontSize: '0.85rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {chat.last_message?.text || 'Sin mensajes todavía'}
+              </div>
+            </button>
+          ))
+        )}
+
+        {hasFriends && (
+          <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '0.75rem', display: 'grid', gap: '0.5rem' }}>
+            <div style={{ fontWeight: 900, color: '#334155', fontSize: '0.9rem' }}>Nuevo chat</div>
+            {friends.map((friend) => (
+              <button
+                key={friend.uid}
+                type="button"
+                onClick={() => onStartChat(friend)}
+                style={{
+                  border: '1px solid #e2e8f0',
+                  background: '#fff',
+                  borderRadius: '8px',
+                  padding: '0.6rem 0.75rem',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  fontWeight: 800,
+                  color: '#0f172a',
+                }}
+              >
+                {friend.full_name || friend.username}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="card" style={{ padding: 0, minHeight: '520px', display: 'grid', gridTemplateRows: 'auto 1fr auto', overflow: 'hidden' }}>
+        {selectedFriend ? (
+          <>
+            <div style={{ padding: '1rem', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <ProfileImage
+                photoPath={selectedFriend.photo_url}
+                displayName={selectedFriend.full_name || selectedFriend.username}
+                username={selectedFriend.username}
+                style={{ width: 42, height: 42, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+              />
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: 900, color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {selectedFriend.full_name || selectedFriend.username}
+                </div>
+                <div style={{ color: '#64748b', fontSize: '0.85rem' }}>@{selectedFriend.username}</div>
+              </div>
+            </div>
+
+            <div style={{ padding: '1rem', display: 'grid', gap: '0.75rem', alignContent: 'start', overflowY: 'auto', background: '#f8fafc' }}>
+              {messages.length === 0 ? (
+                <div style={{ color: '#64748b', textAlign: 'center', padding: '2rem 1rem' }}>Todavía no hay mensajes.</div>
+              ) : (
+                messages.map((msg) => {
+                  const mine = msg.sender_uid === getUserDocId(user);
+                  return (
+                    <div key={msg.id} style={{ display: 'flex', justifyContent: mine ? 'flex-end' : 'flex-start' }}>
+                      <div style={{
+                        maxWidth: '78%',
+                        padding: '0.7rem 0.85rem',
+                        borderRadius: mine ? '8px 8px 2px 8px' : '8px 8px 8px 2px',
+                        background: mine ? '#2563eb' : '#fff',
+                        color: mine ? '#fff' : '#0f172a',
+                        border: mine ? '1px solid #2563eb' : '1px solid #e2e8f0',
+                        boxShadow: '0 1px 3px rgba(15,23,42,0.08)',
+                      }}>
+                        <div style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', lineHeight: 1.4 }}>{msg.text}</div>
+                        <div style={{ marginTop: '0.3rem', fontSize: '0.72rem', opacity: 0.72, textAlign: 'right' }}>
+                          {formatMessageTime(msg.created_at)}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            <form onSubmit={onSend} style={{ padding: '0.85rem', borderTop: '1px solid #e2e8f0', display: 'flex', gap: '0.6rem' }}>
+              <input
+                type="text"
+                value={draft}
+                onChange={(event) => onDraftChange(event.target.value)}
+                placeholder="Escribe un mensaje"
+                maxLength={1000}
+                style={{ flex: 1 }}
+              />
+              <button type="submit" className="btn btn-primary" disabled={sending || !draft.trim()}>
+                <Send size={16} />
+                Enviar
+              </button>
+            </form>
+          </>
+        ) : (
+          <div style={{ display: 'grid', placeItems: 'center', padding: '2rem', color: '#64748b', textAlign: 'center' }}>
+            Selecciona una conversación o empieza un chat con una amiga.
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -258,6 +473,12 @@ export default function FriendsView({ user, activeCalendarTournaments = [], subs
   const [agendaLoading, setAgendaLoading] = useState(false);
   const [agendaFriendFilter, setAgendaFriendFilter] = useState('all');
   const [agendaRangeFilter, setAgendaRangeFilter] = useState('all');
+  const [chats, setChats] = useState([]);
+  const [selectedChat, setSelectedChat] = useState(null);
+  const [selectedFriend, setSelectedFriend] = useState(null);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatDraft, setChatDraft] = useState('');
+  const [isSendingChat, setIsSendingChat] = useState(false);
   const communityProfileStatus = getCommunityProfileStatus(localUser);
 
   useEffect(() => {
@@ -275,13 +496,43 @@ export default function FriendsView({ user, activeCalendarTournaments = [], subs
     const unsubFriends = subscribeToFriends(localUser, setFriends);
     const unsubIncoming = subscribeToIncomingFriendRequests(localUser, setIncomingRequests);
     const unsubOutgoing = subscribeToOutgoingFriendRequests(localUser, setOutgoingRequests);
+    const unsubChats = subscribeToChats(localUser, setChats);
 
     return () => {
       unsubFriends();
       unsubIncoming();
       unsubOutgoing();
+      unsubChats();
     };
   }, [localUser?.uid, localUser?.docId, localUser?.username, communityProfileStatus.isComplete]);
+
+  useEffect(() => {
+    if (!selectedChat?.id || !communityProfileStatus.isComplete) {
+      setChatMessages([]);
+      return undefined;
+    }
+
+    markChatRead(localUser, selectedChat.id).catch((error) => {
+      console.warn('[chat] Could not mark chat as read:', error);
+    });
+
+    const unsubscribe = subscribeToChatMessages(selectedChat.id, localUser, setChatMessages);
+    return () => unsubscribe();
+  }, [selectedChat?.id, localUser?.uid, localUser?.docId, communityProfileStatus.isComplete]);
+
+  useEffect(() => {
+    if (!selectedChat?.id) return;
+    const refreshed = chats.find((chat) => chat.id === selectedChat.id);
+    if (refreshed) {
+      setSelectedChat(refreshed);
+      setSelectedFriend(refreshed.friend);
+      if (refreshed.unread) {
+        markChatRead(localUser, refreshed.id).catch((error) => {
+          console.warn('[chat] Could not mark refreshed chat as read:', error);
+        });
+      }
+    }
+  }, [chats, selectedChat?.id, localUser?.uid, localUser?.docId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -326,6 +577,14 @@ export default function FriendsView({ user, activeCalendarTournaments = [], subs
   }, [outgoingRequests]);
 
   const friendUids = useMemo(() => new Set(friends.map((friend) => friend.uid)), [friends]);
+  const unreadChatCount = useMemo(() => chats.filter((chat) => chat.unread).length, [chats]);
+  const unreadByFriendUid = useMemo(() => {
+    const map = new Map();
+    chats.forEach((chat) => {
+      if (chat.friend_uid && chat.unread) map.set(chat.friend_uid, true);
+    });
+    return map;
+  }, [chats]);
   const myTournamentIds = useMemo(() => {
     const ids = new Set((subscribedIds || []).map((id) => String(resolveCanonicalTournamentId(id))));
     (activeCalendarTournaments || []).forEach((tournament) => {
@@ -419,6 +678,56 @@ export default function FriendsView({ user, activeCalendarTournaments = [], subs
     }
   };
 
+  const handleOpenChat = async (friend) => {
+    if (!friend) return;
+    setIsWorking(true);
+    setMessage(null);
+    try {
+      const chatId = await getOrCreateChat(localUser, friend);
+      const existingChat = chats.find((chat) => chat.id === chatId);
+      const nextChat = existingChat || {
+        id: chatId,
+        friend_uid: friend.uid,
+        friend,
+        members: [getUserDocId(localUser), friend.uid].filter(Boolean).sort(),
+        unread: false,
+      };
+      setSelectedChat(nextChat);
+      setSelectedFriend(friend);
+      setActiveTab('chat');
+      await markChatRead(localUser, chatId).catch(() => {});
+    } catch (error) {
+      setMessage({ type: 'error', text: error.message || 'No se pudo abrir el chat.' });
+    } finally {
+      setIsWorking(false);
+    }
+  };
+
+  const handleSelectChat = async (chat) => {
+    setSelectedChat(chat);
+    setSelectedFriend(chat.friend);
+    setActiveTab('chat');
+    await markChatRead(localUser, chat.id).catch((error) => {
+      console.warn('[chat] Could not mark selected chat as read:', error);
+    });
+  };
+
+  const handleSendChat = async (event) => {
+    event.preventDefault();
+    if (!selectedFriend || !chatDraft.trim()) return;
+
+    setIsSendingChat(true);
+    setMessage(null);
+    try {
+      await sendChatMessage(localUser, selectedFriend, chatDraft);
+      setChatDraft('');
+    } catch (error) {
+      setMessage({ type: 'error', text: error.message || 'No se pudo enviar el mensaje.' });
+    } finally {
+      setIsSendingChat(false);
+    }
+  };
+
   const renderSearchResultAction = (targetProfile) => {
     if (!targetProfile) return null;
     if (friendUids.has(targetProfile.uid)) {
@@ -492,6 +801,22 @@ export default function FriendsView({ user, activeCalendarTournaments = [], subs
                   {incomingRequests.length}
                 </span>
               )}
+              {tab.id === 'chat' && unreadChatCount > 0 && (
+                <span style={{
+                  minWidth: '1.35rem',
+                  height: '1.35rem',
+                  borderRadius: '999px',
+                  background: isActive ? '#fff' : '#ef4444',
+                  color: isActive ? '#ef4444' : '#fff',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.75rem',
+                  fontWeight: 900,
+                }}>
+                  {unreadChatCount}
+                </span>
+              )}
             </button>
           );
         })}
@@ -505,10 +830,33 @@ export default function FriendsView({ user, activeCalendarTournaments = [], subs
             <EmptyState title="Todavía no tienes amigas" text="Busca una jugadora por su usuario y envía una solicitud." />
           ) : (
             friends.map((friend) => (
-              <FriendCard key={friend.uid} friend={friend} onRemove={handleRemoveFriend} />
+              <FriendCard
+                key={friend.uid}
+                friend={friend}
+                onRemove={handleRemoveFriend}
+                onOpenChat={handleOpenChat}
+                unread={unreadByFriendUid.get(friend.uid)}
+              />
             ))
           )}
         </div>
+      )}
+
+      {activeTab === 'chat' && (
+        <ChatPanel
+          user={localUser}
+          friends={friends}
+          chats={chats}
+          selectedChat={selectedChat}
+          selectedFriend={selectedFriend}
+          messages={chatMessages}
+          draft={chatDraft}
+          sending={isSendingChat}
+          onSelectChat={handleSelectChat}
+          onStartChat={handleOpenChat}
+          onDraftChange={setChatDraft}
+          onSend={handleSendChat}
+        />
       )}
 
       {activeTab === 'requests' && (

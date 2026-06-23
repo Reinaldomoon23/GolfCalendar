@@ -991,3 +991,22 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
   PRÓXIMO PASO: HARDENING — Revisión de ordenación acumulada multi-ronda
 ==========================================================================
   Siguiente: Validar con datos reales de torneo de varios días que el acumulado mantiene la clasificación correcta cuando varias jugadoras empiezan la ronda activa en momentos distintos.
+
+[COMPLETADO] COMUNIDAD FASE 2 — Chat básico entre amigas
+  Archivos modificados:
+    - src/services/chat.service.js
+    - src/components/FriendsView.jsx
+    - firestore.rules
+  Resumen:
+    - Añadida colección `chats/{chatId}` con mensajes en `messages/{messageId}`.
+    - El chat solo se puede crear entre miembros de una amistad aceptada.
+    - Añadida pestaña `Chat` en Comunidad, botón de chat en cada amiga y conversación 1:1 en tiempo real.
+    - Añadido contador visual de chats no leídos mediante `unread_by`.
+    - Reglas Firestore limitan lectura/escritura a miembros del chat y mensajes de texto de hasta 1000 caracteres.
+  Verificación:
+    - npm run build
+
+==========================================================================
+  PRÓXIMO PASO: COMUNIDAD FASE 2.1 — Pulir chat y notificaciones
+==========================================================================
+  Siguiente: Probar chat con dos cuentas reales, ajustar UX móvil si hace falta y decidir si añadimos notificaciones push o moderación/admin.
