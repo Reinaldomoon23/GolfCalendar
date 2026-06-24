@@ -1048,3 +1048,23 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
   PRÓXIMO PASO: COMUNIDAD FASE 2.3 — Prueba real y notificaciones
 ==========================================================================
   Siguiente: Probar chat/reportes con dos cuentas reales en producción y decidir si se activa Web Push/Firebase Messaging para notificaciones fuera de la app.
+
+[COMPLETADO] HOTFIX — Histórico RFEG en PDFs con columnas pegadas
+  Archivos modificados:
+    - api/get_handicap.js
+  Firestore actualizado:
+    - users/lQ79UhIbk2bfoVuA2MATKJTUQh32/handicap_history/*
+  Resumen:
+    - Julia Carrera tenía `current_handicap=15.3`, pero `handicap_history` estaba vacío.
+    - El PDF RFEG `299471.pdf` sí contiene 20 resultados, pero `pdf-parse` extrae las columnas pegadas, por ejemplo `Individuales1872.1/131/7115.9`.
+    - Añadido parser compatible con ese formato: detecta `18` hoyos + `Vc/Vs/PAR` + `SMH` sin espacios.
+    - Verificado endpoint producción: licencia `CB19299471` devuelve 20 puntos históricos, de `2025-11-01` HCP `24.5` a `2026-06-06` HCP `15.9`.
+    - Sincronizados esos 20 puntos en Firestore para Julia Carrera.
+  Verificación:
+    - npm run build
+    - npx vercel --prod --yes
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Revisar nombres de torneo extraídos del PDF RFEG
+==========================================================================
+  Siguiente: Limpiar nombres de torneo/campo cuando RFEG devuelve texto pegado, sin afectar a la serie histórica ni al cálculo del gráfico.

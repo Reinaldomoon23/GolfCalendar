@@ -19,7 +19,6 @@ function extractTournamentName(rawBetween) {
 }
 
 function extractHistoryFromPdfText(text) {
-  const headerMarker = 'Vc/Vs/PAR';
   const endCandidates = [
     '2.  Para cada resultado',
     '2. Para cada resultado',
@@ -27,12 +26,16 @@ function extractHistoryFromPdfText(text) {
     '2. Para cada',
   ];
 
-  let searchText = text;
-  const headerPos = text.indexOf(headerMarker);
-  let startPos = headerPos;
+  const normalizedText = String(text || '')
+    .replace(/\u00a0/g, ' ')
+    .replace(/\r/g, '\n');
 
-  if (headerPos !== -1) {
-    const nextNewline = text.indexOf('\n', headerPos);
+  let searchText = normalizedText;
+  const headerMatch = /Vc\s*\/\s*Vs\s*\/\s*PAR/i.exec(normalizedText);
+  let startPos = headerMatch?.index ?? -1;
+
+  if (startPos !== -1) {
+    const nextNewline = normalizedText.indexOf('\n', startPos);
     if (nextNewline !== -1) {
       startPos = nextNewline + 1;
     }
@@ -40,7 +43,7 @@ function extractHistoryFromPdfText(text) {
 
   let endPos = -1;
   for (const marker of endCandidates) {
-    const candidatePos = text.indexOf(marker);
+    const candidatePos = normalizedText.indexOf(marker);
     if (candidatePos !== -1) {
       endPos = candidatePos;
       break;
@@ -48,32 +51,40 @@ function extractHistoryFromPdfText(text) {
   }
 
   if (startPos !== -1 && endPos !== -1 && endPos > startPos) {
-    searchText = text.slice(startPos, endPos);
+    searchText = normalizedText.slice(startPos, endPos);
   } else if (endPos !== -1) {
-    searchText = text.slice(0, endPos);
+    searchText = normalizedText.slice(0, endPos);
   }
 
-  const rowPattern = /(\d{2}\/\d{2}\/\d{4})(.*?)(\d+\.\d+)\/(\d+)\/(\d+)\s+([+-]?\d+\.\d+)/gsu;
+  const rowPatterns = [
+    /(\d{1,2}\/\d{1,2}\/\d{4})(.*?)(\d+(?:[.,]\d+)?)\/(\d+)\/(\d+)\s+([+-]?\d+(?:[.,]\d+)?)/gsu,
+    /(\d{1,2}\/\d{1,2}\/\d{4})(.*?)(?:9|18)(\d{2,3}[.,]\d)\/(\d{2,3})\/(\d{2})([+-]?\d{1,2}[.,]\d)/gsu,
+  ];
   const history = [];
+  const seenDates = new Set();
 
-  for (const match of searchText.matchAll(rowPattern)) {
-    const rawDate = match[1];
-    const between = match[2];
-    const handicapValue = Number.parseFloat(match[6]);
+  for (const rowPattern of rowPatterns) {
+    for (const match of searchText.matchAll(rowPattern)) {
+      const rawDate = match[1];
+      const between = match[2];
+      const handicapValue = Number.parseFloat(String(match[6]).replace(',', '.'));
 
-    if (!rawDate || Number.isNaN(handicapValue)) {
-      continue;
+      if (!rawDate || Number.isNaN(handicapValue)) {
+        continue;
+      }
+
+      const [day, month, year] = rawDate.split('/');
+      const isoDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+      if (seenDates.has(isoDate)) continue;
+      seenDates.add(isoDate);
+
+      history.push({
+        date: isoDate,
+        handicap: handicapValue,
+        source: 'rfeg_pdf',
+        tournament: extractTournamentName(between),
+      });
     }
-
-    const [day, month, year] = rawDate.split('/');
-    const isoDate = `${year}-${month}-${day}`;
-
-    history.push({
-      date: isoDate,
-      handicap: handicapValue,
-      source: 'rfeg_pdf',
-      tournament: extractTournamentName(between),
-    });
   }
 
   history.sort((a, b) => a.date.localeCompare(b.date));
