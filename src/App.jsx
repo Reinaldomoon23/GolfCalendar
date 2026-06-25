@@ -37,6 +37,7 @@ import { useTournaments } from './hooks/useTournaments';
 import { uploadProfilePhoto, updateUserProfile, recoverLegacyProfile } from './services/profile.service';
 import { subscribeToPreferences, subscribeToResults, saveResult, saveAllResults, deleteResult, savePreferences } from './services/results.service';
 import { subscribeToChats } from './services/chat.service';
+import { subscribeToForegroundPushMessages } from './services/notifications.service';
 
 // Config
 import { IS_MULTI, DEFAULT_PREFERENCES } from './config/app';
@@ -259,6 +260,32 @@ function AppContent() {
     const timer = setTimeout(() => setChatNotice(null), 8000);
     return () => clearTimeout(timer);
   }, [chatNotice]);
+
+  useEffect(() => {
+    let unsubscribe = () => {};
+    let cancelled = false;
+
+    subscribeToForegroundPushMessages((payload) => {
+      setChatNotice({
+        chatId: payload.data?.chatId || null,
+        friendName: payload.notification?.title || 'Nuevo mensaje',
+        text: payload.notification?.body || payload.data?.body || 'Tienes una notificación nueva.',
+      });
+    }).then((unsub) => {
+      if (cancelled) {
+        unsub();
+        return;
+      }
+      unsubscribe = unsub;
+    }).catch((error) => {
+      console.warn('[notifications] Foreground listener unavailable:', error);
+    });
+
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, []);
 
   const openChatNotice = () => {
     setChatNotice(null);

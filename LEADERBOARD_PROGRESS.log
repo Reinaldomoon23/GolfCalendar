@@ -1172,3 +1172,52 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
   PRÓXIMO PASO: COMUNIDAD FASE 2.7 — Push notifications reales
 ==========================================================================
   Siguiente: Decidir si añadimos Firebase Messaging/Web Push para avisar incluso con la app cerrada.
+
+[COMPLETADO] COMUNIDAD FASE 2.7 — Base de Web Push y admin de comunidad
+  Archivos modificados:
+    - src/services/notifications.service.js
+    - public/firebase-messaging-sw.js
+    - api/send_chat_push.js
+    - src/services/chat.service.js
+    - src/components/FriendsView.jsx
+    - src/App.jsx
+    - firestore.rules
+    - src/components/admin/AdminDashboardView.jsx
+    - src/components/admin/CommunityAdminPanel.jsx
+  Datos actualizados:
+    - Paula Albadalejo sincronizada con RFEG: handicap actual 8.9, PDF 971024.pdf y 20 entradas historicas añadidas.
+  Resumen:
+    - Añadido registro de tokens Web Push por usuario en `users/{uid}/push_tokens`.
+    - Añadido service worker Firebase Messaging.
+    - Añadido endpoint `api/send_chat_push` para enviar FCM al receptor de un chat.
+    - `sendChatMessage` llama al endpoint de push sin bloquear el envio del mensaje.
+    - `Comunidad` muestra accion para activar notificaciones en el dispositivo.
+    - La app escucha mensajes foreground de FCM y los muestra con el aviso global existente.
+    - Añadido panel admin `Comunidad` para crear/reparar amistades, eliminar amistades y cancelar solicitudes.
+  Nota:
+    - Web Push queda preparado, pero requiere configurar `VITE_FIREBASE_VAPID_KEY` en el entorno de build para que el navegador emita tokens reales.
+  Verificacion:
+    - Build directo con Vite: correcto.
+
+[COMPLETADO] HARDENING — Leaderboard multi-ronda y variantes de campo
+  Archivos modificados:
+    - src/services/leaderboard.service.js
+    - src/components/TournamentLeaderboard.jsx
+    - src/components/CalendarView.jsx
+    - src/utils/courseScorecards.js
+    - src/data/course_variants.json
+    - api/get_handicap.js
+  Resumen:
+    - El leaderboard guarda `roundPars` y `totalPar` para calcular correctamente `vs Par` por ronda y total.
+    - La vista de clasificación por ronda usa el par real de esa ronda, no el par total del torneo.
+    - Añadido resolver centralizado de tarjetas de campo con variantes por fecha o variante explicita.
+    - Añadida variante Sant Cugat Rojas 2026 y tarjeta anterior para torneos antiguos.
+    - CalendarView usa el resolver de tarjetas para par por defecto, reinicio de ronda y tarjeta inicial.
+    - El parser RFEG limpia mejor nombres de torneos cuando el PDF devuelve columnas pegadas.
+  Verificacion:
+    - Build directo con Vite: correcto.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Validar Web Push con VAPID y prueba real cruzada
+==========================================================================
+  Siguiente: Configurar `VITE_FIREBASE_VAPID_KEY` en Vercel/entorno de build, activar notificaciones en dos dispositivos y validar recepcion con la app cerrada.

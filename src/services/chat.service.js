@@ -15,6 +15,8 @@ import {
   where,
 } from 'firebase/firestore';
 import { db } from '../firebase';
+import { auth } from '../firebase';
+import { API_ENDPOINTS } from '../config/api';
 import { getUserDocId } from '../utils/userProfiles';
 
 function profileSummary(profile) {
@@ -157,6 +159,29 @@ export async function sendChatMessage(currentUser, friend, text) {
     unread_by: arrayUnion(friendUid),
     hidden_for: arrayRemove(currentUid, friendUid),
   }, { merge: true });
+
+  sendChatPushNotification({
+    chatId,
+    recipientUid: friendUid,
+    senderName: currentUser?.full_name || currentUser?.username || 'RoundTracker',
+    body: cleanText,
+  }).catch((error) => {
+    console.warn('[chat] Push notification skipped:', error);
+  });
+}
+
+async function sendChatPushNotification(payload) {
+  if (!auth.currentUser || !API_ENDPOINTS.sendChatPush) return;
+
+  const token = await auth.currentUser.getIdToken();
+  await fetch(API_ENDPOINTS.sendChatPush, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
 }
 
 export async function deleteChatMessage(currentUser, chat, message) {

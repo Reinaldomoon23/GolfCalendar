@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   ArrowLeft,
   Ban,
+  Bell,
   CalendarDays,
   Check,
   EyeOff,
@@ -45,6 +46,10 @@ import {
   subscribeToChatMessages,
   subscribeToChats,
 } from '../services/chat.service';
+import {
+  enablePushNotifications,
+  isPushNotificationSupported,
+} from '../services/notifications.service';
 
 const tabs = [
   { id: 'friends', label: 'Amigos', icon: Users },
@@ -610,6 +615,7 @@ export default function FriendsView({ user, activeCalendarTournaments = [], subs
   const [chatMessages, setChatMessages] = useState([]);
   const [chatDraft, setChatDraft] = useState('');
   const [isSendingChat, setIsSendingChat] = useState(false);
+  const [pushStatus, setPushStatus] = useState('checking');
   const [isCompactChat, setIsCompactChat] = useState(() => (
     typeof window !== 'undefined' ? window.innerWidth < 720 : false
   ));
@@ -618,6 +624,27 @@ export default function FriendsView({ user, activeCalendarTournaments = [], subs
   useEffect(() => {
     setLocalUser(user);
   }, [user]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    isPushNotificationSupported()
+      .then((supported) => {
+        if (cancelled) return;
+        if (!supported) {
+          setPushStatus('unsupported');
+          return;
+        }
+        setPushStatus(Notification.permission === 'granted' ? 'enabled' : 'available');
+      })
+      .catch(() => {
+        if (!cancelled) setPushStatus('unsupported');
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
@@ -953,6 +980,21 @@ export default function FriendsView({ user, activeCalendarTournaments = [], subs
     }
   };
 
+  const handleEnablePushNotifications = async () => {
+    setIsWorking(true);
+    setMessage(null);
+    try {
+      await enablePushNotifications(localUser);
+      setPushStatus('enabled');
+      setMessage({ type: 'success', text: 'Notificaciones activadas para este dispositivo.' });
+    } catch (error) {
+      if (error.message?.includes('denegado')) setPushStatus('denied');
+      setMessage({ type: 'error', text: error.message || 'No se pudieron activar las notificaciones.' });
+    } finally {
+      setIsWorking(false);
+    }
+  };
+
   const renderSearchResultAction = (targetProfile) => {
     if (!targetProfile) return null;
     if (friendUids.has(targetProfile.uid)) {
@@ -990,6 +1032,32 @@ export default function FriendsView({ user, activeCalendarTournaments = [], subs
           Añade amigos y consulta su agenda futura cuando la amistad esté aceptada.
         </p>
       </div>
+
+      {pushStatus !== 'enabled' && pushStatus !== 'unsupported' && (
+        <div className="card" style={{
+          marginBottom: '1rem',
+          padding: '0.9rem 1rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '0.8rem',
+          flexWrap: 'wrap',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', color: '#334155', fontWeight: 800 }}>
+            <Bell size={18} color="#2563eb" />
+            <span>Activa avisos de mensajes en este dispositivo.</span>
+          </div>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={handleEnablePushNotifications}
+            disabled={isWorking}
+          >
+            <Bell size={16} />
+            Activar
+          </button>
+        </div>
+      )}
 
       <div style={{
         display: 'grid',

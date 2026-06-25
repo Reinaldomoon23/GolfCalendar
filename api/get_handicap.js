@@ -10,12 +10,27 @@ function extractTournamentName(rawBetween) {
   const normalized = String(rawBetween || '').replace(/\s+/g, ' ').trim();
   if (!normalized) return '';
 
+  const gluedAfterYear = normalized.match(/^(.+\d{4})[12](?=[A-ZÁÉÍÓÚÑ])/u);
+  if (gluedAfterYear?.[1]) {
+    return gluedAfterYear[1].trim();
+  }
+
+  const gluedRoundAndCourse = normalized.match(/^(.{12,}?)[12](?=[A-ZÁÉÍÓÚÑ])/u);
+  if (gluedRoundAndCourse?.[1] && !/jornada\s*$/iu.test(gluedRoundAndCourse[1])) {
+    return gluedRoundAndCourse[1].trim().replace(/\s+-$/, '').trim();
+  }
+
   const match = normalized.match(/^(.*?)\s+\d+\s+/u);
   if (match?.[1]) {
     return match[1].trim();
   }
 
-  return normalized.substring(0, 60).trim();
+  return normalized
+    .replace(/\bIndividuales?\b.*$/iu, '')
+    .replace(/\bStableford\b.*$/iu, '')
+    .substring(0, 60)
+    .replace(/\s+-$/, '')
+    .trim();
 }
 
 function extractHistoryFromPdfText(text) {

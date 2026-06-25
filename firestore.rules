@@ -147,6 +147,10 @@ service cloud.firestore {
         // Write: Owner, manager, or admin
         allow write: if isAdmin() || canAccessUser(userId);
       }
+
+      match /push_tokens/{tokenId} {
+        allow read, write: if isAdmin() || canAccessUser(userId);
+      }
     }
 
     // =============================================================

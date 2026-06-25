@@ -110,6 +110,7 @@ function getResultScoreSummary(resultData) {
   const scorecards = resultData?.scorecards || {};
   const roundKeys = Object.keys(scorecards).sort((a, b) => Number(a) - Number(b));
   const rounds = [];
+  const roundPars = [];
   let total = 0;
   let totalPar = 0;
 
@@ -131,13 +132,14 @@ function getResultScoreSummary(resultData) {
 
     if (holesPlayed > 0) {
       rounds.push(roundScore);
+      roundPars.push(roundPar);
       total += roundScore;
       totalPar += roundPar;
     }
   }
 
   if (rounds.length > 0) {
-    return { rounds, total, roundsPlayed: rounds.length, totalPar };
+    return { rounds, roundPars, total, roundsPlayed: rounds.length, totalPar };
   }
 
   const validScores = (resultData?.rounds || [])
@@ -148,6 +150,7 @@ function getResultScoreSummary(resultData) {
 
   return {
     rounds: validScores,
+    roundPars: validScores.map(() => par),
     total: fallbackTotal,
     roundsPlayed: validScores.length,
     totalPar: par * validScores.length,
@@ -232,6 +235,8 @@ export async function updateParticipantScore(user, tournamentId, resultData) {
     roundsPlayed,
     vspar,
     rounds: scoreSummary.rounds,
+    roundPars: scoreSummary.roundPars,
+    totalPar: scoreSummary.totalPar,
     par,
     hasScore: total > 0,
     status: progress.status,

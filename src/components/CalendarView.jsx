@@ -14,6 +14,7 @@ import CommunityExplorerModal from './CommunityExplorerModal';
 import { generateTournamentDeterministicId } from '../services/tournaments.service';
 import TournamentLeaderboard from './TournamentLeaderboard';
 import { isSharedTournamentId } from '../services/leaderboard.service';
+import { getScorecardParTotal, resolveCourseScorecard } from '../utils/courseScorecards';
 
 // -------------------------------------------------------------------------
 // LOGIC HELPERS (Shared with Results)
@@ -89,8 +90,9 @@ const getTournamentPar = (t, result, spanishCourses) => {
     if (t?.course && spanishCourses) {
         const courseName = t.course.toLowerCase();
         const courseData = findCourseData(t.course);
-        if (courseData && courseData.pars) {
-            const sum = courseData.pars.reduce((a, b) => a + (parseInt(b) || 0), 0);
+        const scorecard = resolveCourseScorecard(t, courseData);
+        if (scorecard?.pars) {
+            const sum = getScorecardParTotal(scorecard);
             if (sum > 0) {
                 // Special case for Salamanca Forum (hack preserved)
                 if (courseName.includes('salamanca forum') && sum === 71) return 70;
@@ -244,9 +246,10 @@ export default function CalendarView({
             let calculatedPar = 72;
             if (selectedTournament.course) {
                 const courseData = findCourseData(selectedTournament.course);
+                const scorecard = resolveCourseScorecard(selectedTournament, courseData);
 
-                if (courseData && courseData.pars) {
-                    const sum = courseData.pars.reduce((a, b) => a + (parseInt(b) || 0), 0);
+                if (scorecard?.pars) {
+                    const sum = getScorecardParTotal(scorecard);
                     if (sum > 0) calculatedPar = sum;
                 }
             }
@@ -285,8 +288,9 @@ export default function CalendarView({
         // Auto-calculate par if course changes
         if (field === 'course') {
             const courseData = findCourseData(value);
-            if (courseData && courseData.pars) {
-                const sum = courseData.pars.reduce((a, b) => a + (parseInt(b) || 0), 0);
+            const scorecard = resolveCourseScorecard({ ...selectedTournament, course: value }, courseData);
+            if (scorecard?.pars) {
+                const sum = getScorecardParTotal(scorecard);
                 if (sum > 0) updates.par = sum;
             }
         }
@@ -465,7 +469,8 @@ export default function CalendarView({
 
             // Lookup course pars (Loose matching)
             const courseData = findCourseData(t.course);
-            const defaultPars = courseData?.pars || Array(18).fill('');
+            const scorecard = resolveCourseScorecard(t, courseData);
+            const defaultPars = scorecard?.pars || Array(18).fill('');
 
             // Helper to get initial scorecard for a round
             const getInitialScorecard = (rIdx) => {
@@ -737,7 +742,8 @@ export default function CalendarView({
 
             // Re-derive defaults to reset nicely
             const courseData = findCourseData(selectedTournament.course);
-            const defaultPars = courseData?.pars || Array(18).fill('');
+            const scorecard = resolveCourseScorecard(selectedTournament, courseData);
+            const defaultPars = scorecard?.pars || Array(18).fill('');
 
             const newCardInfo = {
                 pars: defaultPars.map(p => p || ''),

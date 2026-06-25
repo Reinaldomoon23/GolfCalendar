@@ -67,7 +67,9 @@ export default function TournamentLeaderboard({ tournamentId, par = 72, currentU
     const getDisplayVsPar = (participant) => {
         if (viewMode === 'total') return participant.vspar;
         const score = getDisplayScore(participant);
-        return score ? score - par : null;
+        const roundIdx = Number(viewMode);
+        const roundPar = Array.isArray(participant.roundPars) ? Number(participant.roundPars[roundIdx]) : 0;
+        return score ? score - (roundPar || par) : null;
     };
 
     const sortedParticipants = [...participants].sort((a, b) => {
