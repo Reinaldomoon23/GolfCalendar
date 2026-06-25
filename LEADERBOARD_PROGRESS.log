@@ -1068,3 +1068,21 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
   PRÓXIMO PASO: HARDENING — Revisar nombres de torneo extraídos del PDF RFEG
 ==========================================================================
   Siguiente: Limpiar nombres de torneo/campo cuando RFEG devuelve texto pegado, sin afectar a la serie histórica ni al cálculo del gráfico.
+
+[COMPLETADO] OPERACIÓN ADMIN — Alta Valentina y red de amigas
+  Firestore/Auth actualizado:
+    - Usuario creado: valentina / Valentina Corretja de Miguel / CB01965090.
+    - Perfil completado con federación, club, handicap actual 1.3 y foto pública localizada.
+    - Histórico RFEG sincronizado desde `summaryhandicap/965090.pdf` con 20 puntos.
+    - Creadas las amistades completas entre Txell, Nicole, Itziar, Ona, Iona, Valentina y Maria Ros.
+    - Actualizados los perfiles embebidos de Valentina dentro de sus amistades para mostrar foto y nombre correcto.
+  Reglas:
+    - Desplegadas reglas Firestore para permitir mantenimiento admin de `friendships`.
+  Verificación:
+    - Login real en producción como `valentina`.
+    - Confirmado header con foto, handicap y pestaña Amigas con las 6 jugadoras esperadas.
+
+==========================================================================
+  PRÓXIMO PASO: COMUNIDAD FASE 2.3 — Prueba cruzada de chat y agenda entre amigas
+==========================================================================
+  Siguiente: Probar desde dos cuentas reales que Valentina puede abrir chat, ver agenda futura de sus amigas y que los nombres/fotos aparecen consistentes.
