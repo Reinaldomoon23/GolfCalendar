@@ -213,6 +213,14 @@ export async function sendFriendRequest(currentUser, targetProfile) {
   return outgoingRef.id;
 }
 
+export async function cancelFriendRequest(currentUser, request) {
+  const uid = getUserDocId(currentUser);
+  if (!uid || !request?.id) throw new Error('Faltan datos para cancelar la solicitud.');
+  if (request.from_uid !== uid) throw new Error('Solo puedes cancelar solicitudes enviadas por ti.');
+
+  await deleteDoc(doc(db, 'friend_requests', request.id));
+}
+
 export function subscribeToFriends(user, onUpdate) {
   const uid = getUserDocId(user);
   if (!uid) return () => {};

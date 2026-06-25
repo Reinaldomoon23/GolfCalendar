@@ -22,6 +22,7 @@ import { getUserDocId } from '../utils/userProfiles';
 import { resolveCanonicalTournamentId } from '../services/tournaments.service';
 import {
   acceptFriendRequest,
+  cancelFriendRequest,
   getCommunityProfileStatus,
   loadFriendSchedule,
   rejectFriendRequest,
@@ -810,6 +811,19 @@ export default function FriendsView({ user, activeCalendarTournaments = [], subs
     }
   };
 
+  const handleCancelOutgoingRequest = async (request) => {
+    setIsWorking(true);
+    setMessage(null);
+    try {
+      await cancelFriendRequest(localUser, request);
+      setMessage({ type: 'success', text: 'Solicitud cancelada.' });
+    } catch (error) {
+      setMessage({ type: 'error', text: error.message || 'No se pudo cancelar la solicitud.' });
+    } finally {
+      setIsWorking(false);
+    }
+  };
+
   const handleRemoveFriend = async (friend) => {
     setIsWorking(true);
     setMessage(null);
@@ -1117,12 +1131,16 @@ export default function FriendsView({ user, activeCalendarTournaments = [], subs
             ) : (
               <div style={{ display: 'grid', gap: '0.75rem' }}>
                 {outgoingRequests.map((request) => (
-                  <div key={request.id} className="card" style={{ padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                  <div key={request.id} className="card" style={{ padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.85rem', flexWrap: 'wrap' }}>
                     <Clock size={20} color="#64748b" />
-                    <div>
+                    <div style={{ flex: 1, minWidth: '180px' }}>
                       <div style={{ fontWeight: 900 }}>{request.to_user?.full_name || request.to_user?.username}</div>
                       <div style={{ color: '#64748b', fontSize: '0.9rem' }}>Pendiente de aceptación</div>
                     </div>
+                    <button type="button" className="btn card" onClick={() => handleCancelOutgoingRequest(request)} disabled={isWorking}>
+                      <X size={16} />
+                      Cancelar
+                    </button>
                   </div>
                 ))}
               </div>

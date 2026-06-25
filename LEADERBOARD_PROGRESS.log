@@ -1132,3 +1132,27 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
   PRÓXIMO PASO: COMUNIDAD FASE 2.5 — Validación real de borrado
 ==========================================================================
   Siguiente: Probar en producción que Ona puede borrar su mensaje y Nicole ve `Mensaje eliminado`.
+
+[COMPLETADO] ADMIN — Contraseña Paula Albadalejo
+  Firestore/Auth actualizado:
+    - Usuario: `paulaalbadalejo`
+    - UID: `tdD3UbBr0WeR0ydBxJMJPqGQlMy2`
+    - Contraseña asignada: `albadalejo`
+  Verificación:
+    - Login Firebase verificado correctamente con `paulaalbadalejo@golfteam.app`.
+
+[COMPLETADO] COMUNIDAD FASE 2.5 — Cancelar solicitudes enviadas
+  Archivos modificados:
+    - src/services/friends.service.js
+    - src/components/FriendsView.jsx
+  Resumen:
+    - Añadida función `cancelFriendRequest` para borrar solicitudes pendientes enviadas por la propia usuaria.
+    - En `Solicitudes > Enviadas` aparece botón `Cancelar` junto a cada solicitud pendiente.
+    - Se reutilizan reglas existentes de Firestore: el emisor o receptor puede borrar la solicitud.
+  Verificación:
+    - Build directo con Vite: correcto.
+
+==========================================================================
+  PRÓXIMO PASO: COMUNIDAD FASE 2.6 — Validar cancelación en producción
+==========================================================================
+  Siguiente: Probar en producción que una solicitud enviada desaparece para la emisora y no llega a la receptora tras cancelar.
