@@ -1156,3 +1156,19 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
   PRÓXIMO PASO: COMUNIDAD FASE 2.6 — Validar cancelación en producción
 ==========================================================================
   Siguiente: Probar en producción que una solicitud enviada desaparece para la emisora y no llega a la receptora tras cancelar.
+
+[COMPLETADO] COMUNIDAD FASE 2.6 — Aviso global de mensajes nuevos
+  Archivos modificados:
+    - src/App.jsx
+  Resumen:
+    - La app se suscribe globalmente a los chats del usuario autenticado.
+    - Cuando llega un mensaje no leído de otra persona, aparece un aviso flotante con remitente, preview y botón `Ver chat`.
+    - El aviso no requiere permisos del navegador y funciona dentro de la PWA mientras está abierta.
+    - El botón abre la sección `Amigos`, donde ya está disponible la pestaña `Chat`.
+  Verificación:
+    - Build directo con Vite: correcto.
+
+==========================================================================
+  PRÓXIMO PASO: COMUNIDAD FASE 2.7 — Push notifications reales
+==========================================================================
+  Siguiente: Decidir si añadimos Firebase Messaging/Web Push para avisar incluso con la app cerrada.

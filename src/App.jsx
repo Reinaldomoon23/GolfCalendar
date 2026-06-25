@@ -1,7 +1,7 @@
 import { Suspense, lazy, useState, useEffect, useRef, useMemo } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { BrowserRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
-import { X } from 'lucide-react';
+import { MessageCircle, X } from 'lucide-react';
 
 // Views
 const CalendarView = lazy(() => import('./components/CalendarView'));
@@ -36,6 +36,7 @@ import { useTournaments } from './hooks/useTournaments';
 // Services
 import { uploadProfilePhoto, updateUserProfile, recoverLegacyProfile } from './services/profile.service';
 import { subscribeToPreferences, subscribeToResults, saveResult, saveAllResults, deleteResult, savePreferences } from './services/results.service';
+import { subscribeToChats } from './services/chat.service';
 
 // Config
 import { IS_MULTI, DEFAULT_PREFERENCES } from './config/app';
@@ -191,6 +192,17 @@ function AppContent() {
   const appNotificationTimer = useRef(null);
   const [appConfirmDialog, setAppConfirmDialog] = useState(null);
   const appConfirmResolver = useRef(null);
+  const [globalChats, setGlobalChats] = useState([]);
+  const [chatNotice, setChatNotice] = useState(null);
+  const seenUnreadChatKeys = useRef(new Set());
+
+  const chatNoticeKey = (chat) => {
+    const timeKey = chat?.last_message_at?.toMillis?.()
+      || chat?.updated_at?.toMillis?.()
+      || chat?.last_message?.text
+      || '';
+    return `${chat?.id || ''}:${timeKey}`;
+  };
 
   const notifyApp = (message, type = 'info') => {
     if (appNotificationTimer.current) clearTimeout(appNotificationTimer.current);
@@ -211,8 +223,124 @@ function AppContent() {
     setAppConfirmDialog(null);
   };
 
+  useEffect(() => {
+    setGlobalChats([]);
+    setChatNotice(null);
+    seenUnreadChatKeys.current = new Set();
+
+    if (!user || !activeUserDocId) return undefined;
+    return subscribeToChats(user, setGlobalChats);
+  }, [user?.uid, user?.docId, user?.username, activeUserDocId]);
+
+  useEffect(() => {
+    if (!activeUserDocId) return;
+
+    const unreadIncoming = globalChats.filter((chat) => (
+      chat.unread &&
+      chat.last_message?.sender_uid &&
+      chat.last_message.sender_uid !== activeUserDocId
+    ));
+    const nextKeys = new Set(unreadIncoming.map(chatNoticeKey));
+    const newestUnread = unreadIncoming.find((chat) => !seenUnreadChatKeys.current.has(chatNoticeKey(chat)));
+
+    seenUnreadChatKeys.current = nextKeys;
+
+    if (newestUnread) {
+      setChatNotice({
+        chatId: newestUnread.id,
+        friendName: newestUnread.friend?.full_name || newestUnread.friend?.username || 'Nuevo mensaje',
+        text: newestUnread.last_message?.deleted ? 'Mensaje eliminado' : (newestUnread.last_message?.text || 'Nuevo mensaje'),
+      });
+    }
+  }, [globalChats, activeUserDocId]);
+
+  useEffect(() => {
+    if (!chatNotice) return undefined;
+    const timer = setTimeout(() => setChatNotice(null), 8000);
+    return () => clearTimeout(timer);
+  }, [chatNotice]);
+
+  const openChatNotice = () => {
+    setChatNotice(null);
+    navigate('/friends');
+  };
+
   const renderAppFeedback = () => (
     <>
+      {chatNotice && (
+        <div
+          role="status"
+          style={{
+            position: 'fixed',
+            right: '18px',
+            bottom: appNotification ? '82px' : '22px',
+            zIndex: 10030,
+            width: 'min(390px, calc(100vw - 32px))',
+            padding: '14px',
+            borderRadius: '12px',
+            background: '#0f172a',
+            color: '#f8fafc',
+            border: '1px solid rgba(148, 163, 184, 0.35)',
+            boxShadow: '0 22px 60px rgba(15, 23, 42, 0.34)',
+            display: 'grid',
+            gap: '10px',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+            <div style={{
+              width: 34,
+              height: 34,
+              borderRadius: '999px',
+              background: '#2563eb',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}>
+              <MessageCircle size={18} />
+            </div>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ fontWeight: 900, marginBottom: '2px' }}>Nuevo mensaje</div>
+              <div style={{ fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {chatNotice.friendName}
+              </div>
+              <div style={{ color: '#cbd5e1', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {chatNotice.text}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setChatNotice(null)}
+              title="Cerrar aviso"
+              style={{
+                border: 'none',
+                background: 'transparent',
+                color: '#cbd5e1',
+                cursor: 'pointer',
+                padding: '2px',
+                display: 'inline-flex',
+              }}
+            >
+              <X size={18} />
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={openChatNotice}
+            style={{
+              border: '1px solid rgba(191, 219, 254, 0.45)',
+              background: '#2563eb',
+              color: '#fff',
+              borderRadius: '8px',
+              padding: '0.65rem 0.8rem',
+              cursor: 'pointer',
+              fontWeight: 900,
+            }}
+          >
+            Ver chat
+          </button>
+        </div>
+      )}
       {appNotification && (
         <div
           role="status"
