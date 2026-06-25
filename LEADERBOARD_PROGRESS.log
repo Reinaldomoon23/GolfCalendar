@@ -1086,3 +1086,20 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
   PRÓXIMO PASO: COMUNIDAD FASE 2.3 — Prueba cruzada de chat y agenda entre amigas
 ==========================================================================
   Siguiente: Probar desde dos cuentas reales que Valentina puede abrir chat, ver agenda futura de sus amigas y que los nombres/fotos aparecen consistentes.
+
+[COMPLETADO] TEST PRODUCCIÓN — Chat Ona → Nicole
+  Prueba realizada:
+    - Login real como Ona Martinez Cucco.
+    - Apertura de conversación con Nicole LIkhomanova Garcia desde `Amigas > Chat`.
+    - Enviado mensaje real: `Mingui`.
+  Verificación:
+    - El mensaje aparece en la UI de Ona con hora de envío.
+    - Firestore confirma `last_message.text = Mingui`.
+    - Firestore confirma `unread_by` contiene el UID de Nicole, por tanto queda pendiente de lectura para Nicole.
+  Nota:
+    - No se siguió probando login de Nicole porque Firebase devolvió límite temporal por intentos de contraseña.
+
+==========================================================================
+  PRÓXIMO PASO: COMUNIDAD FASE 2.3 — Verificar recepción visual con Nicole
+==========================================================================
+  Siguiente: Entrar como Nicole cuando el límite temporal de Firebase desaparezca y comprobar que ve el aviso/no leído y puede responder.
