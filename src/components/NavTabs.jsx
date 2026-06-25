@@ -45,7 +45,7 @@ export default function NavTabs() {
       <Link to="/friends" style={{ textDecoration: 'none' }}>
         <button className={`btn ${isFriends ? 'btn-primary' : 'card'}`}>
           <Users size={20} />
-          Amigas
+          Amigos
         </button>
       </Link>
     </nav>

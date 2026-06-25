@@ -35,6 +35,7 @@ import {
 } from '../services/friends.service';
 import {
   blockChatUser,
+  deleteChatMessage,
   getOrCreateChat,
   hideChatForUser,
   markChatRead,
@@ -45,7 +46,7 @@ import {
 } from '../services/chat.service';
 
 const tabs = [
-  { id: 'friends', label: 'Amigas', icon: Users },
+  { id: 'friends', label: 'Amigos', icon: Users },
   { id: 'chat', label: 'Chat', icon: MessageCircle },
   { id: 'requests', label: 'Solicitudes', icon: UserPlus },
   { id: 'search', label: 'Buscar', icon: Search },
@@ -199,6 +200,7 @@ function ChatPanel({
   onHideChat,
   onReportChat,
   onBlockChat,
+  onDeleteMessage,
   onSend,
 }) {
   const hasFriends = friends.length > 0;
@@ -217,9 +219,9 @@ function ChatPanel({
       <div className="card" style={{ padding: '1rem', display: 'grid', gap: '0.75rem' }}>
         <div style={{ fontWeight: 900, color: '#0f172a' }}>Conversaciones</div>
         {!hasFriends ? (
-          <div style={{ color: '#64748b', lineHeight: 1.45 }}>Añade una amiga para empezar un chat.</div>
+          <div style={{ color: '#64748b', lineHeight: 1.45 }}>Añade un contacto para empezar un chat.</div>
         ) : chats.length === 0 ? (
-          <div style={{ color: '#64748b', lineHeight: 1.45 }}>Elige una amiga para iniciar la conversación.</div>
+          <div style={{ color: '#64748b', lineHeight: 1.45 }}>Elige un contacto para iniciar la conversación.</div>
         ) : (
           chats.map((chat) => (
             <button
@@ -239,7 +241,7 @@ function ChatPanel({
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
                 <span style={{ fontWeight: 900, color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {chat.friend?.full_name || chat.friend?.username || 'Amiga'}
+                  {chat.friend?.full_name || chat.friend?.username || 'Contacto'}
                 </span>
                 {chat.unread && (
                   <span style={{
@@ -396,20 +398,42 @@ function ChatPanel({
               ) : (
                 messages.map((msg) => {
                   const mine = msg.sender_uid === getUserDocId(user);
+                  const deleted = Boolean(msg.deleted);
                   return (
                     <div key={msg.id} style={{ display: 'flex', justifyContent: mine ? 'flex-end' : 'flex-start' }}>
                       <div style={{
                         maxWidth: '78%',
                         padding: '0.7rem 0.85rem',
                         borderRadius: mine ? '8px 8px 2px 8px' : '8px 8px 8px 2px',
-                        background: mine ? '#2563eb' : '#fff',
-                        color: mine ? '#fff' : '#0f172a',
-                        border: mine ? '1px solid #2563eb' : '1px solid #e2e8f0',
+                        background: deleted ? '#f1f5f9' : (mine ? '#2563eb' : '#fff'),
+                        color: deleted ? '#64748b' : (mine ? '#fff' : '#0f172a'),
+                        border: deleted ? '1px dashed #cbd5e1' : (mine ? '1px solid #2563eb' : '1px solid #e2e8f0'),
                         boxShadow: '0 1px 3px rgba(15,23,42,0.08)',
                       }}>
-                        <div style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', lineHeight: 1.4 }}>{msg.text}</div>
-                        <div style={{ marginTop: '0.3rem', fontSize: '0.72rem', opacity: 0.72, textAlign: 'right' }}>
-                          {formatMessageTime(msg.created_at)}
+                        <div style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', lineHeight: 1.4, fontStyle: deleted ? 'italic' : 'normal' }}>
+                          {deleted ? 'Mensaje eliminado' : msg.text}
+                        </div>
+                        <div style={{ marginTop: '0.3rem', fontSize: '0.72rem', opacity: 0.72, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.35rem' }}>
+                          <span>{formatMessageTime(msg.created_at)}</span>
+                          {mine && !deleted && (
+                            <button
+                              type="button"
+                              onClick={() => onDeleteMessage(msg)}
+                              title="Borrar mensaje"
+                              style={{
+                                border: 'none',
+                                background: 'transparent',
+                                color: 'inherit',
+                                cursor: 'pointer',
+                                padding: '0.1rem',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                opacity: 0.85,
+                              }}
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -436,7 +460,7 @@ function ChatPanel({
           </>
         ) : (
           <div style={{ display: 'grid', placeItems: 'center', padding: '2rem', color: '#64748b', textAlign: 'center' }}>
-            Selecciona una conversación o empieza un chat con una amiga.
+            Selecciona una conversación o empieza un chat con un contacto.
           </div>
         )}
       </div>
@@ -678,7 +702,7 @@ export default function FriendsView({ user, activeCalendarTournaments = [], subs
       } catch (error) {
         console.error('[friends] Could not load friend agenda:', error);
         if (!cancelled) {
-          setMessage({ type: 'error', text: 'No se pudo cargar la agenda de amigas.' });
+          setMessage({ type: 'error', text: 'No se pudo cargar la agenda de amigos.' });
         }
       } finally {
         if (!cancelled) setAgendaLoading(false);
@@ -765,7 +789,7 @@ export default function FriendsView({ user, activeCalendarTournaments = [], subs
     setMessage(null);
     try {
       await acceptFriendRequest(localUser, request);
-      setMessage({ type: 'success', text: `Ahora eres amiga de @${request.from_user?.username}.` });
+      setMessage({ type: 'success', text: `Ahora tienes a @${request.from_user?.username} en Amigos.` });
     } catch (error) {
       setMessage({ type: 'error', text: error.message || 'No se pudo aceptar la solicitud.' });
     } finally {
@@ -791,7 +815,7 @@ export default function FriendsView({ user, activeCalendarTournaments = [], subs
     setMessage(null);
     try {
       await removeFriend(localUser, friend);
-      setMessage({ type: 'success', text: `@${friend.username} ya no está en tu lista de amigas.` });
+      setMessage({ type: 'success', text: `@${friend.username} ya no está en tu lista de amigos.` });
     } catch (error) {
       setMessage({ type: 'error', text: error.message || 'No se pudo eliminar la amistad.' });
     } finally {
@@ -885,6 +909,20 @@ export default function FriendsView({ user, activeCalendarTournaments = [], subs
     }
   };
 
+  const handleDeleteMessage = async (messageToDelete) => {
+    if (!selectedChat?.id || !messageToDelete?.id) return;
+    setIsWorking(true);
+    setMessage(null);
+    try {
+      await deleteChatMessage(localUser, selectedChat, messageToDelete);
+      setMessage({ type: 'success', text: 'Mensaje borrado.' });
+    } catch (error) {
+      setMessage({ type: 'error', text: error.message || 'No se pudo borrar el mensaje.' });
+    } finally {
+      setIsWorking(false);
+    }
+  };
+
   const handleSendChat = async (event) => {
     event.preventDefault();
     if (!selectedFriend || !chatDraft.trim()) return;
@@ -904,7 +942,7 @@ export default function FriendsView({ user, activeCalendarTournaments = [], subs
   const renderSearchResultAction = (targetProfile) => {
     if (!targetProfile) return null;
     if (friendUids.has(targetProfile.uid)) {
-      return <span style={{ color: '#16a34a', fontWeight: 800 }}>Ya sois amigas</span>;
+      return <span style={{ color: '#16a34a', fontWeight: 800 }}>Ya está en Amigos</span>;
     }
     if (outgoingByUid.has(targetProfile.uid)) {
       return <span style={{ color: '#64748b', fontWeight: 800 }}>Solicitud enviada</span>;
@@ -935,7 +973,7 @@ export default function FriendsView({ user, activeCalendarTournaments = [], subs
       <div style={{ marginBottom: '1.25rem' }}>
         <h1 style={{ margin: 0, color: '#0f172a', fontSize: '1.9rem' }}>Comunidad</h1>
         <p style={{ margin: '0.35rem 0 0', color: '#64748b' }}>
-          Añade amigas y consulta su agenda futura cuando la amistad esté aceptada.
+          Añade amigos y consulta su agenda futura cuando la amistad esté aceptada.
         </p>
       </div>
 
@@ -1000,7 +1038,7 @@ export default function FriendsView({ user, activeCalendarTournaments = [], subs
       {activeTab === 'friends' && (
         <div style={{ display: 'grid', gap: '0.75rem' }}>
           {friends.length === 0 ? (
-            <EmptyState title="Todavía no tienes amigas" text="Busca una jugadora por su usuario y envía una solicitud." />
+            <EmptyState title="Todavía no tienes amigos" text="Busca una jugadora por su usuario y envía una solicitud." />
           ) : (
             friends.map((friend) => (
               <FriendCard
@@ -1033,6 +1071,7 @@ export default function FriendsView({ user, activeCalendarTournaments = [], subs
           onHideChat={handleHideChat}
           onReportChat={handleReportChat}
           onBlockChat={handleBlockChat}
+          onDeleteMessage={handleDeleteMessage}
           onSend={handleSendChat}
         />
       )}
@@ -1138,9 +1177,9 @@ export default function FriendsView({ user, activeCalendarTournaments = [], subs
           {friends.length > 0 && (
             <div className="card" style={{ padding: '1rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'end' }}>
               <label style={{ display: 'grid', gap: '0.35rem', fontWeight: 800, flex: '1 1 220px' }}>
-                Amiga
+                Amigo
                 <select value={agendaFriendFilter} onChange={(event) => setAgendaFriendFilter(event.target.value)}>
-                  <option value="all">Todas</option>
+                  <option value="all">Todos</option>
                   {friends.map((friend) => (
                     <option key={friend.uid} value={friend.uid}>
                       {friend.full_name || friend.username}
@@ -1160,9 +1199,9 @@ export default function FriendsView({ user, activeCalendarTournaments = [], subs
           )}
 
           {agendaLoading ? (
-            <EmptyState title="Cargando agenda" text="Consultando torneos futuros de tus amigas." />
+            <EmptyState title="Cargando agenda" text="Consultando torneos futuros de tus amigos." />
           ) : filteredAgenda.length === 0 ? (
-            <EmptyState title="Sin torneos futuros visibles" text="Cuando una amiga aceptada esté apuntada a un torneo futuro, aparecerá aquí." />
+            <EmptyState title="Sin torneos futuros visibles" text="Cuando una amistad aceptada esté apuntada a un torneo futuro, aparecerá aquí." />
           ) : (
             filteredAgenda.map((item) => {
               const tournamentId = getTournamentId(item);

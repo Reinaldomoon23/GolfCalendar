@@ -245,7 +245,24 @@ service cloud.firestore {
           request.resource.data.text.size() > 0 &&
           request.resource.data.text.size() <= 1000;
 
-        allow update, delete: if false;
+        allow update: if isAdmin() || (
+          isAuthenticated() &&
+          request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.members &&
+          resource.data.sender_uid == request.auth.uid &&
+          request.resource.data.sender_uid == resource.data.sender_uid &&
+          request.resource.data.created_at == resource.data.created_at &&
+          request.resource.data.deleted == true &&
+          request.resource.data.text == 'Mensaje eliminado' &&
+          request.resource.data.deleted_by == request.auth.uid &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'text',
+            'deleted',
+            'deleted_at',
+            'deleted_by'
+          ])
+        );
+
+        allow delete: if false;
       }
     }
 

@@ -192,7 +192,7 @@ export async function sendFriendRequest(currentUser, targetProfile) {
     getDoc(reverseRef),
   ]);
 
-  if (friendshipSnap.exists()) throw new Error('Ya sois amigas.');
+  if (friendshipSnap.exists()) throw new Error('Ya está en Amigos.');
   if (outgoingSnap.exists() && outgoingSnap.data()?.status === 'pending') {
     throw new Error('Ya has enviado una solicitud a esta jugadora.');
   }

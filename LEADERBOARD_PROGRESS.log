@@ -1103,3 +1103,32 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
   PRÓXIMO PASO: COMUNIDAD FASE 2.3 — Verificar recepción visual con Nicole
 ==========================================================================
   Siguiente: Entrar como Nicole cuando el límite temporal de Firebase desaparezca y comprobar que ve el aviso/no leído y puede responder.
+
+[COMPLETADO] COMUNIDAD FASE 2.4 — Borrado suave de mensajes
+  Archivos modificados:
+    - src/services/chat.service.js
+    - src/components/FriendsView.jsx
+    - firestore.rules
+  Resumen:
+    - Añadida acción para borrar mensajes propios desde el chat.
+    - El borrado es suave: el mensaje queda como `Mensaje eliminado` para mantener trazabilidad.
+    - Si se borra el último mensaje, la vista de conversaciones actualiza el preview.
+    - Reglas Firestore permiten actualizar solo mensajes propios y solo con los campos de borrado controlados.
+  Verificación:
+    - Build directo con Vite: correcto.
+
+[COMPLETADO] UX — Cambiar etiqueta Amigas por Amigos
+  Archivos modificados:
+    - src/components/NavTabs.jsx
+    - src/components/FriendsView.jsx
+    - src/services/friends.service.js
+  Resumen:
+    - Navegación, pestaña de comunidad, estados vacíos y mensajes visibles usan `Amigos`.
+    - La ruta interna `/friends` y la lógica de amistades no cambian.
+  Verificación:
+    - Build directo con Vite: correcto.
+
+==========================================================================
+  PRÓXIMO PASO: COMUNIDAD FASE 2.5 — Validación real de borrado
+==========================================================================
+  Siguiente: Probar en producción que Ona puede borrar su mensaje y Nicole ve `Mensaje eliminado`.

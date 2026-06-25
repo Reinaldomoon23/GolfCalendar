@@ -159,6 +159,35 @@ export async function sendChatMessage(currentUser, friend, text) {
   }, { merge: true });
 }
 
+export async function deleteChatMessage(currentUser, chat, message) {
+  const uid = getUserDocId(currentUser);
+  if (!uid || !chat?.id || !message?.id) throw new Error('Faltan datos para borrar el mensaje.');
+  if (message.sender_uid !== uid) throw new Error('Solo puedes borrar tus propios mensajes.');
+  if (message.deleted) return;
+
+  const deletedText = 'Mensaje eliminado';
+  const messageRef = doc(db, 'chats', chat.id, 'messages', message.id);
+
+  await updateDoc(messageRef, {
+    text: deletedText,
+    deleted: true,
+    deleted_at: serverTimestamp(),
+    deleted_by: uid,
+  });
+
+  if (chat.last_message?.sender_uid === uid && chat.last_message?.text === message.text) {
+    await setDoc(doc(db, 'chats', chat.id), {
+      last_message: {
+        text: deletedText,
+        sender_uid: uid,
+        sender_username: currentUser?.username || '',
+        deleted: true,
+      },
+      updated_at: serverTimestamp(),
+    }, { merge: true });
+  }
+}
+
 export async function markChatRead(currentUser, chatId) {
   const uid = getUserDocId(currentUser);
   if (!uid || !chatId) return;
