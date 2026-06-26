@@ -121,6 +121,7 @@ export default function TournamentReport({ tournament, result, user }) {
           ['Rondas', report.rounds.length],
           ['Putts', report.totals.putts || '-'],
           ['GIR', report.totals.girAttempts ? `${report.totals.girs}/${report.totals.girAttempts}` : '-'],
+          ...(report.totals.hasStableford ? [['Stableford', report.totals.stableford]] : []),
         ].map(([label, value]) => (
           <div key={label} style={{ ...cardStyle, padding: '14px' }}>
             <span style={statLabel}>{label}</span>
@@ -165,6 +166,11 @@ export default function TournamentReport({ tournament, result, user }) {
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '6px', marginTop: '14px', color: 'rgba(255,255,255,0.72)', fontSize: '0.82rem' }}>
                       <span>Putts</span><strong>{round.putts || '-'}</strong>
                       <span>GIR</span><strong>{round.girAttempts ? `${round.girs}/${round.girAttempts}` : '-'}</strong>
+                      {report.totals.hasStableford && Number(round.stableford) > 0 && (
+                        <>
+                          <span>Stableford</span><strong>{round.stableford}</strong>
+                        </>
+                      )}
                       <span>Birdies o mejor</span><strong>{round.birdies || '-'}</strong>
                       <span>Pares</span><strong>{round.parsCount || '-'}</strong>
                     </div>

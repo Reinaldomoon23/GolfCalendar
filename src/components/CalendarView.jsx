@@ -2946,10 +2946,12 @@ export default function CalendarView({
                                                 <div style={{ fontSize: '14px', textTransform: 'uppercase', opacity: 0.8 }}>Golpes</div>
                                                 <div style={{ fontSize: '48px', fontWeight: 'bold' }}>{formData.rounds[sharingRound]}</div>
                                             </div>
-                                            <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.9)', color: '#064e3b', padding: '20px', borderRadius: '12px', width: '150px' }}>
-                                                <div style={{ fontSize: '14px', textTransform: 'uppercase', fontWeight: 'bold' }}>Stableford</div>
-                                                <div style={{ fontSize: '48px', fontWeight: 'bold' }}>{formData.stableford[sharingRound] || '-'}</div>
-                                            </div>
+                                            {Number(formData.stableford?.[sharingRound]) > 0 && (
+                                                <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.9)', color: '#064e3b', padding: '20px', borderRadius: '12px', width: '150px' }}>
+                                                    <div style={{ fontSize: '14px', textTransform: 'uppercase', fontWeight: 'bold' }}>Stableford</div>
+                                                    <div style={{ fontSize: '48px', fontWeight: 'bold' }}>{formData.stableford[sharingRound]}</div>
+                                                </div>
+                                            )}
                                         </div>
 
                                         {/* Scorecard Grid for Image */}

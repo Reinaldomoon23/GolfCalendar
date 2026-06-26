@@ -124,6 +124,7 @@ export function buildTournamentReport(tournament = {}, result = {}, user = {}) {
       ...totals,
       vsPar: totals.score && totals.par ? totals.score - totals.par : null,
       average: validScores.length ? (validScores.reduce((a, b) => a + b, 0) / validScores.length).toFixed(1) : '-',
+      hasStableford: rounds.some((round) => Number(round.stableford) > 0),
       bestRound,
       worstRound,
     },
@@ -166,6 +167,7 @@ export function printTournamentReport(report) {
       <div class="round-grid">
         <span>Putts</span><strong>${round.putts || '-'}</strong>
         <span>GIR</span><strong>${round.girAttempts ? `${round.girs}/${round.girAttempts}` : '-'}</strong>
+        ${report.totals.hasStableford && Number(round.stableford) > 0 ? `<span>Stableford</span><strong>${round.stableford}</strong>` : ''}
         <span>Birdies</span><strong>${round.birdies || '-'}</strong>
         <span>Pares</span><strong>${round.parsCount || '-'}</strong>
       </div>
@@ -192,7 +194,7 @@ export function printTournamentReport(report) {
         .hero-score span { color: #f3d88a; font-weight: 800; }
         .section { margin-top: 18px; padding: 20px; border: 1px solid #e7dfd0; border-radius: 20px; background: white; box-shadow: 0 18px 50px rgba(16,32,24,.08); break-inside: avoid; }
         .section h2 { margin: 0 0 14px; font-size: 16px; letter-spacing: .08em; text-transform: uppercase; color: #1f3d34; }
-        .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 18px; }
+        .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-top: 18px; }
         .kpi { padding: 14px; border-radius: 16px; background: #f8faf8; border: 1px solid #e5eee8; }
         .kpi span { display: block; color: #64746d; font-size: 11px; text-transform: uppercase; letter-spacing: .12em; font-weight: 800; }
         .kpi strong { display: block; color: #102018; font-size: 24px; margin-top: 4px; }
@@ -231,6 +233,7 @@ export function printTournamentReport(report) {
           <div class="kpi"><span>Rondas</span><strong>${report.rounds.length}</strong></div>
           <div class="kpi"><span>Putts</span><strong>${report.totals.putts || '-'}</strong></div>
           <div class="kpi"><span>GIR</span><strong>${report.totals.girAttempts ? `${report.totals.girs}/${report.totals.girAttempts}` : '-'}</strong></div>
+          ${report.totals.hasStableford ? `<div class="kpi"><span>Stableford</span><strong>${report.totals.stableford}</strong></div>` : ''}
         </div>
         <div class="section">
           <h2>Comparativa por rondas</h2>
