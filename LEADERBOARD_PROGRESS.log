@@ -1367,6 +1367,22 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
 ==========================================================================
   Siguiente: Abrir los tres puntos de un torneo con resultados y confirmar que `Generar informe` abre el PDF sin entrar en el torneo.
 
+[COMPLETADO] REGLA — Clasificación exige la ronda del día
+  Archivos modificados:
+    - src/components/TournamentLeaderboard.jsx
+  Resumen:
+    - En torneos de varios días, la vista `Total` calcula la ronda requerida según la fecha del torneo.
+    - Si hoy corresponde R2/R3, solo contabilizan las jugadoras que ya tengan esa ronda introducida.
+    - Las jugadoras con rondas anteriores pero sin la ronda del día bajan al bloque de pendientes como `Pendiente R2` o `Pendiente R3`.
+    - Se muestra una etiqueta `Cuenta Rn` para dejar claro qué ronda está contando.
+  Verificación:
+    - Build directo con Vite: correcto.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Validar cambio de día R2/R3
+==========================================================================
+  Siguiente: En el día de R2, confirmar que las jugadoras con solo R1 no contabilizan en `Total` hasta introducir R2.
+
 [COMPLETADO] FEATURE — Informe premium de torneo exportable a PDF
   Archivos modificados:
     - src/components/CalendarView.jsx

@@ -3,6 +3,39 @@ import { Trophy, Users, Clock, TrendingUp } from 'lucide-react';
 import { subscribeToLeaderboard } from '../services/leaderboard.service';
 import ProfileImage from './ProfileImage';
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function parseTournamentDate(value) {
+    const [day, month, year] = String(value || '').split('/').map(Number);
+    if (!day || !month || !year) return null;
+    return new Date(year, month - 1, day).setHours(0, 0, 0, 0);
+}
+
+function getRequiredRoundIndex(dates) {
+    const parts = String(dates || '').split(' - ');
+    const start = parseTournamentDate(parts[0]);
+    if (!start) return null;
+
+    const end = parseTournamentDate(parts[1]) || start;
+    const today = new Date().setHours(0, 0, 0, 0);
+
+    if (today < start) return null;
+    if (today > end) return Math.max(0, Math.floor((end - start) / DAY_MS));
+    return Math.max(0, Math.floor((today - start) / DAY_MS));
+}
+
+function hasRoundScore(participant, roundIdx) {
+    if (roundIdx === null || roundIdx === undefined) return false;
+    const score = Number(participant.rounds?.[Number(roundIdx)]);
+    if (Number.isFinite(score) && score > 0) return true;
+
+    const card = participant.scorecards?.[String(roundIdx)] || participant.scorecards?.[Number(roundIdx)];
+    return Array.isArray(card?.strokes) && card.strokes.some((stroke) => {
+        const value = String(stroke || '').trim();
+        return value !== '' && value !== '-' && value !== '0';
+    });
+}
+
 /**
  * TournamentLeaderboard
  *
@@ -47,6 +80,9 @@ export default function TournamentLeaderboard({ tournamentId, par = 72, currentU
         ...participants.map((p) => Array.isArray(p.rounds) ? p.rounds.length : 0)
     );
     const roundTabs = Array.from({ length: maxRounds }, (_, idx) => idx);
+    const tournamentDates = participants.find((p) => p.tournamentDates)?.tournamentDates;
+    const requiredRoundIndex = getRequiredRoundIndex(tournamentDates);
+    const requiredRoundLabel = requiredRoundIndex !== null ? `R${requiredRoundIndex + 1}` : null;
 
     const getDisplayScore = (participant) => {
         if (viewMode === 'total') return participant.total || null;
@@ -54,15 +90,25 @@ export default function TournamentLeaderboard({ tournamentId, par = 72, currentU
         return Array.isArray(participant.rounds) ? Number(participant.rounds[roundIdx]) || null : null;
     };
 
-    const hasDisplayResult = (participant) => (
-        viewMode === 'total'
-            ? (
-                participant.hasScore === true ||
-                Number(getDisplayScore(participant)) > 0 ||
-                Number(participant.roundsPlayed) > 0
-            )
-            : Number(getDisplayScore(participant)) > 0
+    const hasAnyResult = (participant) => (
+        participant.hasScore === true ||
+        Number(participant.total) > 0 ||
+        Number(participant.roundsPlayed) > 0
     );
+
+    const hasDisplayResult = (participant) => {
+        if (viewMode !== 'total') return Number(getDisplayScore(participant)) > 0;
+        if (!hasAnyResult(participant)) return false;
+        if (requiredRoundIndex === null) return true;
+        return hasRoundScore(participant, requiredRoundIndex);
+    };
+
+    const getPendingLabel = (participant) => {
+        if (viewMode === 'total' && hasAnyResult(participant) && requiredRoundLabel) {
+            return `Pendiente ${requiredRoundLabel}`;
+        }
+        return 'Sin resultados';
+    };
 
     const getDisplayVsPar = (participant) => {
         if (viewMode === 'total') return participant.vspar;
@@ -157,7 +203,16 @@ export default function TournamentLeaderboard({ tournamentId, par = 72, currentU
                             fontSize: '0.8rem', color: '#64748b', fontWeight: '600'
                         }}>
                             <TrendingUp size={14} color="#10b981" />
-                            <span>{withScores.length} con resultado</span>
+                            <span>{requiredRoundLabel ? `${withScores.length} contabilizan` : `${withScores.length} con resultado`}</span>
+                        </div>
+                    )}
+                    {requiredRoundLabel && (
+                        <div style={{
+                            display: 'flex', alignItems: 'center', gap: '6px',
+                            fontSize: '0.8rem', color: '#b45309', fontWeight: '700'
+                        }}>
+                            <Clock size={14} color="#b45309" />
+                            <span>Cuenta {requiredRoundLabel}</span>
                         </div>
                     )}
                 </div>
@@ -340,7 +395,7 @@ export default function TournamentLeaderboard({ tournamentId, par = 72, currentU
                         gap: '8px'
                     }}>
                         <Clock size={12} />
-                        Sin resultados
+                        {requiredRoundLabel && viewMode === 'total' ? `No contabilizan hasta completar ${requiredRoundLabel}` : 'Sin resultados'}
                     </div>
                 )}
 
@@ -381,11 +436,11 @@ export default function TournamentLeaderboard({ tournamentId, par = 72, currentU
                                         <span style={{ marginLeft: '6px', fontSize: '0.65rem', color: '#3b82f6', fontWeight: '700' }}>TÚ</span>
                                     )}
                                     <div style={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: '700', textTransform: 'uppercase' }}>
-                                        Sin resultados
+                                        {getPendingLabel(p)}
                                     </div>
                                 </div>
                             </div>
-                            <div style={{ textAlign: 'center', fontSize: '0.8rem', color: '#94a3b8' }}>0</div>
+                            <div style={{ textAlign: 'center', fontSize: '0.8rem', color: '#94a3b8' }}>{p.roundsPlayed || 0}</div>
                             <div style={{ textAlign: 'center', fontSize: '0.85rem', color: '#94a3b8' }}>—</div>
                             <div style={{ textAlign: 'center', fontSize: '0.85rem', color: '#94a3b8' }}>—</div>
                         </div>
