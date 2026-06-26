@@ -1334,6 +1334,21 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
 ==========================================================================
   Siguiente: Generar el PDF desde la pestaña `Informe` y comprobar que la tabla no queda partida por el pie de página.
 
+[COMPLETADO] UX — Hacer visible el acceso a Informe
+  Archivos modificados:
+    - src/components/CalendarView.jsx
+  Resumen:
+    - La navegación del detalle del torneo pasa de tabs horizontales con overflow a botones en grid responsive.
+    - `Informe` ahora aparece como `Informe PDF` con tratamiento visual destacado.
+    - En móvil ya no debería quedar oculto fuera de la pantalla.
+  Verificación:
+    - Build directo con Vite: correcto.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Revisar navegación de detalle en móvil
+==========================================================================
+  Siguiente: Abrir un torneo en móvil y confirmar que `Informe PDF` es visible junto a resultados y clasificación.
+
 [COMPLETADO] FEATURE — Informe premium de torneo exportable a PDF
   Archivos modificados:
     - src/components/CalendarView.jsx

@@ -2353,45 +2353,54 @@ export default function CalendarView({
                                 </button>
                             </div>
 
-                            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', borderBottom: '2px solid #e2e8f0', paddingBottom: '0', overflowX: 'auto' }}>
-                                <button
-                                    onClick={() => setDetailTab('results')}
-                                    style={{
-                                        padding: '10px 16px', border: 'none', background: 'none', cursor: 'pointer',
-                                        fontWeight: '700', fontSize: '0.9rem', whiteSpace: 'nowrap',
-                                        color: detailTab === 'results' ? 'var(--color-primary)' : '#94a3b8',
-                                        borderBottom: detailTab === 'results' ? '2px solid var(--color-primary)' : '2px solid transparent',
-                                        marginBottom: '-2px', transition: 'all 0.2s'
-                                    }}
-                                >
-                                    📝 Mis Resultados
-                                </button>
-                                {isSharedTournamentId(selectedTournament.id) && (
-                                    <button
-                                        onClick={() => setDetailTab('leaderboard')}
-                                        style={{
-                                            padding: '10px 16px', border: 'none', background: 'none', cursor: 'pointer',
-                                            fontWeight: '700', fontSize: '0.9rem', whiteSpace: 'nowrap',
-                                            color: detailTab === 'leaderboard' ? 'var(--color-primary)' : '#94a3b8',
-                                            borderBottom: detailTab === 'leaderboard' ? '2px solid var(--color-primary)' : '2px solid transparent',
-                                            marginBottom: '-2px', transition: 'all 0.2s'
-                                        }}
-                                    >
-                                        🏆 Clasificación
-                                    </button>
-                                )}
-                                <button
-                                    onClick={() => setDetailTab('report')}
-                                    style={{
-                                        padding: '10px 16px', border: 'none', background: 'none', cursor: 'pointer',
-                                        fontWeight: '700', fontSize: '0.9rem', whiteSpace: 'nowrap',
-                                        color: detailTab === 'report' ? 'var(--color-primary)' : '#94a3b8',
-                                        borderBottom: detailTab === 'report' ? '2px solid var(--color-primary)' : '2px solid transparent',
-                                        marginBottom: '-2px', transition: 'all 0.2s'
-                                    }}
-                                >
-                                    📄 Informe
-                                </button>
+                            <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))',
+                                gap: '10px',
+                                marginBottom: '20px'
+                            }}>
+                                {[
+                                    { id: 'results', label: 'Mis resultados', icon: '📝' },
+                                    ...(isSharedTournamentId(selectedTournament.id) ? [{ id: 'leaderboard', label: 'Clasificación', icon: '🏆' }] : []),
+                                    { id: 'report', label: 'Informe PDF', icon: '📄', featured: true },
+                                ].map((tab) => {
+                                    const active = detailTab === tab.id;
+                                    const featured = tab.featured;
+                                    return (
+                                        <button
+                                            key={tab.id}
+                                            type="button"
+                                            onClick={() => setDetailTab(tab.id)}
+                                            style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                gap: '8px',
+                                                minHeight: '44px',
+                                                padding: '10px 12px',
+                                                borderRadius: '12px',
+                                                border: active
+                                                    ? (featured ? '2px solid #c9a45d' : '2px solid var(--color-primary)')
+                                                    : (featured ? '1px solid #e7c978' : '1px solid #e2e8f0'),
+                                                background: active
+                                                    ? (featured ? 'linear-gradient(135deg, #fff7df, #f8e7b2)' : 'var(--color-primary)')
+                                                    : (featured ? '#fffaf0' : 'white'),
+                                                color: active
+                                                    ? (featured ? '#6b4e0d' : 'white')
+                                                    : (featured ? '#8a640f' : '#475569'),
+                                                fontWeight: '900',
+                                                fontSize: '0.86rem',
+                                                whiteSpace: 'nowrap',
+                                                cursor: 'pointer',
+                                                boxShadow: featured ? '0 8px 18px rgba(201, 164, 93, 0.16)' : 'none',
+                                                transition: 'all 0.2s ease'
+                                            }}
+                                        >
+                                            <span aria-hidden="true">{tab.icon}</span>
+                                            <span>{tab.label}</span>
+                                        </button>
+                                    );
+                                })}
                             </div>
 
                             {detailTab === 'results' && (
