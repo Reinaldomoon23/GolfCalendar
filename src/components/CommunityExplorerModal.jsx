@@ -15,11 +15,11 @@ const CATEGORIES = [
 export default function CommunityExplorerModal({
     isOpen,
     onClose,
-    sharedTournaments,
+    sharedTournaments = [],
     onAdd,        // Legacy: for custom tournaments that are NOT from shared_tournaments
     onJoin,       // New: join via reference model
     onLeave,      // New: leave (unsubscribe)
-    joinedTournaments,
+    joinedTournaments = [],
     subscribedTournaments = [],
 }) {
     const [searchTerm, setSearchTerm] = useState('');
@@ -28,41 +28,45 @@ export default function CommunityExplorerModal({
     const [loadingCounts, setLoadingCounts] = useState(false);
     const [joiningId, setJoiningId] = useState(null); // Loading state per card
 
-    if (!isOpen) return null;
+    const safeSharedTournaments = Array.isArray(sharedTournaments) ? sharedTournaments : [];
+    const safeJoinedTournaments = Array.isArray(joinedTournaments) ? joinedTournaments : [];
+    const safeSubscribedTournaments = Array.isArray(subscribedTournaments) ? subscribedTournaments : [];
 
     // Fetch participant counts once when modal opens
     useEffect(() => {
-        if (!sharedTournaments?.length) return;
-        const ids = sharedTournaments.filter(t => t.isShared).map(t => String(t.id));
+        if (!isOpen || !safeSharedTournaments.length) return;
+        const ids = safeSharedTournaments.filter(t => t?.isShared && t?.id).map(t => String(t.id));
         if (!ids.length) return;
         setLoadingCounts(true);
         fetchParticipantCounts(ids).then(counts => {
             setParticipantCounts(counts);
             setLoadingCounts(false);
         }).catch(() => setLoadingCounts(false));
-    }, [sharedTournaments?.length]);
+    }, [isOpen, safeSharedTournaments]);
 
     // Helper: is this tournament already in the user's calendar?
     const isJoinedTournament = (id) => {
         const sid = String(id);
         return (
-            subscribedTournaments.some(t => String(t.id) === sid) ||
-            joinedTournaments.some(jt => String(jt.id) === sid)
+            safeSubscribedTournaments.some(t => String(t?.id) === sid) ||
+            safeJoinedTournaments.some(jt => String(jt?.id) === sid)
         );
     };
 
     // Filter and Group tournaments
     const filtered = useMemo(() => {
-        return sharedTournaments.filter(t => {
+        return safeSharedTournaments.filter(t => {
+            if (!t?.id) return false;
             // 1. Ocultar torneos pasados (si la fecha de fin ya pasó)
             // A menos que ya estemos apuntados (para poder verlos/quitarlos si fuera necesario)
-            const joined = subscribedTournaments.some(st => String(st.id) === String(t.id)) || 
-                          joinedTournaments.some(jt => String(jt.id) === String(t.id));
+            const joined = safeSubscribedTournaments.some(st => String(st?.id) === String(t.id)) ||
+                          safeJoinedTournaments.some(jt => String(jt?.id) === String(t.id));
             
             if (!joined && isPast(t.dates)) return false;
 
-            const matchesSearch = t.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                               (t.course || '').toLowerCase().includes(searchTerm.toLowerCase());
+            const needle = searchTerm.toLowerCase();
+            const matchesSearch = (t.name || '').toLowerCase().includes(needle) ||
+                               (t.course || '').toLowerCase().includes(needle);
             
             if (!matchesSearch) return false;
 
@@ -73,7 +77,7 @@ export default function CommunityExplorerModal({
             const tType = t.type || 'club';
             return tGroups.includes(activeCategory) || tType === activeCategory;
         });
-    }, [sharedTournaments, searchTerm, activeCategory, subscribedTournaments, joinedTournaments]);
+    }, [safeSharedTournaments, searchTerm, activeCategory, safeSubscribedTournaments, safeJoinedTournaments]);
 
     const handleJoinClick = async (t) => {
         setJoiningId(String(t.id));
@@ -97,6 +101,8 @@ export default function CommunityExplorerModal({
             setJoiningId(null);
         }
     };
+
+    if (!isOpen) return null;
 
     return (
         <div style={{

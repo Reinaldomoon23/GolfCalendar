@@ -1116,6 +1116,9 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
     - Reglas Firestore permiten actualizar solo mensajes propios y solo con los campos de borrado controlados.
   Verificación:
     - Build directo con Vite: correcto.
+    - Deploy FTP Hostinger `/GolfTeam/`: correcto.
+    - Redeploy Vercel production: correcto.
+    - Resultado R1 de Adriana Montolio cargado en Firestore: 85 golpes, par 73, +12.
 
 [COMPLETADO] UX — Cambiar etiqueta Amigas por Amigos
   Archivos modificados:
@@ -1255,6 +1258,22 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
   PRÓXIMO PASO: PRODUCCIÓN — Probar modo móvil con Putts/GIR
 ==========================================================================
   Siguiente: En una cuenta real, activar `Track Putts` y `Track GIR`, entrar en `Modo Móvil`, esperar autosave y confirmar que ambos campos siguen visibles.
+
+[COMPLETADO] HOTFIX — Explorar no deja la app en blanco
+  Fecha: 2026-06-26 18:06 CEST
+  Archivos modificados:
+    - src/components/CommunityExplorerModal.jsx
+  Resumen:
+    - Corregido el orden de hooks del modal de exploración: ya no retorna antes de `useEffect`/`useMemo`.
+    - Normalizadas las listas de torneos suscritos, unidos y compartidos para tolerar valores vacíos.
+    - Blindada la búsqueda para evitar `.toLowerCase()` sobre nombres/campos ausentes.
+  Verificación:
+    - Build directo con Vite: correcto.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Validar botón Explorar desplegado
+==========================================================================
+  Siguiente: Desplegar el hotfix y abrir `Explorar` en producción. Si un móvil sigue blanco, forzar recarga/limpieza de caché PWA.
 
 [COMPLETADO] HOTFIX — Stableford opcional en resúmenes y roster Campeonato España
   Archivos modificados:
