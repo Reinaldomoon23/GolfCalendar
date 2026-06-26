@@ -1256,6 +1256,27 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
 ==========================================================================
   Siguiente: En una cuenta real, activar `Track Putts` y `Track GIR`, entrar en `Modo Móvil`, esperar autosave y confirmar que ambos campos siguen visibles.
 
+[COMPLETADO] FEATURE — Informe premium de torneo exportable a PDF
+  Archivos modificados:
+    - src/components/CalendarView.jsx
+    - src/components/TournamentReport.jsx
+    - src/utils/tournamentReport.js
+  Resumen:
+    - Añadida pestaña `Informe` dentro del detalle del torneo.
+    - El informe muestra foto de la jugadora, resumen premium, total, vs par, media, putts, GIR y comparativa por rondas.
+    - Añadida tabla de analisis hoyo a hoyo con colores por resultado respecto al par.
+    - Boton `Generar PDF` abre una version imprimible premium para guardar como PDF desde el navegador.
+  Verificacion:
+    - Build directo con Vite: correcto.
+    - Deploy FTP Hostinger `/GolfTeam/`: correcto.
+    - Redeploy Vercel production: correcto.
+    - Bundle de produccion contiene `Informe`, `Generar PDF` y plantilla imprimible premium.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Validar informe premium en torneo real
+==========================================================================
+  Siguiente: Abrir un torneo con varias rondas, revisar la pestana `Informe`, generar PDF y confirmar que la foto y tablas se renderizan correctamente.
+
 [COMPLETADO] HOTFIX — Defensa contra pantalla blanca en raíz cacheada
   Archivos modificados:
     - src/App.jsx

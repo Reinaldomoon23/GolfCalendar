@@ -13,6 +13,7 @@ import MonthGridView from './MonthGridView';
 import CommunityExplorerModal from './CommunityExplorerModal';
 import { generateTournamentDeterministicId } from '../services/tournaments.service';
 import TournamentLeaderboard from './TournamentLeaderboard';
+import TournamentReport from './TournamentReport';
 import { isSharedTournamentId } from '../services/leaderboard.service';
 import { getScorecardParTotal, resolveCourseScorecard } from '../utils/courseScorecards';
 
@@ -2352,26 +2353,25 @@ export default function CalendarView({
                                 </button>
                             </div>
 
-                            {/* Solo mostrar pestañas si el torneo es centralizado */}
-                            {isSharedTournamentId(selectedTournament.id) && (
-                                <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', borderBottom: '2px solid #e2e8f0', paddingBottom: '0' }}>
-                                    <button
-                                        onClick={() => setDetailTab('results')}
-                                        style={{
-                                            padding: '10px 20px', border: 'none', background: 'none', cursor: 'pointer',
-                                            fontWeight: '700', fontSize: '0.9rem',
-                                            color: detailTab === 'results' ? 'var(--color-primary)' : '#94a3b8',
-                                            borderBottom: detailTab === 'results' ? '2px solid var(--color-primary)' : '2px solid transparent',
-                                            marginBottom: '-2px', transition: 'all 0.2s'
-                                        }}
-                                    >
-                                        📝 Mis Resultados
-                                    </button>
+                            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', borderBottom: '2px solid #e2e8f0', paddingBottom: '0', overflowX: 'auto' }}>
+                                <button
+                                    onClick={() => setDetailTab('results')}
+                                    style={{
+                                        padding: '10px 16px', border: 'none', background: 'none', cursor: 'pointer',
+                                        fontWeight: '700', fontSize: '0.9rem', whiteSpace: 'nowrap',
+                                        color: detailTab === 'results' ? 'var(--color-primary)' : '#94a3b8',
+                                        borderBottom: detailTab === 'results' ? '2px solid var(--color-primary)' : '2px solid transparent',
+                                        marginBottom: '-2px', transition: 'all 0.2s'
+                                    }}
+                                >
+                                    📝 Mis Resultados
+                                </button>
+                                {isSharedTournamentId(selectedTournament.id) && (
                                     <button
                                         onClick={() => setDetailTab('leaderboard')}
                                         style={{
-                                            padding: '10px 20px', border: 'none', background: 'none', cursor: 'pointer',
-                                            fontWeight: '700', fontSize: '0.9rem',
+                                            padding: '10px 16px', border: 'none', background: 'none', cursor: 'pointer',
+                                            fontWeight: '700', fontSize: '0.9rem', whiteSpace: 'nowrap',
                                             color: detailTab === 'leaderboard' ? 'var(--color-primary)' : '#94a3b8',
                                             borderBottom: detailTab === 'leaderboard' ? '2px solid var(--color-primary)' : '2px solid transparent',
                                             marginBottom: '-2px', transition: 'all 0.2s'
@@ -2379,8 +2379,20 @@ export default function CalendarView({
                                     >
                                         🏆 Clasificación
                                     </button>
-                                </div>
-                            )}
+                                )}
+                                <button
+                                    onClick={() => setDetailTab('report')}
+                                    style={{
+                                        padding: '10px 16px', border: 'none', background: 'none', cursor: 'pointer',
+                                        fontWeight: '700', fontSize: '0.9rem', whiteSpace: 'nowrap',
+                                        color: detailTab === 'report' ? 'var(--color-primary)' : '#94a3b8',
+                                        borderBottom: detailTab === 'report' ? '2px solid var(--color-primary)' : '2px solid transparent',
+                                        marginBottom: '-2px', transition: 'all 0.2s'
+                                    }}
+                                >
+                                    📄 Informe
+                                </button>
+                            </div>
 
                             {detailTab === 'results' && (
                                 <>
@@ -3114,6 +3126,13 @@ export default function CalendarView({
                                 currentUsername={user?.username}
                             />
                         </>
+                    )}
+                    {detailTab === 'report' && (
+                        <TournamentReport
+                            tournament={selectedTournament}
+                            result={formData}
+                            user={user}
+                        />
                     )}
                         </div>
                     ) : (
