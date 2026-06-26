@@ -184,12 +184,13 @@ export default function TournamentReport({ tournament, result, user }) {
             <h3 style={{ margin: '0 0 14px', color: '#102018', fontSize: '1rem', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
               Análisis hoyo a hoyo
             </h3>
-            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: `${Math.max(520, 170 + report.rounds.length * 82)}px` }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: `${Math.max(560, 240 + report.rounds.length * 82)}px` }}>
               <thead>
                 <tr>
                   <th style={thStyle}>Hoyo</th>
                   <th style={thStyle}>Par</th>
                   {report.rounds.map((round) => <th key={round.key} style={thStyle}>{round.label}</th>)}
+                  <th style={thStyle}>Media</th>
                 </tr>
               </thead>
               <tbody>
@@ -217,6 +218,21 @@ export default function TournamentReport({ tournament, result, user }) {
                         </td>
                       );
                     })}
+                    <td style={tdStyle}>
+                      <span style={{
+                        display: 'inline-flex',
+                        minWidth: '38px',
+                        height: '30px',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderRadius: '999px',
+                        background: hole.averageTone.bg,
+                        color: hole.averageTone.color,
+                        fontWeight: 900,
+                      }}>
+                        {Number.isFinite(hole.averageScore) ? hole.averageScore.toFixed(1) : '-'}
+                      </span>
+                    </td>
                   </tr>
                 ))}
               </tbody>

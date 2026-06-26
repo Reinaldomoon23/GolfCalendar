@@ -1349,6 +1349,24 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
 ==========================================================================
   Siguiente: Abrir un torneo en móvil y confirmar que `Informe PDF` es visible junto a resultados y clasificación.
 
+[COMPLETADO] UX — Informe desde menú y media por hoyo
+  Archivos modificados:
+    - src/components/CalendarView.jsx
+    - src/components/TournamentReport.jsx
+    - src/utils/tournamentReport.js
+  Resumen:
+    - El menú de tres puntos de cada torneo incluye `Generar informe`.
+    - Si el torneo no tiene resultados guardados, se muestra aviso y no abre informe vacío.
+    - El informe premium añade columna `Media` en el análisis hoyo a hoyo.
+    - La media se calcula por hoyo usando todas las rondas registradas del torneo para esa jugadora.
+  Verificación:
+    - Build directo con Vite: correcto.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Validar informe desde lista
+==========================================================================
+  Siguiente: Abrir los tres puntos de un torneo con resultados y confirmar que `Generar informe` abre el PDF sin entrar en el torneo.
+
 [COMPLETADO] FEATURE — Informe premium de torneo exportable a PDF
   Archivos modificados:
     - src/components/CalendarView.jsx

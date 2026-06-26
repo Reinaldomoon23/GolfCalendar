@@ -5,7 +5,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 // ... imports ...
 
 // ... imports ...
-import { ChevronLeft, ChevronRight, Info, Calendar, Trophy, Plus, MapPin, Trash2, Share2, Filter, CalendarDays, Save, X, AlertTriangle, List, MoreVertical, Copy, Edit, Radio, Users } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Info, Calendar, Trophy, Plus, MapPin, Trash2, Share2, Filter, CalendarDays, Save, X, AlertTriangle, List, MoreVertical, Copy, Edit, Radio, Users, FileText } from 'lucide-react';
 import MobileScorecardEditor from './MobileScorecardEditor';
 import spanishCourses from '../data/spanish_courses.json';
 import CalendarFilters from './CalendarFilters';
@@ -16,6 +16,7 @@ import TournamentLeaderboard from './TournamentLeaderboard';
 import TournamentReport from './TournamentReport';
 import { isSharedTournamentId } from '../services/leaderboard.service';
 import { getScorecardParTotal, resolveCourseScorecard } from '../utils/courseScorecards';
+import { buildTournamentReport, printTournamentReport } from '../utils/tournamentReport';
 
 // -------------------------------------------------------------------------
 // LOGIC HELPERS (Shared with Results)
@@ -438,6 +439,21 @@ export default function CalendarView({
     const handleEditFromMenu = (t) => {
         // Navigate with explicit edit state
         navigate(`/event/${t.id}`, { state: { edit: true } });
+        setContextMenu(null);
+    };
+
+    const handleReportFromMenu = (t) => {
+        const result = results?.[t.id];
+        if (!result) {
+            notify('Todavia no hay resultados guardados para generar el informe.', 'warning');
+            setContextMenu(null);
+            return;
+        }
+
+        const opened = printTournamentReport(buildTournamentReport(t, result, user));
+        if (!opened) {
+            notify('El navegador ha bloqueado la ventana del informe.', 'warning');
+        }
         setContextMenu(null);
     };
 
@@ -1233,7 +1249,7 @@ export default function CalendarView({
         if (!contextMenu) return null;
         console.log('Rendering Context Menu - Version: ExactPositioning-Clamp'); // Debug version
         const menuWidth = 170;
-        const menuHeight = 220; // Increased for extra options
+        const menuHeight = 270; // Increased for extra options
 
         // Start at exact click coordinates
         let x = contextMenu.x;
@@ -1272,6 +1288,9 @@ export default function CalendarView({
                 </button>
                 <button onClick={() => handleDuplicate(contextMenu.tournament)} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '10px', background: 'none', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.9rem', textAlign: 'left', color: '#333' }}>
                     <Copy size={16} /> Duplicar
+                </button>
+                <button onClick={() => handleReportFromMenu(contextMenu.tournament)} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '10px', background: '#fffaf0', border: '1px solid #f1dfaa', borderRadius: '6px', cursor: 'pointer', fontSize: '0.9rem', textAlign: 'left', color: '#8a640f', fontWeight: 800 }}>
+                    <FileText size={16} /> Generar informe
                 </button>
 
                 <div style={{ height: '1px', background: '#f1f5f9', margin: '4px 0' }}></div>

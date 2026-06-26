@@ -92,11 +92,21 @@ export function buildTournamentReport(tournament = {}, result = {}, user = {}) {
         tone: getScoreTone(diff),
       };
     });
+    const scoredValues = roundValues
+      .map((value) => value.score)
+      .filter((score) => Number.isFinite(score) && score > 0);
+    const averageScore = scoredValues.length
+      ? scoredValues.reduce((total, score) => total + score, 0) / scoredValues.length
+      : null;
+    const averageDiff = averageScore && numberValue(par) ? averageScore - numberValue(par) : null;
 
     return {
       hole: holeIndex + 1,
       par,
       roundValues,
+      averageScore,
+      averageDiff,
+      averageTone: getScoreTone(averageDiff),
     };
   });
 
@@ -156,9 +166,10 @@ export function printTournamentReport(report) {
         const value = hole.roundValues[index];
         return `<td><span class="score-pill" style="background:${value.tone.bg};color:${value.tone.color}">${value.score || '-'}</span></td>`;
       }).join('')}
+      <td><span class="score-pill" style="background:${hole.averageTone.bg};color:${hole.averageTone.color}">${Number.isFinite(hole.averageScore) ? hole.averageScore.toFixed(1) : '-'}</span></td>
     </tr>
   `).join('');
-  const roundHeaders = report.rounds.map((round) => `<th>${escapeHtml(round.label)}</th>`).join('');
+  const roundHeaders = `${report.rounds.map((round) => `<th>${escapeHtml(round.label)}</th>`).join('')}<th>Media</th>`;
   const roundCards = report.rounds.map((round) => `
     <div class="round-card">
       <div class="round-label">${escapeHtml(round.label)}</div>
