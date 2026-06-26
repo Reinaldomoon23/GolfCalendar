@@ -4,6 +4,7 @@ import { app, db } from '../firebase';
 import { getUserDocId } from '../utils/userProfiles';
 
 const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+const PUSH_SCOPE = `${import.meta.env.BASE_URL}firebase-cloud-messaging-push-scope/`;
 
 export async function isPushNotificationSupported() {
   if (typeof window === 'undefined') return false;
@@ -16,8 +17,18 @@ async function getMessagingRegistration() {
     throw new Error('Este navegador no soporta service workers.');
   }
 
+  const existingRegistration = await navigator.serviceWorker.getRegistration(PUSH_SCOPE);
+  if (existingRegistration) return existingRegistration;
+
   const swUrl = `${import.meta.env.BASE_URL}firebase-messaging-sw.js`;
-  return navigator.serviceWorker.register(swUrl, { scope: import.meta.env.BASE_URL });
+  return navigator.serviceWorker.register(swUrl, { scope: PUSH_SCOPE });
+}
+
+export function getPushNotificationConfigStatus() {
+  return {
+    hasVapidKey: Boolean(VAPID_KEY),
+    permission: typeof Notification === 'undefined' ? 'unsupported' : Notification.permission,
+  };
 }
 
 export async function enablePushNotifications(user) {
@@ -48,6 +59,7 @@ export async function enablePushNotifications(user) {
     token,
     platform: 'web',
     user_agent: navigator.userAgent || null,
+    scope: PUSH_SCOPE,
     enabled: true,
     updated_at: serverTimestamp(),
     created_at: serverTimestamp(),

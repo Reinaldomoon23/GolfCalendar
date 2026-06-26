@@ -1118,6 +1118,9 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
     - Build directo con Vite: correcto.
     - Deploy FTP Hostinger `/GolfTeam/`: correcto.
     - Redeploy Vercel production: correcto.
+    - `firebase-messaging-sw.js` responde 200 en Vercel y Hostinger.
+    - Deploy FTP Hostinger `/GolfTeam/`: correcto.
+    - Redeploy Vercel production: correcto.
     - Resultado R1 de Adriana Montolio cargado en Firestore: 85 golpes, par 73, +12.
 
 [COMPLETADO] UX — Cambiar etiqueta Amigas por Amigos
@@ -1258,6 +1261,27 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
   PRÓXIMO PASO: PRODUCCIÓN — Probar modo móvil con Putts/GIR
 ==========================================================================
   Siguiente: En una cuenta real, activar `Track Putts` y `Track GIR`, entrar en `Modo Móvil`, esperar autosave y confirmar que ambos campos siguen visibles.
+
+[COMPLETADO] FEATURE — Notificaciones push reales para chat
+  Fecha: 2026-06-26
+  Archivos modificados:
+    - .env
+    - src/services/notifications.service.js
+    - src/services/chat.service.js
+    - public/firebase-messaging-sw.js
+  Resumen:
+    - Configurada la VAPID pública para builds locales/Hostinger.
+    - El service worker de Firebase Messaging usa un scope propio y ya no pisa el service worker principal de la PWA.
+    - Al activar notificaciones se guarda el token FCM con scope y metadatos del dispositivo en `users/{uid}/push_tokens/{token}`.
+    - El envío de chat detecta errores reales de la API `/api/send_chat_push` en vez de ignorar respuestas no OK.
+    - Al pulsar una notificación se enfoca la ventana abierta si existe; si no, abre `Amigos`.
+  Verificación:
+    - Build directo con Vite: correcto.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Prueba real de push entre dos cuentas
+==========================================================================
+  Siguiente: En el móvil receptor, entrar en `Amigos`, pulsar `Activar` avisos y aceptar permisos. Desde otra cuenta enviar un chat y confirmar que llega push con la app en segundo plano/cerrada.
 
 [COMPLETADO] HOTFIX — Explorar no deja la app en blanco
   Fecha: 2026-06-26 18:06 CEST

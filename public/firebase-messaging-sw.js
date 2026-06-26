@@ -13,14 +13,22 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
+function getAppUrl(path) {
+  try {
+    return new URL(path || '../friends', self.registration.scope).href;
+  } catch (error) {
+    return '/GolfTeam/friends';
+  }
+}
+
 messaging.onBackgroundMessage((payload) => {
   const title = payload.notification?.title || 'Nuevo mensaje';
   const options = {
     body: payload.notification?.body || payload.data?.body || '',
-    icon: '/GolfTeam/pwa-192x192.png',
-    badge: '/GolfTeam/pwa-192x192.png',
+    icon: getAppUrl('../pwa-192x192.png'),
+    badge: getAppUrl('../pwa-192x192.png'),
     data: {
-      url: payload.data?.url || '/GolfTeam/friends',
+      url: payload.data?.url || getAppUrl('../friends'),
     },
   };
 
@@ -29,6 +37,20 @@ messaging.onBackgroundMessage((payload) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const targetUrl = event.notification?.data?.url || '/GolfTeam/friends';
-  event.waitUntil(clients.openWindow(targetUrl));
+  const targetUrl = event.notification?.data?.url || getAppUrl('../friends');
+
+  event.waitUntil((async () => {
+    const windowClients = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const target = new URL(targetUrl, self.location.origin).href;
+
+    for (const client of windowClients) {
+      if (client.url.startsWith(self.location.origin) && 'focus' in client) {
+        await client.focus();
+        if ('navigate' in client) return client.navigate(target);
+        return client;
+      }
+    }
+
+    return clients.openWindow(target);
+  })());
 });

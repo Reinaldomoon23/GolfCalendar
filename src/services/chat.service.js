@@ -174,7 +174,7 @@ async function sendChatPushNotification(payload) {
   if (!auth.currentUser || !API_ENDPOINTS.sendChatPush) return;
 
   const token = await auth.currentUser.getIdToken();
-  await fetch(API_ENDPOINTS.sendChatPush, {
+  const response = await fetch(API_ENDPOINTS.sendChatPush, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -182,6 +182,17 @@ async function sendChatPushNotification(payload) {
     },
     body: JSON.stringify(payload),
   });
+
+  if (!response.ok) {
+    let message = 'No se pudo enviar la notificación push.';
+    try {
+      const data = await response.json();
+      if (data?.error) message = data.error;
+    } catch (error) {
+      // Keep the generic message if the API did not return JSON.
+    }
+    throw new Error(message);
+  }
 }
 
 export async function deleteChatMessage(currentUser, chat, message) {
