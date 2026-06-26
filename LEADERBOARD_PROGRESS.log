@@ -1304,6 +1304,21 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
 ==========================================================================
   Siguiente: Recibir nuevas tarjetas de primera vuelta y cargarlas preservando scorecards y leaderboard.
 
+[COMPLETADO] HOTFIX — Avatar de clasificación móvil con tamaño estable
+  Archivos modificados:
+    - src/components/TournamentLeaderboard.jsx
+  Resumen:
+    - `ProfileImage` recibe ahora `photoPath`, `displayName` y `alt` correctos en la clasificación.
+    - El avatar queda fijado a 28x28 px para evitar que el fallback de iniciales ocupe toda la fila.
+    - Las columnas de la tabla se compactan ligeramente para móvil sin romper el nombre de la jugadora.
+  Verificación:
+    - Build directo con Vite: correcto.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Validar clasificación en móvil
+==========================================================================
+  Siguiente: Abrir la pestaña `Clasificación` en móvil y confirmar que las fotos/iniciales se ven como avatares pequeños.
+
 [COMPLETADO] FEATURE — Informe premium de torneo exportable a PDF
   Archivos modificados:
     - src/components/CalendarView.jsx

@@ -87,6 +87,15 @@ export default function TournamentLeaderboard({ tournamentId, par = 72, currentU
 
     const withScores = sortedParticipants.filter(p => hasDisplayResult(p));
     const withoutScores = sortedParticipants.filter(p => !hasDisplayResult(p));
+    const gridColumns = '34px minmax(0, 1fr) 48px 56px 58px';
+    const avatarStyle = {
+        width: '28px',
+        height: '28px',
+        borderRadius: '50%',
+        objectFit: 'cover',
+        flexShrink: 0,
+        display: 'block',
+    };
 
     if (loading) {
         return (
@@ -203,7 +212,7 @@ export default function TournamentLeaderboard({ tournamentId, par = 72, currentU
                 {/* Table Header */}
                 <div style={{
                     display: 'grid',
-                    gridTemplateColumns: '36px 1fr 60px 72px 72px',
+                    gridTemplateColumns: gridColumns,
                     gap: '8px',
                     padding: '10px 16px',
                     background: '#f8fafc',
@@ -233,7 +242,7 @@ export default function TournamentLeaderboard({ tournamentId, par = 72, currentU
                             key={p.username}
                             style={{
                                 display: 'grid',
-                                gridTemplateColumns: '36px 1fr 60px 72px 72px',
+                                gridTemplateColumns: gridColumns,
                                 gap: '8px',
                                 padding: '12px 16px',
                                 alignItems: 'center',
@@ -264,9 +273,10 @@ export default function TournamentLeaderboard({ tournamentId, par = 72, currentU
                             {/* Player Name */}
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
                                 <ProfileImage
-                                    username={p.username}
-                                    size={28}
-                                    style={{ borderRadius: '50%', flexShrink: 0 }}
+                                    photoPath={p.photo_url}
+                                    displayName={p.fullName || p.full_name || p.username}
+                                    alt={p.fullName || p.full_name || p.username}
+                                    style={avatarStyle}
                                 />
                                 <div style={{ minWidth: 0 }}>
                                     <div style={{
@@ -342,7 +352,7 @@ export default function TournamentLeaderboard({ tournamentId, par = 72, currentU
                             key={p.username}
                             style={{
                                 display: 'grid',
-                                gridTemplateColumns: '36px 1fr 60px 72px 72px',
+                                gridTemplateColumns: gridColumns,
                                 gap: '8px',
                                 padding: '10px 16px',
                                 alignItems: 'center',
@@ -357,9 +367,10 @@ export default function TournamentLeaderboard({ tournamentId, par = 72, currentU
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
                                 <ProfileImage
-                                    username={p.username}
-                                    size={28}
-                                    style={{ borderRadius: '50%', flexShrink: 0 }}
+                                    photoPath={p.photo_url}
+                                    displayName={p.fullName || p.full_name || p.username}
+                                    alt={p.fullName || p.full_name || p.username}
+                                    style={avatarStyle}
                                 />
                                 <div style={{
                                     fontWeight: '600', fontSize: '0.9rem', color: '#64748b',
