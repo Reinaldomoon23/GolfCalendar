@@ -1239,3 +1239,19 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
   PRÓXIMO PASO: PRODUCCIÓN — Prueba real de permisos y recepción push
 ==========================================================================
   Siguiente: Entrar en la app desde un dispositivo real, pulsar `Activar` en Comunidad, aceptar permisos del navegador y enviar un mensaje desde otra cuenta para confirmar recepción con la app cerrada.
+
+[COMPLETADO] HOTFIX — Modo móvil preserva Putts y GIR
+  Archivos modificados:
+    - src/components/CalendarView.jsx
+  Resumen:
+    - El autosave de resultados ahora guarda `track_putts`, `track_girs` y `tee_time`, igual que el guardado manual.
+    - Al abrir un torneo, la UI inicializa los toggles de Putts/GIR también desde el resultado existente, no solo desde la ficha del torneo.
+    - Al reconstruir scorecards desde Firestore se normalizan y preservan `strokes`, `putts` y `girs`.
+    - Las tarjetas nuevas ya nacen con array `girs` para evitar que el editor móvil pierda el campo.
+  Verificación:
+    - Build directo con Vite: correcto.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Probar modo móvil con Putts/GIR
+==========================================================================
+  Siguiente: En una cuenta real, activar `Track Putts` y `Track GIR`, entrar en `Modo Móvil`, esperar autosave y confirmar que ambos campos siguen visibles.

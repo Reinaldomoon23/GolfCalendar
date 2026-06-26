@@ -71,6 +71,8 @@ const samePars = (a = [], b = []) => {
     return normalizedA.length === normalizedB.length && normalizedA.every((value, index) => value === normalizedB[index]);
 };
 
+const normalizeHoleArray = (values = []) => Array.from({ length: 18 }, (_, index) => values?.[index] ?? '');
+
 const shouldReplaceSavedPars = (t, savedPars, defaultPars) => {
     const courseName = normalizeCourseName(t?.course);
     if (!Array.isArray(savedPars) || !Array.isArray(defaultPars) || defaultPars.length !== 18) return false;
@@ -182,6 +184,7 @@ export default function CalendarView({
     const selectedTournament = useMemo(() =>
         id ? tournaments.find(t => String(t.id) === id) || null : null
         , [id, tournaments]);
+    const selectedResult = selectedTournament ? results[selectedTournament.id] : null;
 
     // --- NEW: Editing Tournament Details State ---
     const [editingDetails, setEditingDetails] = useState({});
@@ -237,6 +240,7 @@ export default function CalendarView({
 
     useEffect(() => {
         if (selectedTournament) {
+            const existingResult = selectedResult || {};
             setDetailTab('results'); // Reset tab to results when switching tournaments
             // Check if we navigated here with intent to edit
             const shouldEdit = location.state?.edit === true;
@@ -268,10 +272,13 @@ export default function CalendarView({
                 conflict: selectedTournament.conflict || false,
                 groups: selectedTournament.groups || [],
                 type: selectedTournament.type || 'club',
-                target_score: selectedTournament.target_score !== undefined ? selectedTournament.target_score : null
+                target_score: selectedTournament.target_score !== undefined ? selectedTournament.target_score : null,
+                track_putts: selectedTournament.track_putts || existingResult.track_putts || false,
+                track_girs: selectedTournament.track_girs || existingResult.track_girs || false,
+                tee_time: selectedTournament.tee_time || existingResult.tee_time || null
             });
         }
-    }, [selectedTournament, location.state]);
+    }, [selectedTournament, location.state, selectedResult?.track_putts, selectedResult?.track_girs, selectedResult?.tee_time]);
 
     const handleSaveChanges = () => {
         if (!selectedTournament) return;
@@ -495,7 +502,9 @@ export default function CalendarView({
                     return {
                         ...card,
                         pars: mergedPars,
-                        putts: card.putts || Array(18).fill('')
+                        strokes: normalizeHoleArray(card.strokes),
+                        putts: normalizeHoleArray(card.putts),
+                        girs: normalizeHoleArray(card.girs)
                     };
                 }
                 // New card
@@ -503,7 +512,8 @@ export default function CalendarView({
                 return {
                     pars: defaultPars.map(p => p || ''),
                     strokes: Array(18).fill(''),
-                    putts: Array(18).fill('')
+                    putts: Array(18).fill(''),
+                    girs: Array(18).fill('')
                 };
             };
 
@@ -778,7 +788,10 @@ export default function CalendarView({
                     tournamentName: editingDetails.name || selectedTournament.name,
                     tournamentCourse: editingDetails.course || selectedTournament.course,
                     tournamentDates: editingDetails.dates || selectedTournament.dates,
-                    tournamentPar: editingDetails.par || selectedTournament.par || 72
+                    tournamentPar: editingDetails.par || selectedTournament.par || 72,
+                    track_putts: editingDetails.track_putts || selectedTournament.track_putts || false,
+                    track_girs: editingDetails.track_girs || selectedTournament.track_girs || false,
+                    tee_time: editingDetails.tee_time || selectedTournament.tee_time || null
                 };
                 onSaveSpecificResult(selectedTournament.id, entry);
             }
@@ -863,7 +876,10 @@ export default function CalendarView({
                 tournamentName: editingDetails.name || selectedTournament.name,
                 tournamentCourse: editingDetails.course || selectedTournament.course,
                 tournamentDates: editingDetails.dates || selectedTournament.dates,
-                tournamentPar: editingDetails.par || selectedTournament.par || 72
+                tournamentPar: editingDetails.par || selectedTournament.par || 72,
+                track_putts: editingDetails.track_putts || selectedTournament.track_putts || false,
+                track_girs: editingDetails.track_girs || selectedTournament.track_girs || false,
+                tee_time: editingDetails.tee_time || selectedTournament.tee_time || null
             };
 
             onSaveSpecificResult(selectedTournament.id, entry);
@@ -872,7 +888,7 @@ export default function CalendarView({
         return () => {
             if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
         };
-    }, [formData, isEditingResults, selectedTournament]);
+    }, [formData, isEditingResults, selectedTournament, editingDetails.track_putts, editingDetails.track_girs, editingDetails.tee_time]);
 
     const handleSaveResults = () => {
         if (!selectedTournament) return;
