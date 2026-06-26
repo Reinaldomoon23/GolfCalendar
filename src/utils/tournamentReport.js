@@ -180,7 +180,7 @@ export function printTournamentReport(report) {
       <meta charset="utf-8" />
       <title>Informe ${escapeHtml(tournament.name || '')}</title>
       <style>
-        @page { size: A4; margin: 14mm; }
+        @page { size: A4; margin: 14mm 14mm 22mm; }
         * { box-sizing: border-box; }
         body { margin: 0; font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #102018; background: #f7f4ef; }
         .page { min-height: 100vh; background: #fbfaf7; padding: 30px; }
@@ -205,13 +205,24 @@ export function printTournamentReport(report) {
         .round-meta { color: rgba(255,255,255,.74); font-weight: 800; margin-top: 4px; }
         .round-grid { display: grid; grid-template-columns: 1fr auto; gap: 7px; margin-top: 14px; font-size: 12px; }
         .round-grid span { color: rgba(255,255,255,.65); }
-        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .analysis-section { break-inside: auto; page-break-inside: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; break-inside: auto; page-break-inside: auto; }
+        thead { display: table-header-group; }
+        tbody { break-inside: auto; page-break-inside: auto; }
+        tr { break-inside: avoid; page-break-inside: avoid; }
         th { background: #102018; color: white; padding: 10px 8px; text-align: center; }
-        td { border-bottom: 1px solid #edf1ee; padding: 8px; text-align: center; }
+        td { border-bottom: 1px solid #edf1ee; padding: 6px 8px; text-align: center; }
         td:first-child, td:nth-child(2) { font-weight: 900; color: #102018; }
-        .score-pill { display: inline-flex; min-width: 28px; height: 28px; align-items: center; justify-content: center; border-radius: 999px; font-weight: 900; }
+        .score-pill { display: inline-flex; min-width: 24px; height: 24px; align-items: center; justify-content: center; border-radius: 999px; font-weight: 900; }
         .footer { margin-top: 18px; color: #748078; font-size: 11px; text-align: center; }
-        @media print { .page { padding: 0; } .section { box-shadow: none; } }
+        @media print {
+          .page { padding: 0; }
+          .section { box-shadow: none; }
+          .analysis-section { padding-bottom: 10mm; }
+          th { padding: 7px 6px; }
+          td { padding: 4px 6px; }
+          .score-pill { min-width: 22px; height: 22px; }
+        }
       </style>
     </head>
     <body>
@@ -239,7 +250,7 @@ export function printTournamentReport(report) {
           <h2>Comparativa por rondas</h2>
           <div class="rounds">${roundCards || '<p>Sin rondas registradas.</p>'}</div>
         </div>
-        <div class="section">
+        <div class="section analysis-section">
           <h2>Analisis hoyo a hoyo</h2>
           <table>
             <thead><tr><th>Hoyo</th><th>Par</th>${roundHeaders}</tr></thead>

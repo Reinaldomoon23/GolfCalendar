@@ -1319,6 +1319,21 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
 ==========================================================================
   Siguiente: Abrir la pestaña `Clasificación` en móvil y confirmar que las fotos/iniciales se ven como avatares pequeños.
 
+[COMPLETADO] HOTFIX — Evitar cortes raros en PDF premium
+  Archivos modificados:
+    - src/utils/tournamentReport.js
+  Resumen:
+    - La tabla hoyo a hoyo del PDF usa filas con `break-inside: avoid`.
+    - El layout de impresión reserva más margen inferior para evitar solaparse con el pie automático del navegador.
+    - La tabla se compacta en modo print para reducir saltos de página y filas huérfanas.
+  Verificación:
+    - Build directo con Vite: correcto.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Validar PDF premium
+==========================================================================
+  Siguiente: Generar el PDF desde la pestaña `Informe` y comprobar que la tabla no queda partida por el pie de página.
+
 [COMPLETADO] FEATURE — Informe premium de torneo exportable a PDF
   Archivos modificados:
     - src/components/CalendarView.jsx
