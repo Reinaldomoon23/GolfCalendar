@@ -1255,3 +1255,20 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
   PRÓXIMO PASO: PRODUCCIÓN — Probar modo móvil con Putts/GIR
 ==========================================================================
   Siguiente: En una cuenta real, activar `Track Putts` y `Track GIR`, entrar en `Modo Móvil`, esperar autosave y confirmar que ambos campos siguen visibles.
+
+[COMPLETADO] HOTFIX — Redirección raíz Vercel a /GolfTeam/
+  Archivos modificados:
+    - vercel.json
+  Resumen:
+    - Añadida redirección temporal de `/` a `/GolfTeam/` en Vercel.
+    - Evita la pantalla en blanco causada por React Router con `basename="/GolfTeam"` cuando se abre la raíz del dominio Vercel.
+  Verificación:
+    - Build directo con Vite: correcto.
+    - Redeploy Vercel production correcto.
+    - `https://golf-calendar-v3.vercel.app/` devuelve 307 a `/GolfTeam/`.
+    - Navegador renderiza login en `https://golf-calendar-v3.vercel.app/GolfTeam/`.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Probar modo móvil con Putts/GIR
+==========================================================================
+  Siguiente: En una cuenta real, activar `Track Putts` y `Track GIR`, entrar en `Modo Móvil`, esperar autosave y confirmar que ambos campos siguen visibles.

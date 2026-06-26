@@ -1,4 +1,7 @@
 {
+  "redirects": [
+    { "source": "/", "destination": "/GolfTeam/", "permanent": false }
+  ],
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/GolfTeam/(.*)", "destination": "/$1" },
