@@ -206,6 +206,7 @@ export default function CalendarView({
     useEffect(() => {
         if (mobileMode && id) {
             localStorage.setItem('golf_tracker_mobile_mode', JSON.stringify({
+                active: true,
                 cardIdx: mobileMode.cardIdx,
                 holeIdx: mobileMode.holeIdx,
                 tournamentId: id
@@ -273,8 +274,8 @@ export default function CalendarView({
                 groups: selectedTournament.groups || [],
                 type: selectedTournament.type || 'club',
                 target_score: selectedTournament.target_score !== undefined ? selectedTournament.target_score : null,
-                track_putts: selectedTournament.track_putts || existingResult.track_putts || false,
-                track_girs: selectedTournament.track_girs || existingResult.track_girs || false,
+                track_putts: existingResult.track_putts === true,
+                track_girs: existingResult.track_girs === true,
                 tee_time: selectedTournament.tee_time || existingResult.tee_time || null
             });
         }
@@ -789,8 +790,8 @@ export default function CalendarView({
                     tournamentCourse: editingDetails.course || selectedTournament.course,
                     tournamentDates: editingDetails.dates || selectedTournament.dates,
                     tournamentPar: editingDetails.par || selectedTournament.par || 72,
-                    track_putts: editingDetails.track_putts || selectedTournament.track_putts || false,
-                    track_girs: editingDetails.track_girs || selectedTournament.track_girs || false,
+                    track_putts: editingDetails.track_putts === true,
+                    track_girs: editingDetails.track_girs === true,
                     tee_time: editingDetails.tee_time || selectedTournament.tee_time || null
                 };
                 onSaveSpecificResult(selectedTournament.id, entry);
@@ -877,8 +878,8 @@ export default function CalendarView({
                 tournamentCourse: editingDetails.course || selectedTournament.course,
                 tournamentDates: editingDetails.dates || selectedTournament.dates,
                 tournamentPar: editingDetails.par || selectedTournament.par || 72,
-                track_putts: editingDetails.track_putts || selectedTournament.track_putts || false,
-                track_girs: editingDetails.track_girs || selectedTournament.track_girs || false,
+                track_putts: editingDetails.track_putts === true,
+                track_girs: editingDetails.track_girs === true,
                 tee_time: editingDetails.tee_time || selectedTournament.tee_time || null
             };
 
@@ -927,8 +928,8 @@ export default function CalendarView({
             tournamentCourse: editingDetails.course || selectedTournament.course,
             tournamentDates: editingDetails.dates || selectedTournament.dates,
             tournamentPar: editingDetails.par || selectedTournament.par || 72,
-            track_putts: editingDetails.track_putts || selectedTournament.track_putts || false,
-            track_girs: editingDetails.track_girs || selectedTournament.track_girs || false,
+            track_putts: editingDetails.track_putts === true,
+            track_girs: editingDetails.track_girs === true,
             tee_time: editingDetails.tee_time || selectedTournament.tee_time || null
         };
 
@@ -2545,7 +2546,7 @@ export default function CalendarView({
                                                     boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                                                 }}
                                             >
-                                                <span>📱</span> Modo Móvil
+                                                <span>📱</span> Introducir resultado
                                             </button>
                                         </div>
 
@@ -2572,7 +2573,7 @@ export default function CalendarView({
                                                     fontWeight: 'bold',
                                                 }}
                                             >
-                                                <Share2 size={14} /> Compartir
+                                                <Share2 size={14} /> Compartir tarjeta
                                             </button>
                                             <button
                                                 onClick={async (e) => {
@@ -2610,7 +2611,7 @@ export default function CalendarView({
                                                 }}
                                                 title="Compartir enlace para seguir resultados en directo"
                                             >
-                                                <Radio size={14} className="pulse-animation" /> En Vivo
+                                                <Radio size={14} className="pulse-animation" /> Resultados en Vivo
                                             </button>
 
                                             {/* Conditionally show MULTI-LIVE button if the user manages other players or is in a team context */}
@@ -3132,8 +3133,8 @@ export default function CalendarView({
                         targetScore={editingDetails.target_score !== undefined ? editingDetails.target_score : (t?.target_score ?? null)}
                         courseName={t?.course || 'Campo de Golf'}
                         config={{
-                            track_putts: editingDetails.track_putts || t?.track_putts || false,
-                            track_girs: editingDetails.track_girs || t?.track_girs || false
+                            track_putts: editingDetails.track_putts === true,
+                            track_girs: editingDetails.track_girs === true
                         }}
                         onUpdate={(hIdx, field, val) => handleHoleChange(mobileMode.cardIdx, hIdx, field, val)}
                         onJumpToHole={(hIdx) => {
@@ -3743,8 +3744,8 @@ export default function CalendarView({
                     targetScore={editingDetails.target_score !== undefined ? editingDetails.target_score : (selectedTournament?.target_score ?? null)}
                     courseName={selectedTournament?.course || 'Campo de Golf'}
                     config={{
-                        track_putts: editingDetails.track_putts || selectedTournament?.track_putts || false,
-                        track_girs: editingDetails.track_girs || selectedTournament?.track_girs || false
+                        track_putts: editingDetails.track_putts === true,
+                        track_girs: editingDetails.track_girs === true
                     }}
                     onUpdate={(hIdx, field, val) => handleHoleChange(mobileMode.cardIdx, hIdx, field, val)}
                     onJumpToHole={(hIdx) => {

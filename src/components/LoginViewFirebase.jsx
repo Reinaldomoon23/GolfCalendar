@@ -150,7 +150,7 @@ export default function LoginViewFirebase({ onLogin }) {
                     }}>
                         {isRegister ? <User size={32} /> : <Lock size={32} />}
                     </div>
-                    <h2>{isRegister ? 'Crear Cuenta' : 'Bienvenido'}</h2>
+                    <h2>{isRegister ? 'Crear cuenta' : 'Bienvenido'}</h2>
                     <p style={{ color: 'var(--color-text-muted)' }}>
                         {isRegister ? 'Regístrate para gestionar tus torneos' : 'Inicia sesión para continuar'}
                     </p>
@@ -288,7 +288,7 @@ export default function LoginViewFirebase({ onLogin }) {
                     >
                         {loading ? <Loader2 className="animate-spin" size={20} /> : (
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                                <span>{isRegister ? 'Registrarse' : 'Ingresar'}</span>
+                                <span>{isRegister ? 'Crear cuenta' : 'Iniciar sesión'}</span>
                                 <ArrowRight size={20} />
                             </div>
                         )}
@@ -300,7 +300,7 @@ export default function LoginViewFirebase({ onLogin }) {
                         onClick={() => { setIsRegister(!isRegister); setError(''); }}
                         style={{ background: 'none', border: 'none', color: 'var(--color-primary)', cursor: 'pointer', fontSize: '0.9rem', fontWeight: '500' }}
                     >
-                        {isRegister ? '¿Ya tienes cuenta? Inicia Sesión' : '¿No tienes cuenta? Regístrate'}
+                        {isRegister ? 'Ya tengo cuenta' : 'Crear cuenta nueva'}
                     </button>
                 </div>
             </div>

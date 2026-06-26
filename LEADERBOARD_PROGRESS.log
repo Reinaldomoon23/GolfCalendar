@@ -1274,6 +1274,63 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
 ==========================================================================
   Siguiente: Abrir `https://reinaldomoon.top/` y `https://golf-calendar-v3.vercel.app/` en navegador real; si alguna PWA instalada sigue blanca, borrar la PWA y reinstalar desde `/GolfTeam/`.
 
+[COMPLETADO] UI COPY — Botones de login más claros
+  Archivos modificados:
+    - src/components/LoginViewFirebase.jsx
+    - src/components/LoginView.jsx
+    - src/components/CalendarView.jsx
+  Resumen:
+    - `Ingresar` pasa a `Iniciar sesión`.
+    - `Registrarse` pasa a `Crear cuenta`.
+    - El cambio de modo usa `Crear cuenta nueva` y `Ya tengo cuenta`.
+    - `Modo Móvil` pasa a `Introducir resultado`.
+    - `Compartir` pasa a `Compartir tarjeta`.
+    - `En Vivo` pasa a `Resultados en Vivo`.
+  Verificación:
+    - Build directo con Vite: correcto.
+    - Deploy FTP Hostinger `/GolfTeam/`: correcto.
+    - Redeploy Vercel production: correcto.
+
+==========================================================================
+  PRÓXIMO PASO: UI — Revisar botones internos con sesión iniciada
+==========================================================================
+  Siguiente: Revisar con usuario autenticado los botones de calendario, tarjeta, modo móvil, compartir y comunidad para ajustar nomenclatura si hace falta.
+
+[COMPLETADO] HOTFIX — Putts/GIR desactivados por defecto
+  Archivos modificados:
+    - src/components/CalendarView.jsx
+  Resumen:
+    - `track_putts` y `track_girs` ya no se activan por defecto desde la configuración del torneo.
+    - Se conservan solo cuando el resultado existente de la usuaria los tenía guardados o cuando la usuaria los marca manualmente.
+    - El editor móvil recibe la misma configuración explícita para evitar que aparezcan campos no seleccionados.
+  Verificación:
+    - Build directo con Vite: correcto.
+    - Deploy FTP Hostinger `/GolfTeam/`: correcto.
+    - Redeploy Vercel production: correcto.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Validar tarjeta con Putts/GIR apagados
+==========================================================================
+  Siguiente: Abrir torneo real nuevo o sin configuración previa y confirmar que `Track Putts` y `Track GIR` aparecen desmarcados por defecto.
+
+[COMPLETADO] HOTFIX — Mantener modo móvil vivo al volver a la app
+  Archivos modificados:
+    - src/App.jsx
+    - src/components/CalendarView.jsx
+  Resumen:
+    - La sesión de modo móvil se guarda como activa con torneo, ronda y hoyo.
+    - Al volver a la app desde una ruta no pública, se restaura automáticamente el torneo activo.
+    - CalendarView reabre el editor móvil si la sesión sigue activa y solo la limpia al cerrar el modo móvil.
+  Verificación:
+    - Build directo con Vite: correcto.
+    - Deploy FTP Hostinger `/GolfTeam/`: correcto.
+    - Redeploy Vercel production: correcto.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Validar retorno a modo móvil
+==========================================================================
+  Siguiente: Entrar en `Introducir resultado`, mandar la app a segundo plano, volver y confirmar que sigue abierta la misma ventana hasta cerrar.
+
 [COMPLETADO] HOTFIX — Redirección raíz Vercel a /GolfTeam/
   Archivos modificados:
     - vercel.json

@@ -86,17 +86,21 @@ function AppContent() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // If iOS unloads the PWA and restarts it at the root URL, restore the scoring session
+    // If iOS unloads or backgrounds the PWA, restore the active scoring session.
     try {
       const savedMobile = localStorage.getItem('golf_tracker_mobile_mode');
-      if (savedMobile && window.location.pathname === '/') {
+      if (savedMobile) {
         const parsed = JSON.parse(savedMobile);
-        if (parsed.tournamentId) {
+        const isPublicRoute = location.pathname.startsWith('/live/')
+          || location.pathname.startsWith('/live-team/')
+          || location.pathname.startsWith('/leaderboard/');
+        const isAlreadyOnTournament = location.pathname === `/event/${parsed.tournamentId}`;
+        if (parsed.active !== false && parsed.tournamentId && !isPublicRoute && !isAlreadyOnTournament) {
           navigate(`/event/${parsed.tournamentId}`, { replace: true });
         }
       }
     } catch(e) {}
-  }, [navigate]);
+  }, [location.pathname, navigate]);
 
 
   const { updateServiceWorker } = useRegisterSW({
