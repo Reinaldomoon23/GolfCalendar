@@ -1120,6 +1120,8 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
     - Redeploy Vercel production: correcto.
     - Deploy FTP Hostinger `/GolfTeam/`: correcto.
     - Redeploy Vercel production: correcto.
+    - Deploy FTP Hostinger `/GolfTeam/`: correcto.
+    - Redeploy Vercel production: correcto.
     - `firebase-messaging-sw.js` responde 200 en Vercel y Hostinger.
     - Deploy FTP Hostinger `/GolfTeam/`: correcto.
     - Redeploy Vercel production: correcto.
@@ -1301,6 +1303,26 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
   PRÓXIMO PASO: PRODUCCIÓN — Validar inicio de R2 el 27/06/2026
 ==========================================================================
   Siguiente: El 27/06/2026, introducir un resultado de R2 y confirmar que la clasificación pasa a exigir R2. Quien siga solo con R1 debe aparecer pendiente hasta completar R2.
+
+[COMPLETADO] FEATURE — Panel admin de carga rápida de resultados
+  Fecha: 2026-06-26
+  Archivos modificados:
+    - src/components/admin/AdminDashboardView.jsx
+    - src/components/admin/QuickResultsAdminPanel.jsx
+  Resumen:
+    - Nueva pestaña `Resultados` en el panel admin.
+    - Permite buscar jugadora, buscar torneo, elegir ronda y pegar texto con golpes.
+    - Extrae 18 hoyos desde texto simple o filas copiadas con encabezados/`Rnd`.
+    - Muestra edición manual de los 18 hoyos, ida, vuelta, total, par y completitud.
+    - Guarda en `users/{uid}/results/{tournamentId}` y sincroniza `tournaments/{id}/participants/{username}`.
+    - Si ya existe una ronda, pide confirmación UI antes de sobrescribir.
+  Verificación:
+    - Build directo con Vite: correcto.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Probar carga admin con R2
+==========================================================================
+  Siguiente: Desde Admin > Resultados, elegir una jugadora, Campeonato de España, Ronda 2, pegar 18 golpes y confirmar que el leaderboard actualiza correctamente.
 
 [COMPLETADO] HOTFIX — Explorar no deja la app en blanco
   Fecha: 2026-06-26 18:06 CEST

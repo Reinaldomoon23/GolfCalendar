@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Users, Trophy, BarChart3, Lock, Flag, Settings, MessageSquareWarning, UserRoundCog } from 'lucide-react';
+import { Users, Trophy, BarChart3, Lock, Flag, Settings, MessageSquareWarning, UserRoundCog, ClipboardList } from 'lucide-react';
 import UsersAdminPanel from './UsersAdminPanel';
 import TournamentsAdminPanel from './TournamentsAdminPanel';
 import FeatureFlagsPanel from './FeatureFlagsPanel';
@@ -8,6 +8,7 @@ import SecurityAdminPanel from './SecurityAdminPanel';
 import SystemAdminPanel from './SystemAdminPanel';
 import ChatReportsAdminPanel from './ChatReportsAdminPanel';
 import CommunityAdminPanel from './CommunityAdminPanel';
+import QuickResultsAdminPanel from './QuickResultsAdminPanel';
 
 /**
  * AdminDashboardView - Panel principal de administración
@@ -27,6 +28,7 @@ function AdminDashboardView({ user }) {
   const tabs = [
     { id: 'users', label: 'Usuarios', icon: Users },
     { id: 'tournaments', label: 'Torneos', icon: Trophy },
+    { id: 'quick-results', label: 'Resultados', icon: ClipboardList },
     { id: 'flags', label: 'Feature Flags', icon: Flag },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'community', label: 'Comunidad', icon: UserRoundCog },
@@ -92,6 +94,7 @@ function AdminDashboardView({ user }) {
         <div className="fade-in">
           {activeTab === 'users' && <UsersAdminPanel user={user} />}
           {activeTab === 'tournaments' && <TournamentsAdminPanel user={user} />}
+          {activeTab === 'quick-results' && <QuickResultsAdminPanel user={user} />}
           {activeTab === 'flags' && <FeatureFlagsPanel user={user} />}
           {activeTab === 'analytics' && <AnalyticsAdminPanel user={user} />}
           {activeTab === 'community' && <CommunityAdminPanel user={user} />}
