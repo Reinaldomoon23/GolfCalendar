@@ -1221,3 +1221,21 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
   PRÓXIMO PASO: PRODUCCIÓN — Validar Web Push con VAPID y prueba real cruzada
 ==========================================================================
   Siguiente: Configurar `VITE_FIREBASE_VAPID_KEY` en Vercel/entorno de build, activar notificaciones en dos dispositivos y validar recepcion con la app cerrada.
+
+[COMPLETADO] PRODUCCIÓN — VITE_FIREBASE_VAPID_KEY configurada
+  Configuración:
+    - Generado par de claves Web Push en Firebase Console para `golfscorings-e4338`.
+    - Añadida `VITE_FIREBASE_VAPID_KEY` a Vercel en entorno Production.
+  Despliegue:
+    - Redeploy Vercel production correcto.
+    - Build local con `VITE_FIREBASE_VAPID_KEY` correcto.
+    - Deploy FTP Hostinger `/GolfTeam/` correcto.
+  Verificación:
+    - Vercel lista `VITE_FIREBASE_VAPID_KEY` en Production.
+    - Bundle de Hostinger contiene la clave VAPID.
+    - Bundle de Vercel contiene la clave VAPID.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Prueba real de permisos y recepción push
+==========================================================================
+  Siguiente: Entrar en la app desde un dispositivo real, pulsar `Activar` en Comunidad, aceptar permisos del navegador y enviar un mensaje desde otra cuenta para confirmar recepción con la app cerrada.
