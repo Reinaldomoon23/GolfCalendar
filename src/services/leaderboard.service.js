@@ -18,6 +18,27 @@ import {
   query,
 } from 'firebase/firestore';
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function parseTournamentDate(value) {
+  const [day, month, year] = String(value || '').split('/').map(Number);
+  if (!day || !month || !year) return null;
+  return new Date(year, month - 1, day).setHours(0, 0, 0, 0);
+}
+
+function getPlayableRoundIndex(dates) {
+  const [startText, endText] = String(dates || '').split(' - ');
+  const start = parseTournamentDate(startText);
+  if (!start) return null;
+
+  const end = parseTournamentDate(endText) || start;
+  const today = new Date().setHours(0, 0, 0, 0);
+
+  if (today < start) return null;
+  if (today > end) return Math.max(0, Math.floor((end - start) / DAY_MS));
+  return Math.max(0, Math.floor((today - start) / DAY_MS));
+}
+
 /**
  * Determines if a tournament ID is a "shared/centralized" one
  * (slug-based deterministic IDs contain underscores and are not purely numeric).
@@ -33,7 +54,20 @@ export function isSharedTournamentId(id) {
 
 export function getResultProgress(resultData) {
   const scorecards = resultData?.scorecards || {};
-  const roundKeys = Object.keys(scorecards).sort((a, b) => Number(a) - Number(b));
+  const playableRoundIndex = getPlayableRoundIndex(resultData?.tournamentDates || resultData?.dates);
+  const roundKeySet = new Set(Object.keys(scorecards));
+  if (Array.isArray(resultData?.rounds)) {
+    resultData.rounds.forEach((roundScore, index) => {
+      if (Number(roundScore) > 0) roundKeySet.add(String(index));
+    });
+  }
+  const roundKeys = Array.from(roundKeySet)
+    .filter((roundKey) => {
+      if (playableRoundIndex === null) return true;
+      const roundIndex = Number(roundKey);
+      return Number.isFinite(roundIndex) && roundIndex <= playableRoundIndex;
+    })
+    .sort((a, b) => Number(a) - Number(b));
   let totalPlayed = 0;
   let latestPlayedRound = null;
 
@@ -48,6 +82,7 @@ export function getResultProgress(resultData) {
 
     totalPlayed += holesPlayed;
     const roundNumber = Number(roundKey) + 1;
+    const roundScore = Number(resultData?.rounds?.[Number(roundKey)]);
 
     if (holesPlayed > 0 && holesPlayed < 18) {
       return {
@@ -60,6 +95,11 @@ export function getResultProgress(resultData) {
     }
 
     if (holesPlayed === 18) {
+      latestPlayedRound = roundNumber;
+    }
+
+    if (holesPlayed === 0 && Number.isFinite(roundScore) && roundScore > 0) {
+      totalPlayed += 18;
       latestPlayedRound = roundNumber;
     }
   }
@@ -95,7 +135,14 @@ export function getResultProgress(resultData) {
 
 function getResultScoreSummary(resultData) {
   const scorecards = resultData?.scorecards || {};
-  const roundKeys = Object.keys(scorecards).sort((a, b) => Number(a) - Number(b));
+  const playableRoundIndex = getPlayableRoundIndex(resultData?.tournamentDates || resultData?.dates);
+  const roundKeys = Object.keys(scorecards)
+    .filter((roundKey) => {
+      if (playableRoundIndex === null) return true;
+      const roundIndex = Number(roundKey);
+      return Number.isFinite(roundIndex) && roundIndex <= playableRoundIndex;
+    })
+    .sort((a, b) => Number(a) - Number(b));
   const rounds = [];
   const roundPars = [];
   let total = 0;
@@ -130,7 +177,10 @@ function getResultScoreSummary(resultData) {
   }
 
   const validScores = (resultData?.rounds || [])
-    .filter((r) => r && !isNaN(r))
+    .filter((r, index) => {
+      if (!r || isNaN(r)) return false;
+      return playableRoundIndex === null || index <= playableRoundIndex;
+    })
     .map(Number);
   const fallbackTotal = validScores.reduce((a, b) => a + b, 0);
   const par = Number(resultData?.tournamentPar || resultData?.par || 72);

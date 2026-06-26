@@ -1118,6 +1118,8 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
     - Build directo con Vite: correcto.
     - Deploy FTP Hostinger `/GolfTeam/`: correcto.
     - Redeploy Vercel production: correcto.
+    - Deploy FTP Hostinger `/GolfTeam/`: correcto.
+    - Redeploy Vercel production: correcto.
     - `firebase-messaging-sw.js` responde 200 en Vercel y Hostinger.
     - Deploy FTP Hostinger `/GolfTeam/`: correcto.
     - Redeploy Vercel production: correcto.
@@ -1282,6 +1284,23 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
   PRÓXIMO PASO: PRODUCCIÓN — Prueba real de push entre dos cuentas
 ==========================================================================
   Siguiente: En el móvil receptor, entrar en `Amigos`, pulsar `Activar` avisos y aceptar permisos. Desde otra cuenta enviar un chat y confirmar que llega push con la app en segundo plano/cerrada.
+
+[COMPLETADO] HOTFIX — R2 no aparece antes de su fecha
+  Fecha: 2026-06-26
+  Archivos modificados:
+    - src/services/leaderboard.service.js
+  Resumen:
+    - El progreso público del leaderboard calcula la ronda jugable a partir de `tournamentDates`.
+    - Las tarjetas o resultados de rondas futuras se ignoran hasta que llegue el día correspondiente.
+    - Si un participante solo tiene `rounds[0]` sin tarjeta hoyo a hoyo, R1 se considera finalizada correctamente.
+    - Recalculado Firestore del Campeonato de España: Nicole y Ona quedan como `Finalizada` en R1, no `R2 · Hoyo 1`.
+  Verificación:
+    - Build directo con Vite: correcto.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Validar inicio de R2 el 27/06/2026
+==========================================================================
+  Siguiente: El 27/06/2026, introducir un resultado de R2 y confirmar que la clasificación pasa a exigir R2. Quien siga solo con R1 debe aparecer pendiente hasta completar R2.
 
 [COMPLETADO] HOTFIX — Explorar no deja la app en blanco
   Fecha: 2026-06-26 18:06 CEST
