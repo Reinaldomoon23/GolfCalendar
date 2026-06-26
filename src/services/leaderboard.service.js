@@ -36,7 +36,6 @@ export function getResultProgress(resultData) {
   const roundKeys = Object.keys(scorecards).sort((a, b) => Number(a) - Number(b));
   let totalPlayed = 0;
   let latestPlayedRound = null;
-  let nextEmptyRound = null;
 
   for (const roundKey of roundKeys) {
     const card = scorecards[roundKey] || {};
@@ -62,19 +61,7 @@ export function getResultProgress(resultData) {
 
     if (holesPlayed === 18) {
       latestPlayedRound = roundNumber;
-    } else if (holesPlayed === 0 && latestPlayedRound !== null && nextEmptyRound === null) {
-      nextEmptyRound = roundNumber;
     }
-  }
-
-  if (nextEmptyRound !== null) {
-    return {
-      status: 'in_progress',
-      currentRound: nextEmptyRound,
-      currentHole: 1,
-      holesPlayed: totalPlayed,
-      progressLabel: roundKeys.length > 1 ? `R${nextEmptyRound} · Hoyo 1` : 'Hoyo 1',
-    };
   }
 
   if (totalPlayed > 0) {

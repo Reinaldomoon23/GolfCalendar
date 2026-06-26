@@ -1283,6 +1283,27 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
 ==========================================================================
   Siguiente: Recibir resultados de primera vuelta por jugadora y cargarlos en Firestore preservando scorecards y leaderboard.
 
+[COMPLETADO] HOTFIX — No adelantar R2 Hoyo 1 antes de la fecha
+  Archivos modificados:
+    - src/services/leaderboard.service.js
+  Datos actualizados en Firestore:
+    - `nicole`: `R2 · Hoyo 1` corregido a `Finalizada`.
+    - `ona`: `R2 · Hoyo 1` corregido a `Finalizada`.
+  Resumen:
+    - `getResultProgress()` ya no interpreta una ronda posterior vacía como ronda en progreso.
+    - Solo se muestra `Hoyo N` cuando la ronda tiene golpes parciales reales.
+    - Una ronda completa mantiene estado `Finalizada` hasta que se introduzca un golpe de la siguiente ronda.
+  Verificación:
+    - Build directo con Vite: correcto.
+    - Deploy FTP Hostinger `/GolfTeam/`: correcto.
+    - Redeploy Vercel production: correcto.
+    - Firestore verificado: Nicole y Ona quedan `finished / Finalizada`, sin `currentHole`.
+
+==========================================================================
+  PRÓXIMO PASO: DATOS — Seguir cargando resultados R1
+==========================================================================
+  Siguiente: Recibir nuevas tarjetas de primera vuelta y cargarlas preservando scorecards y leaderboard.
+
 [COMPLETADO] FEATURE — Informe premium de torneo exportable a PDF
   Archivos modificados:
     - src/components/CalendarView.jsx
