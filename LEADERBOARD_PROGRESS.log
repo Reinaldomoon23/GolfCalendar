@@ -1256,6 +1256,24 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
 ==========================================================================
   Siguiente: En una cuenta real, activar `Track Putts` y `Track GIR`, entrar en `Modo Móvil`, esperar autosave y confirmar que ambos campos siguen visibles.
 
+[COMPLETADO] HOTFIX — Defensa contra pantalla blanca en raíz cacheada
+  Archivos modificados:
+    - src/App.jsx
+  Resumen:
+    - Si la app arranca en `/`, redirige desde cliente a `/GolfTeam/` antes de montar React Router.
+    - Evita que una entrada cacheada o PWA antigua quede en blanco por no coincidir con el basename.
+  Verificación:
+    - Build directo con Vite: correcto.
+    - Deploy FTP Hostinger `/GolfTeam/`: correcto.
+    - Redeploy Vercel production: correcto.
+    - `https://reinaldomoon.top/` encadena a Vercel `/GolfTeam/`.
+    - Navegador renderiza login en `https://golf-calendar-v3.vercel.app/GolfTeam/`.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Confirmar carga tras limpiar cache/PWA
+==========================================================================
+  Siguiente: Abrir `https://reinaldomoon.top/` y `https://golf-calendar-v3.vercel.app/` en navegador real; si alguna PWA instalada sigue blanca, borrar la PWA y reinstalar desde `/GolfTeam/`.
+
 [COMPLETADO] HOTFIX — Redirección raíz Vercel a /GolfTeam/
   Archivos modificados:
     - vercel.json

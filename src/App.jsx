@@ -931,6 +931,11 @@ function App() {
   
   // Dynamic override for multi-folder support
   const path = window.location.pathname;
+  if (path === '/' || path === '') {
+    window.location.replace('/GolfTeam/');
+    return <LoadingShell text="Cargando RoundTracker..." />;
+  }
+
   if (path.includes('/GolfTeam')) {
     basename = '/GolfTeam';
   } else if (path.includes('/Player_HCP')) {
