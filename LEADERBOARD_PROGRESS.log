@@ -1266,6 +1266,24 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
 ==========================================================================
   Siguiente: En una cuenta real, activar `Track Putts` y `Track GIR`, entrar en `Modo Móvil`, esperar autosave y confirmar que ambos campos siguen visibles.
 
+[COMPLETADO] HOTFIX — Informe no abre impresión automáticamente
+  Fecha: 2026-06-27
+  Archivos modificados:
+    - src/utils/tournamentReport.js
+    - src/components/TournamentReport.jsx
+    - src/components/CalendarView.jsx
+  Resumen:
+    - Eliminado el `window.print()` automático del informe premium.
+    - El informe se abre en una pestaña/ventana para revisar, sin mostrar el diálogo de impresión.
+    - Botones renombrados a `Abrir informe PDF` / `Abrir informe`.
+  Verificación:
+    - Build directo con Vite: correcto.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Validar apertura de informe sin impresión
+==========================================================================
+  Siguiente: Abrir un informe desde pestaña o menú de tres puntos y confirmar que no aparece el diálogo de imprimir.
+
 [COMPLETADO] FEATURE — Notificaciones push reales para chat
   Fecha: 2026-06-26
   Archivos modificados:

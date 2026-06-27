@@ -270,7 +270,6 @@ export function printTournamentReport(report) {
         </div>
         <div class="footer">Generado con RoundTracker · ${new Date().toLocaleDateString('es-ES')}</div>
       </div>
-      <script>window.addEventListener('load', function(){ setTimeout(function(){ window.print(); }, 350); });</script>
     </body>
   </html>`;
 

@@ -108,7 +108,7 @@ export default function TournamentReport({ tournament, result, user }) {
             }}
           >
             <Download size={16} />
-            Generar PDF
+            Abrir informe PDF
           </button>
         </div>
       </div>

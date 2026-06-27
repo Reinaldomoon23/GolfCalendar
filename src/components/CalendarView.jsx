@@ -1290,7 +1290,7 @@ export default function CalendarView({
                     <Copy size={16} /> Duplicar
                 </button>
                 <button onClick={() => handleReportFromMenu(contextMenu.tournament)} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '10px', background: '#fffaf0', border: '1px solid #f1dfaa', borderRadius: '6px', cursor: 'pointer', fontSize: '0.9rem', textAlign: 'left', color: '#8a640f', fontWeight: 800 }}>
-                    <FileText size={16} /> Generar informe
+                    <FileText size={16} /> Abrir informe
                 </button>
 
                 <div style={{ height: '1px', background: '#f1f5f9', margin: '4px 0' }}></div>
