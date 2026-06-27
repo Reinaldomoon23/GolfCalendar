@@ -7,6 +7,7 @@ export const API_ENDPOINTS = {
   handicap: "https://golf-calendar-v3.vercel.app/api/get_handicap",
   setTempPassword: "https://golf-calendar-v3.vercel.app/api/set_temp_password",
   sendChatPush: "https://golf-calendar-v3.vercel.app/api/send_chat_push",
+  weatherSamples: "https://golf-calendar-v3.vercel.app/api/get_weather_samples",
 
   // Legacy PHP endpoints (fallback)
   updateUser: "/api/update_user.php",

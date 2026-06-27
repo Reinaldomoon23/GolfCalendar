@@ -11,6 +11,80 @@ const formatVsPar = (value) => {
   return value > 0 ? `+${value}` : String(value);
 };
 
+const formatDecimal = (value, suffix = '') => (
+  Number.isFinite(Number(value)) ? `${Number(value).toFixed(1)}${suffix}` : '-'
+);
+
+const parseTournamentRoundDates = (tournament = {}) => {
+  const dates = String(tournament.dates || tournament.date || '').trim();
+  const parseSlashDate = (value) => {
+    const [day, month, year] = String(value || '').trim().split('/');
+    if (!day || !month || !year) return null;
+    return new Date(Number(year), Number(month) - 1, Number(day));
+  };
+  const formatIso = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  let start = null;
+  let end = null;
+  if (dates) {
+    const [startRaw, endRaw] = dates.split(' - ');
+    start = parseSlashDate(startRaw);
+    end = parseSlashDate(endRaw || startRaw);
+  }
+
+  if (!start || !end) {
+    const idMatch = String(tournament.id || '').match(/tt_v2__(\d{4}-\d{2}-\d{2})__(\d{4}-\d{2}-\d{2})__/);
+    if (idMatch) {
+      start = new Date(`${idMatch[1]}T00:00:00`);
+      end = new Date(`${idMatch[2]}T00:00:00`);
+    }
+  }
+
+  if (!start || !end) return [];
+  const output = [];
+  const current = new Date(start);
+  while (current <= end) {
+    output.push(formatIso(current));
+    current.setDate(current.getDate() + 1);
+  }
+  return output;
+};
+
+const average = (values = []) => {
+  const clean = values.map(Number).filter((value) => Number.isFinite(value));
+  if (!clean.length) return null;
+  return clean.reduce((total, value) => total + value, 0) / clean.length;
+};
+
+const maxValue = (values = []) => {
+  const clean = values.map(Number).filter((value) => Number.isFinite(value));
+  return clean.length ? Math.max(...clean) : null;
+};
+
+const summarizeWeatherSamples = (samples = []) => {
+  const clean = samples.filter(Boolean);
+  if (!clean.length) return null;
+  const windValues = clean.map((sample) => sample.windKmh);
+  const gustValues = clean.map((sample) => sample.windGustKmh);
+  const tempValues = clean.map((sample) => sample.temperatureC);
+  const humidityValues = clean.map((sample) => sample.humidity);
+
+  return {
+    sampleCount: clean.length,
+    avgWindKmh: average(windValues),
+    maxWindKmh: maxValue(windValues),
+    maxGustKmh: maxValue(gustValues),
+    avgTemperatureC: average(tempValues),
+    avgHumidity: average(humidityValues),
+    mainDirection: clean.find((sample) => sample.windDirection)?.windDirection || '',
+  };
+};
+
 const getScoreTone = (diff) => {
   if (!Number.isFinite(diff)) return { label: '-', color: '#64748b', bg: '#f8fafc' };
   if (diff <= -2) return { label: 'Eagle+', color: '#854d0e', bg: '#fef3c7' };
@@ -74,9 +148,19 @@ const buildRound = (roundKey, result = {}, tournament = {}) => {
   };
 };
 
-export function buildTournamentReport(tournament = {}, result = {}, user = {}) {
+export function buildTournamentReport(tournament = {}, result = {}, user = {}, options = {}) {
   const roundKeys = getRoundKeys(result);
-  const rounds = roundKeys.map((roundKey) => buildRound(roundKey, result, tournament));
+  const weatherSamples = Array.isArray(options.weatherSamples) ? options.weatherSamples : [];
+  const roundDates = parseTournamentRoundDates(tournament);
+  const rounds = roundKeys.map((roundKey) => {
+    const round = buildRound(roundKey, result, tournament);
+    const dateIso = roundDates[round.index] || null;
+    return {
+      ...round,
+      dateIso,
+      weather: dateIso ? summarizeWeatherSamples(weatherSamples.filter((sample) => sample.dateIso === dateIso)) : null,
+    };
+  });
   const holes = Array.from({ length: 18 }, (_, holeIndex) => {
     const par = rounds.find((round) => numberValue(round.pars[holeIndex]))?.pars[holeIndex] || '';
     const roundValues = rounds.map((round) => {
@@ -130,6 +214,7 @@ export function buildTournamentReport(tournament = {}, result = {}, user = {}) {
     result,
     rounds,
     holes,
+    weather: summarizeWeatherSamples(weatherSamples),
     totals: {
       ...totals,
       vsPar: totals.score && totals.par ? totals.score - totals.par : null,
@@ -179,11 +264,25 @@ export function printTournamentReport(report) {
         <span>Putts</span><strong>${round.putts || '-'}</strong>
         <span>GIR</span><strong>${round.girAttempts ? `${round.girs}/${round.girAttempts}` : '-'}</strong>
         ${report.totals.hasStableford && Number(round.stableford) > 0 ? `<span>Stableford</span><strong>${round.stableford}</strong>` : ''}
+        ${round.weather?.sampleCount ? `<span>Viento</span><strong>${formatDecimal(round.weather.avgWindKmh, ' km/h')}</strong>` : ''}
+        ${round.weather?.sampleCount ? `<span>Racha max.</span><strong>${formatDecimal(round.weather.maxGustKmh, ' km/h')}</strong>` : ''}
         <span>Birdies</span><strong>${round.birdies || '-'}</strong>
         <span>Pares</span><strong>${round.parsCount || '-'}</strong>
       </div>
     </div>
   `).join('');
+
+  const weatherSection = report.weather?.sampleCount ? `
+    <div class="section">
+      <h2>Condiciones del torneo</h2>
+      <div class="kpis compact">
+        <div class="kpi"><span>Viento medio</span><strong>${formatDecimal(report.weather.avgWindKmh, ' km/h')}</strong></div>
+        <div class="kpi"><span>Racha max.</span><strong>${formatDecimal(report.weather.maxGustKmh, ' km/h')}</strong></div>
+        <div class="kpi"><span>Temperatura</span><strong>${formatDecimal(report.weather.avgTemperatureC, '°C')}</strong></div>
+        <div class="kpi"><span>Muestras</span><strong>${report.weather.sampleCount}</strong></div>
+      </div>
+    </div>
+  ` : '';
 
   const html = `<!doctype html>
   <html>
@@ -257,6 +356,7 @@ export function printTournamentReport(report) {
           <div class="kpi"><span>GIR</span><strong>${report.totals.girAttempts ? `${report.totals.girs}/${report.totals.girAttempts}` : '-'}</strong></div>
           ${report.totals.hasStableford ? `<div class="kpi"><span>Stableford</span><strong>${report.totals.stableford}</strong></div>` : ''}
         </div>
+        ${weatherSection}
         <div class="section">
           <h2>Comparativa por rondas</h2>
           <div class="rounds">${roundCards || '<p>Sin rondas registradas.</p>'}</div>

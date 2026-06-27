@@ -3,6 +3,32 @@
 # Actualizar este archivo cada vez que se complete un paso del roadmap
 
 ==========================================================================
+SESIÓN: 2026-06-27 | Codex
+==========================================================================
+
+[COMPLETADO] INFORMES — Meteorología horaria y análisis por ronda
+  Archivos modificados/creados:
+    - api/_weather_utils.js
+    - api/collect_weather.js
+    - api/get_weather_samples.js
+    - src/services/weather.service.js
+    - src/utils/tournamentReport.js
+    - src/components/TournamentReport.jsx
+    - src/components/CalendarView.jsx
+    - src/config/api.js
+    - vercel.json
+    - .github/workflows/collect-weather.yml
+  Resumen:
+    Se añadió una ejecución horaria vía GitHub Actions para recoger viento, racha,
+    temperatura y humedad de torneos activos, guardando muestras bajo
+    tournaments/{id}/weather_samples/{fecha_hora}. Los informes cargan esas
+    muestras desde API serverless y muestran condiciones globales del torneo
+    y condiciones por ronda cuando hay datos disponibles.
+  Verificación:
+    - npm run build
+    - import de api/collect_weather.js y api/get_weather_samples.js
+
+==========================================================================
 SESIÓN: 2026-06-23 | Codex
 ==========================================================================
 

@@ -1,0 +1,24 @@
+name: Collect tournament weather
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger weather collector
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -n "$CRON_SECRET" ]; then
+            curl --fail --show-error --silent \
+              -H "Authorization: Bearer $CRON_SECRET" \
+              "https://golf-calendar-v3.vercel.app/api/collect_weather"
+          else
+            curl --fail --show-error --silent \
+              -A "vercel-cron/1.0" \
+              "https://golf-calendar-v3.vercel.app/api/collect_weather"
+          fi

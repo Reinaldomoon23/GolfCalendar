@@ -1,6 +1,8 @@
-import { Download, FileText, TrendingDown, TrendingUp } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Download, FileText, Thermometer, TrendingDown, TrendingUp, Wind } from 'lucide-react';
 import ProfileImage from './ProfileImage';
 import { buildTournamentReport, formatVsPar, getScoreTone, printTournamentReport } from '../utils/tournamentReport';
+import { fetchTournamentWeatherSamples } from '../services/weather.service';
 
 const cardStyle = {
   background: 'white',
@@ -35,11 +37,27 @@ function roundTrend(current, previous) {
   return { label: `${delta} peor`, color: '#dc2626', icon: TrendingUp };
 }
 
+function formatMetric(value, suffix = '') {
+  return Number.isFinite(Number(value)) ? `${Number(value).toFixed(1)}${suffix}` : '-';
+}
+
 export default function TournamentReport({ tournament, result, user }) {
-  const report = buildTournamentReport(tournament, result, user);
+  const [weatherSamples, setWeatherSamples] = useState([]);
+  const report = buildTournamentReport(tournament, result, user, { weatherSamples });
   const playerName = user?.full_name || user?.fullName || user?.username || 'Jugadora';
   const photoPath = user?.photo_url || user?.photoUrl || user?.photo || '';
   const hasRounds = report.rounds.length > 0;
+
+  useEffect(() => {
+    let mounted = true;
+    setWeatherSamples([]);
+    fetchTournamentWeatherSamples(tournament?.id).then((samples) => {
+      if (mounted) setWeatherSamples(samples);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [tournament?.id]);
 
   const handleGeneratePdf = () => {
     const opened = printTournamentReport(report);
@@ -122,6 +140,7 @@ export default function TournamentReport({ tournament, result, user }) {
           ['Putts', report.totals.putts || '-'],
           ['GIR', report.totals.girAttempts ? `${report.totals.girs}/${report.totals.girAttempts}` : '-'],
           ...(report.totals.hasStableford ? [['Stableford', report.totals.stableford]] : []),
+          ...(report.weather?.sampleCount ? [['Viento', formatMetric(report.weather.avgWindKmh, ' km/h')], ['Racha max.', formatMetric(report.weather.maxGustKmh, ' km/h')]] : []),
         ].map(([label, value]) => (
           <div key={label} style={{ ...cardStyle, padding: '14px' }}>
             <span style={statLabel}>{label}</span>
@@ -169,6 +188,12 @@ export default function TournamentReport({ tournament, result, user }) {
                       {report.totals.hasStableford && Number(round.stableford) > 0 && (
                         <>
                           <span>Stableford</span><strong>{round.stableford}</strong>
+                        </>
+                      )}
+                      {round.weather?.sampleCount && (
+                        <>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Wind size={12} /> Viento</span><strong>{formatMetric(round.weather.avgWindKmh, ' km/h')}</strong>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Thermometer size={12} /> Temp.</span><strong>{formatMetric(round.weather.avgTemperatureC, '°C')}</strong>
                         </>
                       )}
                       <span>Birdies o mejor</span><strong>{round.birdies || '-'}</strong>

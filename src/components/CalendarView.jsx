@@ -15,6 +15,7 @@ import { generateTournamentDeterministicId } from '../services/tournaments.servi
 import TournamentLeaderboard from './TournamentLeaderboard';
 import TournamentReport from './TournamentReport';
 import { isSharedTournamentId } from '../services/leaderboard.service';
+import { fetchTournamentWeatherSamples } from '../services/weather.service';
 import { getScorecardParTotal, resolveCourseScorecard } from '../utils/courseScorecards';
 import { buildTournamentReport, printTournamentReport } from '../utils/tournamentReport';
 
@@ -442,7 +443,7 @@ export default function CalendarView({
         setContextMenu(null);
     };
 
-    const handleReportFromMenu = (t) => {
+    const handleReportFromMenu = async (t) => {
         const result = results?.[t.id];
         if (!result) {
             notify('Todavia no hay resultados guardados para generar el informe.', 'warning');
@@ -450,7 +451,8 @@ export default function CalendarView({
             return;
         }
 
-        const opened = printTournamentReport(buildTournamentReport(t, result, user));
+        const weatherSamples = await fetchTournamentWeatherSamples(t.id);
+        const opened = printTournamentReport(buildTournamentReport(t, result, user, { weatherSamples }));
         if (!opened) {
             notify('El navegador ha bloqueado la ventana del informe.', 'warning');
         }
