@@ -1510,6 +1510,25 @@ SIGUIENTE PASO:
   REFACTORIZACIÓN — Extraer acciones superiores del detalle o helpers de fecha
   compartidos si no se requiere tocar lógica de guardado.
 
+[COMPLETADO] REFACTORIZACIÓN — Acciones superiores del detalle extraídas
+  Archivos modificados/creados:
+    - src/components/TournamentDetailActions.jsx
+    - src/components/CalendarView.jsx
+    - LEADERBOARD_PROGRESS.log
+  Resumen:
+    - Los botones `Volver`, `Editar torneo`/`Cancelar edición` y `Borrar torneo`
+      salen de `CalendarView.jsx`.
+    - `TournamentDetailActions` conserva los estilos inline, nombres accesibles
+      y visibilidad condicional del borrado para torneos custom.
+    - `CalendarView.jsx` mantiene los handlers y sólo pasa callbacks.
+  Verificación:
+    - Build validado fuera de Google Drive en
+      `/Users/reinaldomoon/PlayersCalendar-push-6de558e`.
+
+SIGUIENTE PASO:
+  REFACTORIZACIÓN — Normalizar helpers de fecha repetidos o extraer secciones
+  de edición del detalle en pasos pequeños.
+
 [COMPLETADO] HOTFIX — Informe no abre impresión automáticamente
   Fecha: 2026-06-27
   Archivos modificados:

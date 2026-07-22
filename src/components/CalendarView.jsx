@@ -5,7 +5,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 // ... imports ...
 
 // ... imports ...
-import { ChevronLeft, ChevronRight, Info, Calendar, Trophy, Plus, MapPin, Trash2, Share2, Filter, CalendarDays, Save, X, AlertTriangle, List, MoreVertical, Radio, Users } from 'lucide-react';
+import { ChevronRight, Info, Calendar, Trophy, Plus, MapPin, Trash2, Share2, Filter, CalendarDays, Save, AlertTriangle, List, MoreVertical, Radio, Users } from 'lucide-react';
 import MobileScorecardEditor from './MobileScorecardEditor';
 import spanishCourses from '../data/spanish_courses.json';
 import CalendarFilters from './CalendarFilters';
@@ -13,6 +13,7 @@ import MonthGridView from './MonthGridView';
 import CommunityExplorerModal from './CommunityExplorerModal';
 import TournamentCreateForm from './TournamentCreateForm';
 import TournamentContextMenu from './TournamentContextMenu';
+import TournamentDetailActions from './TournamentDetailActions';
 import TournamentDetailBadges from './TournamentDetailBadges';
 import { generateTournamentDeterministicId } from '../services/tournaments.service';
 import TournamentLeaderboard from './TournamentLeaderboard';
@@ -1572,50 +1573,13 @@ export default function CalendarView({
 
         return (
             <div className="calendar-detail fade-in">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <button
-                        onClick={handleBack}
-                        className="btn"
-                        style={{ display: 'flex', alignItems: 'center', gap: '5px' }}
-                    >
-                        <ChevronLeft size={16} /> Volver
-                    </button>
-
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                        {/* Edit Toggle */}
-                        <button
-                            onClick={() => setIsEditing(!isEditing)}
-                            className="btn"
-                            aria-label={isEditing ? 'Cancelar edición' : 'Editar torneo'}
-                            title={isEditing ? 'Cancelar edición' : 'Editar torneo'}
-                            style={{
-                                color: 'var(--color-primary)',
-                                border: '1px solid var(--color-border)',
-                                fontSize: '0.9rem',
-                                padding: '0.5rem 1rem'
-                            }}
-                        >
-                            {isEditing ? <X size={16} /> : <span style={{ fontSize: '1.2rem' }}>✏️</span>}
-                        </button>
-                        {/* Delete button only for Custom Tournaments */}
-                        {t.custom && (
-                            <button
-                                onClick={handleDeleteTournamentClick}
-                                className="btn"
-                                aria-label="Borrar torneo"
-                                title="Borrar torneo"
-                                style={{
-                                    color: 'var(--color-conflict)',
-                                    border: '1px solid var(--color-conflict)',
-                                    fontSize: '0.9rem',
-                                    padding: '0.5rem'
-                                }}
-                            >
-                                <Trash2 size={16} />
-                            </button>
-                        )}
-                    </div>
-                </div>
+                <TournamentDetailActions
+                    tournament={t}
+                    isEditing={isEditing}
+                    onBack={handleBack}
+                    onToggleEdit={() => setIsEditing(!isEditing)}
+                    onDelete={handleDeleteTournamentClick}
+                />
 
                 <div className="card" style={detailStyle}>
                     <TournamentDetailBadges tournament={t} isPast={isPast} />
