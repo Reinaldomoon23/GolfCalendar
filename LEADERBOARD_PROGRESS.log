@@ -1447,6 +1447,9 @@ SIGUIENTE PASO:
   Verificación:
     - Build validado fuera de Google Drive en
       `/Users/reinaldomoon/PlayersCalendar-push-6de558e`.
+    - Producción Vercel con cache-bust `?codexBust=8f643e1`: creado torneo
+      temporal `TEST CODEX FEEDBACK BORRAR 2026-08-03`, confirmado toast
+      `Torneo creado.`, diálogo de borrado y toast `Torneo borrado.`.
   Nota:
     - `CalendarView` baja de `241.53 kB` a `239.27 kB` en el build de Vite.
 
