@@ -1292,6 +1292,43 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
 ==========================================================================
   Siguiente: En una cuenta real, activar `Track Putts` y `Track GIR`, entrar en `Modo Móvil`, esperar autosave y confirmar que ambos campos siguen visibles.
 
+[COMPLETADO] FACTORIZACIÓN 3.9 — Formulario de creación de torneo fuera de CalendarView
+  Archivos modificados:
+    - src/components/CalendarView.jsx
+    - src/components/TournamentCreateForm.jsx
+  Resumen:
+    - Extraído el modal `Nuevo Torneo` a `TournamentCreateForm`.
+    - El nuevo componente encapsula campos de nombre, fecha, multidía, duración,
+      campo, etiquetas Grand Prix/Valedera/SACE, publicación en comunidad,
+      organizador y acción de guardado.
+    - `CalendarView.jsx` conserva el estado `newTournament`, la validación, la
+      detección de conflictos, deduplicación contra torneos oficiales y
+      persistencia.
+  Verificación:
+    - Build validado fuera de Google Drive en `/Users/reinaldomoon/PlayersCalendar-push-6de558e`.
+
+[COMPLETADO] FACTORIZACIÓN 4.0 — Validación externa y lockfile sincronizado
+  Archivos modificados:
+    - .gitignore
+    - package-lock.json
+    - package.json
+    - LEADERBOARD_PROGRESS.log
+  Resumen:
+    - Añadidos ignores para `scratch/`, `.pnpm-store/`, `pnpm-lock.yaml`,
+      `*.bak` y `firestore_backups/`.
+    - Sincronizado `package-lock.json` con `package.json` para la dependencia
+      explícita `workbox-window@^7.4.1`.
+    - Añadidos scripts npm `backup:firestore` y `restore:firestore`.
+  Verificación:
+    - En el clon externo: `npm install --package-lock-only --ignore-scripts`.
+    - En el clon externo: `npm run build`.
+    - Resultado: build OK; solo warnings existentes de imports dinámicos/chunks
+      grandes, Browserslist y auditoría npm.
+
+SIGUIENTE PASO:
+  PRODUCCIÓN — Push ya integrado sobre `origin/main`; revisar Vercel/GitHub
+  Actions y probar creación de torneo + informe con meteorología.
+
 [COMPLETADO] HOTFIX — Informe no abre impresión automáticamente
   Fecha: 2026-06-27
   Archivos modificados:

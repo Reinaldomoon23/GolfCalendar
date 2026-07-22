@@ -5,6 +5,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+pnpm-lock.yaml
 lerna-debug.log*
 
 node_modules
@@ -33,12 +34,14 @@ dist-ssr
 backup_pearl_theme/
 backup_version_2.0.zip
 build_backups/
+scratch/
 
 # Scraped Data & Temp
 temp_scraped_pars.json
 screenshots/
 debug_scrape.log
 debug_usa_scrape.png
+*.bak
 
 # User Data (Ignored to prevent overwrite)
 public/data/results_*.json
@@ -47,4 +50,6 @@ public/data/prefs_*.json
 public/data/handicap_history_*.json
 public/api/users.json
 server_backups/
+firestore_backups/
+.pnpm-store/
 .vercel
