@@ -13,6 +13,7 @@ import MonthGridView from './MonthGridView';
 import CommunityExplorerModal from './CommunityExplorerModal';
 import TournamentCreateForm from './TournamentCreateForm';
 import TournamentContextMenu from './TournamentContextMenu';
+import TournamentDetailBadges from './TournamentDetailBadges';
 import { generateTournamentDeterministicId } from '../services/tournaments.service';
 import TournamentLeaderboard from './TournamentLeaderboard';
 import TournamentReport from './TournamentReport';
@@ -1617,90 +1618,7 @@ export default function CalendarView({
                 </div>
 
                 <div className="card" style={detailStyle}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-                        <div>
-                            <span className="badge" style={{
-                                backgroundColor: (() => {
-                                    const ORGANIZER_COLORS = {
-                                        'RFEG': '#DC2626',
-                                        'FCG': '#D97706',
-                                        'CAMIRAL': '#059669',
-                                        'JUNIOR BABY CUP': '#0EA5E9',
-                                        'LEGACY': '#4F46E5',
-                                        'CLUB': '#475569'
-                                    };
-                                    if (ORGANIZER_COLORS[t.organizer]) return ORGANIZER_COLORS[t.organizer];
-
-                                    // Fallback Hash
-                                    const FALLBACKS = ['#0D9488', '#DB2777', '#7C3AED', '#0891B2', '#65A30D', '#C026D3'];
-                                    let hash = 0;
-                                    const str = t.organizer || 'DEFAULT';
-                                    for (let i = 0; i < str.length; i++) {
-                                        hash = str.charCodeAt(i) + ((hash << 5) - hash);
-                                    }
-                                    return FALLBACKS[Math.abs(hash) % FALLBACKS.length];
-                                })(),
-                                color: 'white',
-                                marginBottom: '1rem',
-                                display: 'inline-block'
-                            }}>
-                                {t.organizer}
-                            </span>
-                            {t.grand_prix && (
-                                <span className="badge" style={{ backgroundColor: 'var(--color-grand-prix)', color: 'white', marginLeft: '0.5rem' }}>
-                                    GRAND PRIX
-                                </span>
-                            )}
-                            {t.valedera && (
-                                <span className="badge" style={{ backgroundColor: 'var(--color-accent)', color: 'var(--color-primary)', marginLeft: '0.5rem' }}>
-                                    VALEDERA
-                                </span>
-                            )}
-                            {t.sace && (
-                                <span className="badge" style={{ backgroundColor: '#2563eb', color: 'white', marginLeft: '0.5rem' }}>
-                                    SACE
-                                </span>
-                            )}
-                            {/* Support logic for merit: check property OR legacy type='merit' */}
-                            {(t.merit || t.type === 'merit') && (
-                                <span className="badge" style={{ backgroundColor: '#B58B80', color: 'white', marginLeft: '0.5rem' }}>
-                                    ORDEN MÉRITO
-                                </span>
-                            )}
-                            {t.wagr && (
-                                <span className="badge" style={{ backgroundColor: '#1e293b', color: 'white', marginLeft: '0.5rem' }}>
-                                    WAGR
-                                </span>
-                            )}
-                            {isPast(t.dates) && (
-                                <span className="badge" style={{ backgroundColor: '#64748b', color: 'white', marginLeft: '0.5rem' }}>
-                                    FINALIZADO
-                                </span>
-                            )}
-                            {(() => {
-                                const dateInfo = parseDateHelper(t.dates);
-                                const start = dateInfo.start;
-                                const end = dateInfo.end;
-                                const todayTime = new Date().setHours(0, 0, 0, 0);
-                                const inProgress = start <= todayTime && todayTime <= end;
-                                const isFinished = end < todayTime;
-
-                                if (!isFinished && inProgress) {
-                                    return (
-                                        <span className="badge" style={{ backgroundColor: '#22c55e', color: 'white', marginLeft: '0.5rem', animation: 'pulse 2s infinite' }}>
-                                            EN JUEGO
-                                        </span>
-                                    );
-                                }
-                                return null;
-                            })()}
-                        </div>
-                        {t.conflict && (
-                            <span className="badge" style={{ backgroundColor: 'var(--color-conflict)', color: 'white' }}>
-                                CONFLICTO DE FECHAS
-                            </span>
-                        )}
-                    </div>
+                    <TournamentDetailBadges tournament={t} isPast={isPast} />
 
                     {isEditing ? (
                         <div style={{ display: 'grid', gap: '1rem', marginBottom: '2rem' }}>

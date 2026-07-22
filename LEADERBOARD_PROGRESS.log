@@ -1483,6 +1483,30 @@ SIGUIENTE PASO:
   REFACTORIZACIÓN — Extraer el header del detalle o normalizar helpers de
   fechas repetidos dentro de `CalendarView.jsx`.
 
+[COMPLETADO] REFACTORIZACIÓN — Badges del detalle extraídos
+  Archivos modificados/creados:
+    - src/components/TournamentDetailBadges.jsx
+    - src/components/CalendarView.jsx
+    - LEADERBOARD_PROGRESS.log
+  Resumen:
+    - La fila de badges del detalle de torneo sale de `CalendarView.jsx`.
+    - `TournamentDetailBadges` concentra color de organizador, etiquetas
+      `GRAND PRIX`, `VALEDERA`, `SACE`, `ORDEN MÉRITO`, `WAGR`, estado
+      `FINALIZADO`/`EN JUEGO` y conflicto de fechas.
+    - `CalendarView.jsx` conserva el flujo de edición/resultados y sólo pasa
+      `tournament` e `isPast`.
+  Verificación:
+    - Build validado fuera de Google Drive en
+      `/Users/reinaldomoon/PlayersCalendar-push-6de558e`.
+  Nota:
+    - En esta medición Vite agrupa el nuevo módulo dentro del chunk de Calendar;
+      el objetivo conseguido es reducir responsabilidad y longitud de
+      `CalendarView.jsx`, no cambiar el payload.
+
+SIGUIENTE PASO:
+  REFACTORIZACIÓN — Extraer acciones superiores del detalle o helpers de fecha
+  compartidos si no se requiere tocar lógica de guardado.
+
 [COMPLETADO] HOTFIX — Informe no abre impresión automáticamente
   Fecha: 2026-06-27
   Archivos modificados:
