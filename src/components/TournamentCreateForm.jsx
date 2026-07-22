@@ -39,6 +39,7 @@ export default function TournamentCreateForm({
                                 type="date"
                                 value={tournament.startDate}
                                 onChange={event => updateField('startDate', event.target.value)}
+                                onInput={event => updateField('startDate', event.target.value)}
                                 style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc', width: '100%' }}
                             />
                         </div>

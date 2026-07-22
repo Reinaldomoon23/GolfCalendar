@@ -1382,6 +1382,10 @@ SIGUIENTE PASO:
       creaba con la fecha por defecto del día actual.
     - Corregido `TournamentCreateForm` para usar actualización funcional de
       estado: `onChange((current) => ({ ...current, [field]: value }))`.
+    - Tras desplegar el primer fix se repitió la prueba y la fecha seguía
+      guardándose como el día actual cuando el input `date` cambiaba desde el
+      navegador integrado. Se añadió también `onInput` al campo de fecha para
+      capturar el valor visible antes de guardar.
   Verificación:
     - Browser integrado: creación temporal, aparición en calendario, apertura
       de detalle y borrado real.
@@ -1392,8 +1396,8 @@ SIGUIENTE PASO:
       stopped`); se usó el clon externo para validación.
 
 SIGUIENTE PASO:
-  PRODUCCIÓN — Desplegar fix de fecha, repetir creación/borrado temporal y
-  confirmar que una fecha futura se conserva correctamente.
+  PRODUCCIÓN — Desplegar segundo fix de fecha, repetir creación/borrado
+  temporal y confirmar que una fecha futura se conserva correctamente.
 
 [COMPLETADO] HOTFIX — Informe no abre impresión automáticamente
   Fecha: 2026-06-27
