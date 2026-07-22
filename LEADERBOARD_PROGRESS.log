@@ -1386,18 +1386,25 @@ SIGUIENTE PASO:
       guardándose como el día actual cuando el input `date` cambiaba desde el
       navegador integrado. Se añadió también `onInput` al campo de fecha para
       capturar el valor visible antes de guardar.
+    - Desplegado segundo fix en Vercel y probado en producción con
+      `TEST CODEX FECHA BORRAR 2026-08-01`: el calendario mostró `01/08/2026`.
+    - El torneo temporal se abrió en detalle y se borró correctamente con el
+      diálogo interno de confirmación; el toast `Torneo borrado.` confirmó la
+      eliminación.
   Verificación:
     - Browser integrado: creación temporal, aparición en calendario, apertura
       de detalle y borrado real.
     - Build validado fuera de Google Drive en
       `/Users/reinaldomoon/PlayersCalendar-push-6de558e`.
+    - Producción Vercel con cache-bust `?codexBust=a2594dc`: correcto.
   Nota:
     - El build local en Google Drive falló por esbuild (`The service was
       stopped`); se usó el clon externo para validación.
 
 SIGUIENTE PASO:
-  PRODUCCIÓN — Desplegar segundo fix de fecha, repetir creación/borrado
-  temporal y confirmar que una fecha futura se conserva correctamente.
+  PRODUCCIÓN — Queda validar en navegador real el informe PDF en ventana nueva
+  y el retorno a modo móvil con Putts/GIR, si se quiere cerrar también esos
+  flujos manuales.
 
 [COMPLETADO] HOTFIX — Informe no abre impresión automáticamente
   Fecha: 2026-06-27
