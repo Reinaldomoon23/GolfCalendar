@@ -1457,6 +1457,28 @@ SIGUIENTE PASO:
   REFACTORIZACIÓN — Extraer el menú contextual de torneo o el header del
   detalle cuando se pueda validar con creación/borrado temporal.
 
+[COMPLETADO] REFACTORIZACIÓN — Menú contextual de torneos extraído
+  Archivos modificados/creados:
+    - src/components/TournamentContextMenu.jsx
+    - src/components/CalendarView.jsx
+    - LEADERBOARD_PROGRESS.log
+  Resumen:
+    - El JSX y posicionamiento del menú contextual salen de `CalendarView.jsx`
+      a `TournamentContextMenu`.
+    - `CalendarView.jsx` conserva las acciones de negocio y pasa callbacks:
+      editar, duplicar, abrir informe, copiar/pegar color, color rápido y borrar.
+    - El menú ahora expone `role="menu"`/`role="menuitem"` y los swatches son
+      botones con `aria-label`, manteniendo la misma UI.
+  Verificación:
+    - Build validado fuera de Google Drive en
+      `/Users/reinaldomoon/PlayersCalendar-push-6de558e`.
+  Nota:
+    - `CalendarView` baja de `239.27 kB` a `238.83 kB` en el build de Vite.
+
+SIGUIENTE PASO:
+  REFACTORIZACIÓN — Extraer el header del detalle o normalizar helpers de
+  fechas repetidos dentro de `CalendarView.jsx`.
+
 [COMPLETADO] HOTFIX — Informe no abre impresión automáticamente
   Fecha: 2026-06-27
   Archivos modificados:

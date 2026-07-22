@@ -5,13 +5,14 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 // ... imports ...
 
 // ... imports ...
-import { ChevronLeft, ChevronRight, Info, Calendar, Trophy, Plus, MapPin, Trash2, Share2, Filter, CalendarDays, Save, X, AlertTriangle, List, MoreVertical, Copy, Edit, Radio, Users, FileText } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Info, Calendar, Trophy, Plus, MapPin, Trash2, Share2, Filter, CalendarDays, Save, X, AlertTriangle, List, MoreVertical, Radio, Users } from 'lucide-react';
 import MobileScorecardEditor from './MobileScorecardEditor';
 import spanishCourses from '../data/spanish_courses.json';
 import CalendarFilters from './CalendarFilters';
 import MonthGridView from './MonthGridView';
 import CommunityExplorerModal from './CommunityExplorerModal';
 import TournamentCreateForm from './TournamentCreateForm';
+import TournamentContextMenu from './TournamentContextMenu';
 import { generateTournamentDeterministicId } from '../services/tournaments.service';
 import TournamentLeaderboard from './TournamentLeaderboard';
 import TournamentReport from './TournamentReport';
@@ -1228,82 +1229,20 @@ export default function CalendarView({
     // ...
 
     const renderContextMenu = () => {
-        if (!contextMenu) return null;
-        console.log('Rendering Context Menu - Version: ExactPositioning-Clamp'); // Debug version
-        const menuWidth = 170;
-        const menuHeight = 270; // Increased for extra options
-
-        // Start at exact click coordinates
-        let x = contextMenu.x;
-        let y = contextMenu.y;
-
-        // Clamp horizontal position to fit in viewport
-        if (x + menuWidth > window.innerWidth - 10) {
-            x = window.innerWidth - menuWidth - 10;
-        }
-
-        // Clamp vertical position to fit in viewport
-        if (y + menuHeight > window.innerHeight - 10) {
-            y = window.innerHeight - menuHeight - 10;
-        }
-
-        return ReactDOM.createPortal(
-            <div 
-                data-context-menu="true"
-                onClick={(e) => e.stopPropagation()}
-                style={{
-                    position: 'fixed',
-                    top: Math.max(10, y + 5),
-                    left: Math.max(10, x),
-                    zIndex: 9999, // High z-index to be safe
-                    background: 'white',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '12px',
-                    boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
-                    padding: '8px',
-                    minWidth: `${menuWidth}px`,
-                    animation: 'fadeIn 0.1s ease-out'
+        return (
+            <TournamentContextMenu
+                menu={contextMenu}
+                onEdit={handleEditFromMenu}
+                onDuplicate={handleDuplicate}
+                onReport={handleReportFromMenu}
+                onCopyColor={handleCopyColor}
+                onPasteColor={handlePasteColor}
+                onQuickColor={(tournament, color) => {
+                    if (onUpdateTheme) onUpdateTheme(tournament.id, color);
+                    setContextMenu(null);
                 }}
-            >
-                <button onClick={() => handleEditFromMenu(contextMenu.tournament)} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '10px', background: 'none', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.9rem', textAlign: 'left', color: '#333' }}>
-                    <Edit size={16} /> Editar
-                </button>
-                <button onClick={() => handleDuplicate(contextMenu.tournament)} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '10px', background: 'none', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.9rem', textAlign: 'left', color: '#333' }}>
-                    <Copy size={16} /> Duplicar
-                </button>
-                <button onClick={() => handleReportFromMenu(contextMenu.tournament)} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '10px', background: '#fffaf0', border: '1px solid #f1dfaa', borderRadius: '6px', cursor: 'pointer', fontSize: '0.9rem', textAlign: 'left', color: '#8a640f', fontWeight: 800 }}>
-                    <FileText size={16} /> Abrir informe
-                </button>
-
-                <div style={{ height: '1px', background: '#f1f5f9', margin: '4px 0' }}></div>
-
-                <button onClick={() => handleCopyColor(contextMenu.tournament)} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '10px', background: 'none', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.9rem', textAlign: 'left', color: '#333' }}>
-                    <span style={{ width: 16, height: 16, borderRadius: 4, background: 'linear-gradient(45deg, red, blue)' }}></span> Copiar Color
-                </button>
-                <button onClick={() => handlePasteColor(contextMenu.tournament)} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '10px', background: 'none', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.9rem', textAlign: 'left', color: '#333' }}>
-                    <span style={{ width: 16, height: 16, borderRadius: 4, border: '1px dashed #333' }}></span> Pegar Color
-                </button>
-
-                <div style={{ display: 'flex', gap: '4px', padding: '8px', flexWrap: 'wrap' }}>
-                    {/* Quick Color Pickers */}
-                    {['#FECACA', '#FED7AA', '#BBF7D0', '#BAE6FD', '#C7D2FE', '#E2E8F0'].map(c => (
-                        <div
-                            key={c}
-                            onClick={() => {
-                                if (onUpdateTheme) onUpdateTheme(contextMenu.tournament.id, c);
-                                setContextMenu(null);
-                            }}
-                            style={{ width: 20, height: 20, borderRadius: '50%', background: c, cursor: 'pointer', border: '1px solid #ccc' }}
-                        />
-                    ))}
-                </div>
-
-                <div style={{ height: '1px', background: '#f1f5f9', margin: '4px 0' }}></div>
-                <button onClick={() => handleDeleteFromMenu(contextMenu.tournament)} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '10px', background: 'none', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.9rem', color: '#ef4444', textAlign: 'left' }}>
-                    <Trash2 size={16} /> Borrar
-                </button>
-            </div>,
-            document.body
+                onDelete={handleDeleteFromMenu}
+            />
         );
     };
 
