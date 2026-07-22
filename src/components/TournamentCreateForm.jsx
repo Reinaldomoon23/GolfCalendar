@@ -8,7 +8,7 @@ export default function TournamentCreateForm({
     onSubmit,
 }) {
     const updateField = (field, value) => {
-        onChange({ ...tournament, [field]: value });
+        onChange((current) => ({ ...current, [field]: value }));
     };
 
     return (

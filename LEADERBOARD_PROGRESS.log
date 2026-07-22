@@ -1367,6 +1367,34 @@ SIGUIENTE PASO:
   autoriza, abrir informe PDF en ventana nueva, validar push entre dos cuentas
   y probar modo móvil con Putts/GIR.
 
+[COMPLETADO] PRODUCCIÓN — Crear y borrar torneo temporal
+  Archivos modificados:
+    - src/components/TournamentCreateForm.jsx
+    - LEADERBOARD_PROGRESS.log
+  Resumen:
+    - En producción, con sesión real de Nicole, se creó el torneo temporal
+      `TEST CODEX BORRAR 2026-07-22` sin publicarlo en comunidad.
+    - El torneo apareció en el calendario y se pudo abrir su detalle.
+    - Se borró desde el botón de borrado del torneo personalizado y el toast
+      `Torneo borrado.` confirmó la eliminación.
+    - La prueba descubrió un bug: al rellenar varios campos rápido desde el
+      formulario extraído, el valor de fecha podía perderse y el torneo se
+      creaba con la fecha por defecto del día actual.
+    - Corregido `TournamentCreateForm` para usar actualización funcional de
+      estado: `onChange((current) => ({ ...current, [field]: value }))`.
+  Verificación:
+    - Browser integrado: creación temporal, aparición en calendario, apertura
+      de detalle y borrado real.
+    - Build validado fuera de Google Drive en
+      `/Users/reinaldomoon/PlayersCalendar-push-6de558e`.
+  Nota:
+    - El build local en Google Drive falló por esbuild (`The service was
+      stopped`); se usó el clon externo para validación.
+
+SIGUIENTE PASO:
+  PRODUCCIÓN — Desplegar fix de fecha, repetir creación/borrado temporal y
+  confirmar que una fecha futura se conserva correctamente.
+
 [COMPLETADO] HOTFIX — Informe no abre impresión automáticamente
   Fecha: 2026-06-27
   Archivos modificados:
