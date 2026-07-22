@@ -1472,6 +1472,10 @@ SIGUIENTE PASO:
   Verificación:
     - Build validado fuera de Google Drive en
       `/Users/reinaldomoon/PlayersCalendar-push-6de558e`.
+    - Producción Vercel con cache-bust `?codexBust=25e42ae`: menú contextual
+      abierto sobre una tarjeta real; confirmado `role="menu"` y acciones
+      `Editar`, `Duplicar`, `Abrir informe`, `Copiar Color`, `Pegar Color`,
+      `Borrar`.
   Nota:
     - `CalendarView` baja de `239.27 kB` a `238.83 kB` en el build de Vite.
 
