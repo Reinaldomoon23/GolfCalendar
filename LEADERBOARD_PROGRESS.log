@@ -1329,6 +1329,44 @@ SIGUIENTE PASO:
   PRODUCCIÓN — Push ya integrado sobre `origin/main`; revisar Vercel/GitHub
   Actions y probar creación de torneo + informe con meteorología.
 
+[COMPLETADO] PRODUCCIÓN — Validación post-push Vercel/GitHub
+  Archivos modificados:
+    - LEADERBOARD_PROGRESS.log
+  Resumen:
+    - Confirmado que el workspace principal está sincronizado con `origin/main`
+      en `9e41890`.
+    - Verificado que `https://golf-calendar-v3.vercel.app/` redirige a
+      `/GolfTeam/` y responde HTML 200.
+    - Verificado que `https://reinaldomoon.top/` encadena correctamente hacia
+      Vercel `/GolfTeam/`.
+    - GitHub Actions: `Collect tournament weather` aparece en verde; el workflow
+      FTP backend no se disparó porque el commit no tocó `public/api/**`.
+    - Endpoint público de meteorología `get_weather_samples` responde 200 con
+      JSON válido; `collect_weather` responde 401 sin autorización, esperado
+      fuera del cron/token.
+    - En navegador integrado con sesión real, la app carga calendario de Nicole
+      sin errores de consola.
+    - El modal `Nuevo Torneo` abre correctamente con los campos extraídos a
+      `TournamentCreateForm`; no se guardó ningún dato.
+    - El detalle de un torneo existente abre y muestra la pestaña `Informe PDF`.
+    - La pestaña `Informe PDF` renderiza `INFORME PREMIUM` y el botón
+      `Abrir informe PDF` sin errores de consola.
+  Verificación:
+    - `curl -I -L https://golf-calendar-v3.vercel.app/`.
+    - `curl -I -L https://reinaldomoon.top/`.
+    - `gh run list --branch main --limit 10`.
+    - Browser integrado: carga calendario, modal nuevo torneo, detalle de torneo
+      y pestaña informe.
+  Nota:
+    - El torneo probado era futuro y sin muestras meteorológicas, por eso el
+      bloque de clima no aparecía en el informe aunque el endpoint sí respondió.
+    - Warnings esperados en consola: R2/Sentry no configurados.
+
+SIGUIENTE PASO:
+  PRODUCCIÓN — Pruebas reales con interacción: crear torneo de prueba si se
+  autoriza, abrir informe PDF en ventana nueva, validar push entre dos cuentas
+  y probar modo móvil con Putts/GIR.
+
 [COMPLETADO] HOTFIX — Informe no abre impresión automáticamente
   Fecha: 2026-06-27
   Archivos modificados:
