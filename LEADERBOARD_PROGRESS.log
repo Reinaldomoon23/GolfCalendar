@@ -1498,6 +1498,9 @@ SIGUIENTE PASO:
   Verificación:
     - Build validado fuera de Google Drive en
       `/Users/reinaldomoon/PlayersCalendar-push-6de558e`.
+    - Producción Vercel con cache-bust `?codexBust=664cee4`: abierto
+      `Barcelona Junior Golf Open by IMG Academy`; confirmadas badges
+      `CLUB`, `GRAND PRIX` y `VALEDERA` en el detalle.
   Nota:
     - En esta medición Vite agrupa el nuevo módulo dentro del chunk de Calendar;
       el objetivo conseguido es reducir responsabilidad y longitud de
