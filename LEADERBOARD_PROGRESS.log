@@ -1524,6 +1524,8 @@ SIGUIENTE PASO:
   Verificación:
     - Build validado fuera de Google Drive en
       `/Users/reinaldomoon/PlayersCalendar-push-6de558e`.
+    - Producción Vercel con cache-bust `?codexBust=30d0659`: abierto detalle
+      real, confirmados `Volver`, `Editar torneo` y cambio a `Cancelar edición`.
 
 SIGUIENTE PASO:
   REFACTORIZACIÓN — Normalizar helpers de fecha repetidos o extraer secciones
