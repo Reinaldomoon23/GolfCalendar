@@ -1765,6 +1765,8 @@ export default function CalendarView({
                         <button
                             onClick={() => setIsEditing(!isEditing)}
                             className="btn"
+                            aria-label={isEditing ? 'Cancelar edición' : 'Editar torneo'}
+                            title={isEditing ? 'Cancelar edición' : 'Editar torneo'}
                             style={{
                                 color: 'var(--color-primary)',
                                 border: '1px solid var(--color-border)',
@@ -1779,6 +1781,8 @@ export default function CalendarView({
                             <button
                                 onClick={handleDeleteTournamentClick}
                                 className="btn"
+                                aria-label="Borrar torneo"
+                                title="Borrar torneo"
                                 style={{
                                     color: 'var(--color-conflict)',
                                     border: '1px solid var(--color-conflict)',

@@ -1406,6 +1406,29 @@ SIGUIENTE PASO:
   y el retorno a modo móvil con Putts/GIR, si se quiere cerrar también esos
   flujos manuales.
 
+[COMPLETADO] REFACTORIZACIÓN — Accesibilidad acciones de torneo
+  Archivos modificados:
+    - src/components/CalendarView.jsx
+    - LEADERBOARD_PROGRESS.log
+  Resumen:
+    - El botón de editar/cancelar edición del detalle ahora tiene `aria-label`
+      y `title` dinámicos.
+    - El botón de borrar torneo personalizado ahora tiene `aria-label` y
+      `title` como `Borrar torneo`.
+    - Esto mantiene el comportamiento existente, pero permite localizar la
+      acción por nombre accesible en pruebas y mejora el uso con tecnologías
+      asistivas.
+  Verificación:
+    - Build validado fuera de Google Drive en
+      `/Users/reinaldomoon/PlayersCalendar-push-6de558e`.
+  Nota:
+    - El build local en Google Drive volvió a fallar por esbuild (`The service
+      was stopped`); se usó el clon externo para validación.
+
+SIGUIENTE PASO:
+  REFACTORIZACIÓN — Continuar extrayendo piezas pequeñas de `CalendarView.jsx`
+  cuando haya un bloque con bajo riesgo y validación clara.
+
 [COMPLETADO] HOTFIX — Informe no abre impresión automáticamente
   Fecha: 2026-06-27
   Archivos modificados:
