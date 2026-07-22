@@ -1433,6 +1433,27 @@ SIGUIENTE PASO:
   REFACTORIZACIÓN — Continuar extrayendo piezas pequeñas de `CalendarView.jsx`
   cuando haya un bloque con bajo riesgo y validación clara.
 
+[COMPLETADO] REFACTORIZACIÓN — Feedback layer compartido en Calendar
+  Archivos modificados:
+    - src/components/CalendarView.jsx
+    - LEADERBOARD_PROGRESS.log
+  Resumen:
+    - `CalendarView.jsx` deja de mantener estado propio duplicado para
+      notificaciones y diálogos de confirmación.
+    - Se reutiliza `useFeedbackLayer` de `src/components/FeedbackLayer.jsx`,
+      ya usado por vistas de admin y resultados.
+    - Se elimina el render duplicado `renderFeedbackUi`, reduciendo el tamaño
+      de `CalendarView.jsx` sin cambiar los flujos de `notify` ni `askConfirm`.
+  Verificación:
+    - Build validado fuera de Google Drive en
+      `/Users/reinaldomoon/PlayersCalendar-push-6de558e`.
+  Nota:
+    - `CalendarView` baja de `241.53 kB` a `239.27 kB` en el build de Vite.
+
+SIGUIENTE PASO:
+  REFACTORIZACIÓN — Extraer el menú contextual de torneo o el header del
+  detalle cuando se pueda validar con creación/borrado temporal.
+
 [COMPLETADO] HOTFIX — Informe no abre impresión automáticamente
   Fecha: 2026-06-27
   Archivos modificados:
