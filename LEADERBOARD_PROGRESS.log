@@ -1421,6 +1421,10 @@ SIGUIENTE PASO:
   Verificación:
     - Build validado fuera de Google Drive en
       `/Users/reinaldomoon/PlayersCalendar-push-6de558e`.
+    - Producción Vercel con cache-bust `?codexBust=769b523`: creado torneo
+      temporal `TEST CODEX A11Y BORRAR 2026-08-02`, confirmado que el detalle
+      expone los botones `Editar torneo` y `Borrar torneo` por nombre
+      accesible, y borrado confirmado con toast `Torneo borrado.`.
   Nota:
     - El build local en Google Drive volvió a fallar por esbuild (`The service
       was stopped`); se usó el clon externo para validación.
