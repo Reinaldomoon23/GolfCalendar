@@ -99,6 +99,7 @@ export default function AppHeader({
               <ProfileImage
                 key={`photo-${photoVersion}`}
                 photoPath={user.photo_url}
+                username={user.username}
                 displayName={user.full_name || user.username}
                 version={photoVersion}
                 alt={user.full_name}
@@ -115,6 +116,7 @@ export default function AppHeader({
                 <ProfileImage
                   key={`nav-photo-${u.username}-${photoVersion}`}
                   photoPath={u.photo_url}
+                  username={u.username}
                   displayName={u.full_name || u.username}
                   version={photoVersion}
                   alt={u.full_name}
@@ -152,6 +154,7 @@ export default function AppHeader({
             <ProfileImage
               key={`edit-photo-${photoVersion}`}
               photoPath={user.photo_url}
+              username={user.username}
               displayName={user.full_name || user.username}
               version={photoVersion}
               alt={user.full_name}

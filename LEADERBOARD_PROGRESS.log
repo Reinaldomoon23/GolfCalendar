@@ -6,6 +6,39 @@
 SESIÓN: 2026-08-23 | Codex
 ==========================================================================
 
+[COMPLETADO] HARDENING — Enlaces canónicos de fotos de perfil
+  Archivos modificados/creados:
+    - src/utils/profilePhotos.js
+    - src/components/ProfileImage.jsx
+    - src/components/AppHeader.jsx
+    - src/components/PublicScorecardView.jsx
+    - src/components/TournamentLeaderboard.jsx
+    - src/components/TournamentReport.jsx
+  Resumen:
+    - Centralizados los enlaces conocidos de Nicole, Ona y Txell en una única
+      fuente compartida por cabecera, informes y clasificaciones.
+    - Ona usa su URL pública confirmada de R2 aunque photo_url esté vacío o
+      conserve una ruta legacy en Firestore.
+    - Una foto R2 nueva y explícita en Firestore mantiene prioridad para no
+      bloquear futuros cambios de imagen.
+    - Todas las vistas pasan username a ProfileImage y conservan avatar como
+      último fallback si ninguna imagen responde.
+  Verificación:
+    - Build directo con Vite: correcto.
+    - Lint de profilePhotos.js y ProfileImage.jsx: correcto.
+    - Resolución comprobada por username y nombre completo para Ona.
+    - Resolución comprobada por username para Nicole y Txell.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Confirmar fotos conocidas
+==========================================================================
+  Siguiente: Abrir los perfiles de Ona, Nicole y Txell en móvil y escritorio
+  y confirmar que muestran la misma fotografía.
+
+==========================================================================
+SESIÓN: 2026-08-23 | Codex
+==========================================================================
+
 [COMPLETADO] PERFORMANCE — Reducir peticiones de fotos a Cloudflare R2
   Archivos modificados:
     - src/App.jsx

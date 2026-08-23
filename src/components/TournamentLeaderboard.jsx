@@ -329,6 +329,7 @@ export default function TournamentLeaderboard({ tournamentId, par = 72, currentU
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
                                 <ProfileImage
                                     photoPath={p.photo_url}
+                                    username={p.username}
                                     displayName={p.fullName || p.full_name || p.username}
                                     alt={p.fullName || p.full_name || p.username}
                                     style={avatarStyle}
@@ -423,6 +424,7 @@ export default function TournamentLeaderboard({ tournamentId, par = 72, currentU
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
                                 <ProfileImage
                                     photoPath={p.photo_url}
+                                    username={p.username}
                                     displayName={p.fullName || p.full_name || p.username}
                                     alt={p.fullName || p.full_name || p.username}
                                     style={avatarStyle}

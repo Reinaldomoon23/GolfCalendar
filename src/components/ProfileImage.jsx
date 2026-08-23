@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
+import { getKnownProfilePhotoUrl, R2_PUBLIC_URL } from '../utils/profilePhotos';
 
 const BASE_URL = import.meta.env.BASE_URL.replace(/\/$/, '');
-const R2_PUBLIC_URL = 'https://pub-23c281cf1ae04def9102341cf7d87837.r2.dev';
 
 function getAvatarUrl(displayName) {
   const safeName = encodeURIComponent(displayName || 'Golf');
@@ -81,6 +81,7 @@ function getCandidateSources(photoPath, version) {
 
 export default function ProfileImage({
   photoPath,
+  username,
   displayName,
   alt,
   version,
@@ -89,11 +90,20 @@ export default function ProfileImage({
   title,
 }) {
   const avatarUrl = getAvatarUrl(displayName);
-  const stateKey = `${String(photoPath || '')}::${String(version || '')}`;
+  const knownPhotoUrl = getKnownProfilePhotoUrl({ username, displayName });
+  const stateKey = `${String(photoPath || '')}::${String(knownPhotoUrl)}::${String(version || '')}`;
   const candidates = useMemo(() => {
-    const resolved = getCandidateSources(photoPath, version);
-    return [...resolved, avatarUrl];
-  }, [avatarUrl, photoPath, version]);
+    const storedSources = getCandidateSources(photoPath, version);
+    const knownSources = getCandidateSources(knownPhotoUrl, version);
+    const storedIsR2 = String(photoPath || '').includes('.r2.dev/');
+    const orderedSources = storedIsR2
+      ? [...storedSources, ...knownSources]
+      : [...knownSources, ...storedSources];
+    const uniqueSources = orderedSources.filter((source, index, array) => (
+      Boolean(source) && array.indexOf(source) === index
+    ));
+    return [...uniqueSources, avatarUrl];
+  }, [avatarUrl, knownPhotoUrl, photoPath, version]);
   const [candidateIndexes, setCandidateIndexes] = useState({});
   const candidateIndex = candidateIndexes[stateKey] || 0;
 

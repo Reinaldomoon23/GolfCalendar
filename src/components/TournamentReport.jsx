@@ -79,6 +79,7 @@ export default function TournamentReport({ tournament, result, user }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', minWidth: 0 }}>
             <ProfileImage
               photoPath={photoPath}
+              username={user?.username}
               displayName={playerName}
               alt={playerName}
               style={{
