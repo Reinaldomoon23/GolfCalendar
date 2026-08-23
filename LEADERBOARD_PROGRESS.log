@@ -6,6 +6,34 @@
 SESIÓN: 2026-08-23 | Codex
 ==========================================================================
 
+[COMPLETADO] PERFORMANCE — Reducir peticiones de fotos a Cloudflare R2
+  Archivos modificados:
+    - src/App.jsx
+    - src/components/ProfileImage.jsx
+    - vite.config.js
+  Resumen:
+    - Las fotos de R2 dejan de recibir un timestamp distinto en cada sesión.
+    - R2 usa CacheFirst durante 30 días; cada nueva foto mantiene frescura
+      porque las subidas generan un nombre de archivo único.
+    - Las fotos legacy conservan NetworkFirst para detectar reemplazos antiguos.
+    - Los listeners de perfiles vinculados permanecen estables cuando solo
+      cambia el contenido visual de linkedUsers.
+  Verificación:
+    - Build directo con Vite: correcto.
+    - Lint específico de ProfileImage.jsx: correcto.
+    - Service worker generado contiene CacheFirst para R2 y NetworkFirst solo
+      para rutas legacy /profiles/.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Medir solicitudes R2 tras optimización
+==========================================================================
+  Siguiente: Comparar el gráfico de solicitudes durante 24 horas y confirmar
+  que desaparecen los picos sin perder la actualización entre dispositivos.
+
+==========================================================================
+SESIÓN: 2026-08-23 | Codex
+==========================================================================
+
 [COMPLETADO] HARDENING — Sincronización de fotos entre dispositivos
   Archivos modificados:
     - src/App.jsx

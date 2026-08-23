@@ -21,13 +21,24 @@ export default defineConfig(({ mode }) => {
           clientsClaim: true,
           runtimeCaching: [
             {
-              urlPattern: ({ url }) => (
-                url.hostname.endsWith('.r2.dev')
-                || url.pathname.includes('/profiles/')
-              ),
+              urlPattern: ({ url }) => url.hostname.endsWith('.r2.dev'),
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'r2-profile-photos',
+                expiration: {
+                  maxEntries: 100,
+                  maxAgeSeconds: 60 * 60 * 24 * 30
+                },
+                cacheableResponse: {
+                  statuses: [0, 200]
+                }
+              }
+            },
+            {
+              urlPattern: ({ url }) => url.pathname.includes('/profiles/'),
               handler: 'NetworkFirst',
               options: {
-                cacheName: 'user-profiles',
+                cacheName: 'legacy-profile-photos',
                 networkTimeoutSeconds: 5,
                 expiration: {
                   maxEntries: 50,

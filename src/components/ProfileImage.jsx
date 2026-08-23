@@ -9,7 +9,9 @@ function getAvatarUrl(displayName) {
 }
 
 function appendVersion(url, version) {
-  if (!version || !url || url.startsWith('blob:')) return url;
+  // R2 uploads use a unique filename, so query-string cache busting only
+  // creates duplicate requests without improving freshness.
+  if (!version || !url || url.startsWith('blob:') || url.includes('.r2.dev/')) return url;
   return `${url}${url.includes('?') ? '&' : '?'}v=${version}`;
 }
 

@@ -663,11 +663,16 @@ function AppContent() {
     .filter(Boolean)
     .sort()
     .join('|');
+  const linkedProfilesRef = useRef(linkedUsers);
+
+  useEffect(() => {
+    linkedProfilesRef.current = linkedUsers;
+  }, [linkedUsers]);
 
   useEffect(() => {
     if (!IS_MULTI || !linkedProfileKey) return undefined;
 
-    const unsubscribers = linkedUsers
+    const unsubscribers = linkedProfilesRef.current
       .filter((profile) => getUserDocId(profile))
       .map((profile) => onSnapshot(getUserProfileRef(db, profile), (snapshot) => {
         if (!snapshot.exists()) return;
@@ -736,7 +741,7 @@ function AppContent() {
     return () => {
       unsubscribers.forEach((unsubscribe) => unsubscribe());
     };
-  }, [linkedProfileKey, linkedUsers, setLinkedUsers, setUser]);
+  }, [linkedProfileKey, setLinkedUsers, setUser]);
 
   // ── Nuke helper (dev console) ─────────────────────────────────────────────
   useEffect(() => {
