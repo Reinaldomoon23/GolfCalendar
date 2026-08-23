@@ -57,12 +57,14 @@ function getCandidateSources(photoPath, version) {
   const fileName = extractFileName(value);
   const candidates = [];
 
-  if (fileName) {
-    candidates.push(toCloudflareUrl(fileName, version));
+  // Firestore is the source of truth: try its exact absolute URL first.
+  if (value.startsWith('http')) {
+    candidates.push(appendVersion(value, version));
   }
 
-  if (value.startsWith('http') && !value.includes('.workers.dev/')) {
-    candidates.push(appendVersion(value, version));
+  // R2 remains a fallback for legacy/relative paths and migrated photos.
+  if (fileName) {
+    candidates.push(toCloudflareUrl(fileName, version));
   }
 
   const legacyUrl = toLegacyUrl(value, version);

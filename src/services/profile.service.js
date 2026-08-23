@@ -150,21 +150,3 @@ export async function recoverLegacyProfile(user) {
 
   return { ...user, ...updates };
 }
-
-// ─── Firestore Sync ───────────────────────────────────────────────────────────
-
-/**
- * Self-healing: If Firestore is missing a photo but user has one locally, push it.
- * @param {object} user - User profile
- * @param {string|null} incomingPhoto - Photo URL from Firestore snapshot
- */
-export async function selfHealPhoto(user, incomingPhoto) {
-  if (!incomingPhoto && user?.photo_url && String(user.photo_url).trim() !== '') {
-    console.log('[profile] Self-healing: Synchronizing legacy photo to Firestore for', user.username);
-    try {
-      await setDoc(getUserProfileRef(db, user), { photo_url: user.photo_url }, { merge: true });
-    } catch (err) {
-      console.warn('[profile] Self-heal photo failed:', err);
-    }
-  }
-}

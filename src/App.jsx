@@ -25,8 +25,7 @@ import ProfileModal from './components/ProfileModal';
 import { db } from './firebase';
 import { onSnapshot, setDoc, doc } from 'firebase/firestore';
 import { getUserDocId, getUserProfileRef, fetchUserProfileByUsername } from './utils/userProfiles';
-import { selfHealPhoto } from './services/profile.service';
-import { writeSavedUser } from './utils/cache';
+import { writeLinkedUsers, writeSavedUser } from './utils/cache';
 
 // Hooks
 import { useAuth } from './hooks/useAuth';
@@ -624,8 +623,7 @@ function AppContent() {
 
       setUser(prev => {
         if (!prev || prev.username !== user.username) return prev;
-        const photoToUse = (incomingPhoto && String(incomingPhoto).trim() !== '') ? incomingPhoto : prev.photo_url;
-        void selfHealPhoto(prev, incomingPhoto);
+        const photoToUse = incomingPhoto && String(incomingPhoto).trim() !== '' ? incomingPhoto : '';
         if (prev.photo_url !== photoToUse || prev.full_name !== incomingName || currentManaged !== incomingManaged) {
           const updated = { ...prev, ...freshData, photo_url: photoToUse, manager_id: prev.manager_id };
           writeSavedUser(updated);
@@ -657,6 +655,88 @@ function AppContent() {
 
     return () => unsubProfile();
   }, [activeUserDocId, user?.username]);
+
+  // Keep every linked profile fresh across devices. The active profile already
+  // has its own listener above; this also covers the other manager/child avatars.
+  const linkedProfileKey = linkedUsers
+    .map((profile) => `${getUserDocId(profile)}:${profile.username || ''}`)
+    .filter(Boolean)
+    .sort()
+    .join('|');
+
+  useEffect(() => {
+    if (!IS_MULTI || !linkedProfileKey) return undefined;
+
+    const unsubscribers = linkedUsers
+      .filter((profile) => getUserDocId(profile))
+      .map((profile) => onSnapshot(getUserProfileRef(db, profile), (snapshot) => {
+        if (!snapshot.exists()) return;
+
+        const freshData = snapshot.data();
+        const profileDocId = snapshot.id;
+        const profileUsername = freshData.username || profile.username;
+        const freshPhoto = freshData.photo_url && String(freshData.photo_url).trim() !== ''
+          ? freshData.photo_url
+          : '';
+
+        setLinkedUsers((previousProfiles) => {
+          let changed = false;
+          const updatedProfiles = previousProfiles.map((previousProfile) => {
+            const sameProfile = getUserDocId(previousProfile) === profileDocId
+              || previousProfile.username === profileUsername;
+            if (!sameProfile) return previousProfile;
+
+            const updatedProfile = {
+              ...previousProfile,
+              ...freshData,
+              username: profileUsername,
+              docId: profileDocId,
+              photo_url: freshPhoto,
+            };
+
+            if (
+              previousProfile.photo_url !== updatedProfile.photo_url
+              || previousProfile.full_name !== updatedProfile.full_name
+            ) {
+              changed = true;
+            }
+            return updatedProfile;
+          });
+
+          if (!changed) return previousProfiles;
+          writeLinkedUsers(updatedProfiles);
+          return updatedProfiles;
+        });
+
+        setUser((previousUser) => {
+          if (!previousUser || previousUser.username !== profileUsername) return previousUser;
+          if (
+            previousUser.photo_url === freshPhoto
+            && previousUser.full_name === freshData.full_name
+          ) {
+            return previousUser;
+          }
+
+          const updatedUser = {
+            ...previousUser,
+            ...freshData,
+            username: profileUsername,
+            docId: profileDocId,
+            photo_url: freshPhoto,
+            manager_id: previousUser.manager_id,
+          };
+          writeSavedUser(updatedUser);
+          setPhotoVersion(Date.now());
+          return updatedUser;
+        });
+      }, (error) => {
+        console.warn('[profile] Linked profile sync failed:', error.code || error.message);
+      }));
+
+    return () => {
+      unsubscribers.forEach((unsubscribe) => unsubscribe());
+    };
+  }, [linkedProfileKey, linkedUsers, setLinkedUsers, setUser]);
 
   // ── Nuke helper (dev console) ─────────────────────────────────────────────
   useEffect(() => {
@@ -770,7 +850,7 @@ function AppContent() {
     return (
       <div className="app-container fade-in" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div className="card" style={{ padding: '1.5rem 2rem', textAlign: 'center' }}>
-          <span style={{ fontSize: '0.8em', opacity: 0.7, color: 'var(--color-text-muted)' }}>(v3.0.1)</span>
+          <span style={{ fontSize: '0.8em', opacity: 0.7, color: 'var(--color-text-muted)' }}>(v3.0.2)</span>
           Conectando con Firebase...
         </div>
       </div>

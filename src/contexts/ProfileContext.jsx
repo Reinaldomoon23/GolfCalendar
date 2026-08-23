@@ -14,7 +14,7 @@ import { onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuthContext } from './AuthContext';
 import { getUserDocId, getUserProfileRef, fetchUserProfileByUsername } from '../utils/userProfiles';
-import { uploadProfilePhoto, updateUserProfile, recoverLegacyProfile, selfHealPhoto } from '../services/profile.service';
+import { uploadProfilePhoto, updateUserProfile, recoverLegacyProfile } from '../services/profile.service';
 import { writeSavedUser } from '../utils/cache';
 import { IS_MULTI } from '../config/app';
 
@@ -151,8 +151,7 @@ export function ProfileProvider({ children }) {
 
       setUser((prev) => {
         if (!prev || prev.username !== user.username) return prev;
-        const photoToUse = incomingPhoto && String(incomingPhoto).trim() !== '' ? incomingPhoto : prev.photo_url;
-        void selfHealPhoto(prev, incomingPhoto);
+        const photoToUse = incomingPhoto && String(incomingPhoto).trim() !== '' ? incomingPhoto : '';
         if (
           prev.photo_url !== photoToUse ||
           prev.full_name !== incomingName ||

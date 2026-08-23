@@ -21,13 +21,17 @@ export default defineConfig(({ mode }) => {
           clientsClaim: true,
           runtimeCaching: [
             {
-              urlPattern: ({ url }) => url.pathname.includes('/profiles/'),
+              urlPattern: ({ url }) => (
+                url.hostname.endsWith('.r2.dev')
+                || url.pathname.includes('/profiles/')
+              ),
               handler: 'NetworkFirst',
               options: {
                 cacheName: 'user-profiles',
+                networkTimeoutSeconds: 5,
                 expiration: {
-                  maxEntries: 10,
-                  maxAgeSeconds: 60 * 60 * 24 // 1 day
+                  maxEntries: 50,
+                  maxAgeSeconds: 60 * 60 * 24 * 7
                 },
                 cacheableResponse: {
                   statuses: [0, 200]

@@ -3,6 +3,35 @@
 # Actualizar este archivo cada vez que se complete un paso del roadmap
 
 ==========================================================================
+SESIÓN: 2026-08-23 | Codex
+==========================================================================
+
+[COMPLETADO] HARDENING — Sincronización de fotos entre dispositivos
+  Archivos modificados:
+    - src/App.jsx
+    - src/components/ProfileImage.jsx
+    - src/contexts/ProfileContext.jsx
+    - src/services/profile.service.js
+    - vite.config.js
+  Resumen:
+    - Los perfiles vinculados de cuentas manager se escuchan ahora en tiempo
+      real y actualizan la sesión y la caché local en todos los dispositivos.
+    - Firestore queda como fuente de verdad; una foto antigua guardada en el
+      dispositivo ya no puede volver a escribirse automáticamente en el perfil.
+    - Las imágenes respetan primero la URL exacta guardada en Firestore y usan
+      Cloudflare R2 o la ruta legacy únicamente como fallback.
+    - La caché PWA de fotos usa NetworkFirst también para R2 y conserva una
+      copia offline después de intentar obtener la versión actual de la red.
+    - Corregida a v3.0.2 la etiqueta mostrada durante la conexión con Firebase.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Validar foto en dos dispositivos
+==========================================================================
+  Siguiente: Cambiar una foto desde un dispositivo y confirmar que el segundo
+  la actualiza sin cerrar sesión; verificar también una cuenta manager con
+  varios perfiles vinculados.
+
+==========================================================================
 SESIÓN: 2026-06-27 | Codex
 ==========================================================================
 
