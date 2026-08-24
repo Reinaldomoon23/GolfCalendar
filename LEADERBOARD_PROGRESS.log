@@ -3,6 +3,30 @@
 # Actualizar este archivo cada vez que se complete un paso del roadmap
 
 ==========================================================================
+SESIÓN: 2026-08-24 | Codex
+==========================================================================
+
+[COMPLETADO] DATOS — Fotos canónicas de Maria Boixader y Maria Ros
+  Archivos modificados:
+    - src/utils/profilePhotos.js
+  Resumen:
+    - Añadido `maria_1770065115.jpg` para el identificador `mariaboixader`.
+    - Añadida resolución alternativa por nombre completo `Maria Boixader`.
+    - Añadido `mariaros_1778965873.png` para el identificador `mariaros`.
+    - Añadida resolución alternativa por nombre completo `Maria Ros`.
+    - Actualizada Nicole de `nicole_1770126902.jpg` a la foto más reciente
+      `nicole_1782719459.jpg`.
+  Verificación:
+    - Resolución por username y nombre completo comprobada para ambas Marias.
+    - Resolución de Nicole comprobada contra el enlace actualizado.
+
+==========================================================================
+  PRÓXIMO PASO: DATOS — Incorporar siguientes fotos confirmadas
+==========================================================================
+  Siguiente: Añadir las URLs públicas que facilite el usuario y validar cada
+  resolución por username y nombre completo.
+
+==========================================================================
 SESIÓN: 2026-08-23 | Codex
 ==========================================================================
 

@@ -1,9 +1,11 @@
 const R2_PUBLIC_URL = 'https://pub-23c281cf1ae04def9102341cf7d87837.r2.dev';
 
 const CANONICAL_PROFILE_PHOTO_FILES = {
-  nicole: 'nicole_1770126902.jpg',
+  nicole: 'nicole_1782719459.jpg',
   ona: 'ona.jpg',
   txell: 'txell.jpg',
+  mariaboixader: 'maria_1770065115.jpg',
+  mariaros: 'mariaros_1778965873.png',
 };
 
 function normalizeProfileIdentity(value) {
@@ -26,6 +28,8 @@ export function getKnownProfilePhotoUrl(profile = {}) {
     if (displayName.includes('nicole')) fileName = CANONICAL_PROFILE_PHOTO_FILES.nicole;
     else if (displayName.includes('ona martinez')) fileName = CANONICAL_PROFILE_PHOTO_FILES.ona;
     else if (displayName.includes('txell')) fileName = CANONICAL_PROFILE_PHOTO_FILES.txell;
+    else if (displayName.includes('maria boixader')) fileName = CANONICAL_PROFILE_PHOTO_FILES.mariaboixader;
+    else if (displayName.includes('maria ros')) fileName = CANONICAL_PROFILE_PHOTO_FILES.mariaros;
   }
 
   return fileName ? `${R2_PUBLIC_URL}/${encodeURIComponent(fileName)}` : '';
