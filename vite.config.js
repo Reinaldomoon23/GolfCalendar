@@ -27,7 +27,7 @@ export default defineConfig(({ mode }) => {
                 cacheName: 'r2-profile-photos',
                 expiration: {
                   maxEntries: 100,
-                  maxAgeSeconds: 60 * 60 * 24 * 30
+                  maxAgeSeconds: 60 * 60 * 24
                 },
                 cacheableResponse: {
                   statuses: [0, 200]

@@ -6,11 +6,10 @@
  */
 
 import { db } from '../firebase';
+import { auth } from '../firebase';
 import { getUserProfileRef } from '../utils/userProfiles';
 import { IS_MULTI } from '../config/app';
-import { R2_CONFIG, s3Client } from '../config/cloudflare';
 import { setDoc } from 'firebase/firestore';
-import { PutObjectCommand } from '@aws-sdk/client-s3';
 
 const API_BASE = import.meta.env.BASE_URL?.replace(/\/$/, '') || '';
 const LEGACY_API_BASE = 'https://reinaldomoon.top/GolfTeam';
@@ -27,25 +26,82 @@ const LEGACY_API_BASE = 'https://reinaldomoon.top/GolfTeam';
  */
 export async function uploadProfilePhoto(file, user) {
   if (!file || !user?.username) throw new Error('File and user are required');
+  if (!auth.currentUser) throw new Error('Debes iniciar sesion para cambiar la foto.');
 
-  const fileName = `${user.username}_${Math.floor(Date.now() / 1000)}.jpg`;
-  const arrayBuffer = await file.arrayBuffer();
-
-  const command = new PutObjectCommand({
-    Bucket: R2_CONFIG.bucketName,
-    Key: fileName,
-    Body: new Uint8Array(arrayBuffer),
-    ContentType: file.type || 'image/jpeg',
+  const jpeg = await convertProfilePhotoToJpeg(file);
+  const token = await auth.currentUser.getIdToken();
+  const response = await fetch(`${API_BASE}/api/upload_profile_photo?username=${encodeURIComponent(user.username)}`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'image/jpeg',
+    },
+    body: jpeg,
   });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || !payload.photo_url) {
+    throw new Error(payload.error || 'No se pudo subir la foto.');
+  }
 
-  await s3Client.send(command);
+  await invalidateProfilePhotoCache(payload.photo_url, payload.photo_updated_at);
+  return payload.photo_url;
+}
 
-  const newPhotoUrl = `${R2_CONFIG.publicUrl}/${fileName}`;
+async function convertProfilePhotoToJpeg(file) {
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const image = await new Promise((resolve, reject) => {
+      const element = new Image();
+      element.onload = () => resolve(element);
+      element.onerror = () => reject(new Error('No se pudo leer la imagen seleccionada.'));
+      element.src = objectUrl;
+    });
+    const maxSide = 1280;
+    const scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
+    const width = Math.max(1, Math.round(image.naturalWidth * scale));
+    const height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext('2d');
+    context.drawImage(image, 0, 0, width, height);
+    return await new Promise((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => blob ? resolve(blob) : reject(new Error('No se pudo preparar la foto.')),
+        'image/jpeg',
+        0.86
+      );
+    });
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
 
-  // Persist to Firestore
-  await setDoc(getUserProfileRef(db, user), { photo_url: newPhotoUrl }, { merge: true });
+export async function invalidateProfilePhotoCache(photoUrl, photoUpdatedAt) {
+  const url = String(photoUrl || '').trim();
+  if (!url || !url.includes('.r2.dev/')) return false;
 
-  return newPhotoUrl;
+  const storageKey = 'golf_profile_photo_versions';
+  let versions = {};
+  try {
+    versions = JSON.parse(localStorage.getItem(storageKey) || '{}');
+  } catch {
+    versions = {};
+  }
+  const nextVersion = String(photoUpdatedAt || url);
+  if (versions[url] === nextVersion) return false;
+  versions[url] = nextVersion;
+  try {
+    localStorage.setItem(storageKey, JSON.stringify(versions));
+  } catch {
+    // Cache invalidation still continues when localStorage is unavailable.
+  }
+
+  if ('caches' in window) {
+    const cache = await caches.open('r2-profile-photos');
+    await cache.delete(url);
+  }
+  return true;
 }
 
 /**

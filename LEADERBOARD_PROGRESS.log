@@ -3,6 +3,51 @@
 # Actualizar este archivo cada vez que se complete un paso del roadmap
 
 ==========================================================================
+SESIÓN: 2026-08-27 | Codex
+==========================================================================
+
+[COMPLETADO] HARDENING — Fotos estables por username y subida segura
+  Archivos modificados/creados:
+    - api/_firebase_admin.js
+    - api/upload_profile_photo.js
+    - src/services/profile.service.js
+    - src/config/cloudflare.js
+    - src/App.jsx
+    - src/contexts/ProfileContext.jsx
+    - src/components/AppHeader.jsx
+    - src/components/ProfileImage.jsx
+    - src/utils/profilePhotos.js
+    - vite.config.js
+    - firestore.rules
+    - scripts/audit-r2-profile-photos.mjs
+    - .env.example
+    - package.json
+    - LEADERBOARD_ROADMAP.md
+  Resumen:
+    - Las nuevas fotos se convierten a JPEG y se guardan como `{username}.jpg`.
+    - La subida pasa por API autenticada; las credenciales R2 ya no forman
+      parte del cliente ni del bundle público.
+    - La API autoriza propietario, manager o admin, actualiza `photo_updated_at`
+      y elimina la clave anterior solo después de guardar Firestore.
+    - Los dispositivos invalidan únicamente la foto cuya versión cambió.
+    - Añadido script dry-run para inventariar huérfanos con antigüedad mínima
+      de siete días y borrado explícito mediante `--apply --yes`.
+    - Roadmap histórico actualizado al estado real de las fases 1, 2 y 3.
+  Verificación:
+    - Build directo con Vite: correcto.
+    - Lint de API, servicio, configuración, auditor y resolvedor: correcto.
+    - API rechaza métodos y tipos de imagen no permitidos.
+    - El auditor se detiene sin credenciales y no puede borrar por defecto.
+    - Bundle cliente sin AWS SDK, secretos R2 ni nombres de foto con timestamp.
+
+==========================================================================
+  PRÓXIMO PASO: INFRAESTRUCTURA — Configurar R2 y ejecutar dry-run
+==========================================================================
+  Siguiente: Configurar `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`,
+  `R2_ENDPOINT`, `R2_BUCKET_NAME` y `R2_PUBLIC_URL` en Vercel; ejecutar
+  `npm run audit:profile-photos`, revisar candidatos y después aplicar limpieza.
+
+==========================================================================
 SESIÓN: 2026-08-24 | Codex
 ==========================================================================
 

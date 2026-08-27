@@ -78,6 +78,7 @@ service cloud.firestore {
                'federation_id',
                'email',
                'photo_url',
+               'photo_updated_at',
                'handicap_url',
                'current_handicap',
                'handicap_pdf_url',

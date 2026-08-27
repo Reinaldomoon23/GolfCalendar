@@ -14,7 +14,7 @@ import { onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuthContext } from './AuthContext';
 import { getUserDocId, getUserProfileRef, fetchUserProfileByUsername } from '../utils/userProfiles';
-import { uploadProfilePhoto, updateUserProfile, recoverLegacyProfile } from '../services/profile.service';
+import { invalidateProfilePhotoCache, uploadProfilePhoto, updateUserProfile, recoverLegacyProfile } from '../services/profile.service';
 import { writeSavedUser } from '../utils/cache';
 import { IS_MULTI } from '../config/app';
 
@@ -145,6 +145,7 @@ export function ProfileProvider({ children }) {
       const freshData = snapshot.data();
       const managedUsernames = Array.isArray(freshData.managed_users) ? freshData.managed_users : [];
       const incomingPhoto = freshData.photo_url;
+      const incomingPhotoUpdatedAt = freshData.photo_updated_at || '';
       const incomingName = freshData.full_name;
       const currentManaged = JSON.stringify(user.managed_users || []);
       const incomingManaged = JSON.stringify(managedUsernames);
@@ -152,14 +153,19 @@ export function ProfileProvider({ children }) {
       setUser((prev) => {
         if (!prev || prev.username !== user.username) return prev;
         const photoToUse = incomingPhoto && String(incomingPhoto).trim() !== '' ? incomingPhoto : '';
+        const photoChanged = prev.photo_url !== photoToUse
+          || String(prev.photo_updated_at || '') !== String(incomingPhotoUpdatedAt);
         if (
-          prev.photo_url !== photoToUse ||
+          photoChanged ||
           prev.full_name !== incomingName ||
           currentManaged !== incomingManaged
         ) {
           const updated = { ...prev, ...freshData, photo_url: photoToUse, manager_id: prev.manager_id };
           writeSavedUser(updated);
-          setPhotoVersion(Date.now());
+          if (photoChanged) {
+            void invalidateProfilePhotoCache(photoToUse, incomingPhotoUpdatedAt)
+              .finally(() => setPhotoVersion(Date.now()));
+          }
           return updated;
         }
         return prev;

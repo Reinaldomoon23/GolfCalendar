@@ -1,6 +1,6 @@
 const R2_PUBLIC_URL = 'https://pub-23c281cf1ae04def9102341cf7d87837.r2.dev';
 
-const CANONICAL_PROFILE_PHOTO_FILES = {
+export const CANONICAL_PROFILE_PHOTO_FILES = {
   nicole: 'nicole_1782719459.jpg',
   ona: 'ona.jpg',
   txell: 'txell.jpg',

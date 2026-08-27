@@ -111,6 +111,7 @@ export default function ProfileImage({
 
   return (
     <img
+      key={stateKey}
       src={src}
       alt={alt || displayName || 'Perfil'}
       className={className}

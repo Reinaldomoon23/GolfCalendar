@@ -1,13 +1,22 @@
 ![alt text](image.png)# 🏆 LEADERBOARD ROADMAP — Sistema de Clasificación General Centralizada
 # Players Calendar / RoundTracker
-# Última actualización: 2026-04-26
+# Última actualización: 2026-08-27
 
 ---
 
 ## ESTADO GLOBAL
-- FASE 1: 🔶 EN PROGRESO (3/5 pasos completados)
-- FASE 2: ⏳ PENDIENTE
-- FASE 3: ⏳ PENDIENTE
+- FASE 1: ✅ COMPLETADA (5/5)
+- FASE 2: ✅ COMPLETADA (3/3)
+- FASE 3: ✅ COMPLETADA (3/3)
+
+### HARDENING ACTUAL — Fotos de perfil
+
+- ✅ Enlaces canónicos compartidos y sincronización en tiempo real.
+- ✅ Caché R2 optimizada e invalidación por `photo_updated_at`.
+- ✅ Subida autenticada serverless con clave estable `{username}.jpg`.
+- ✅ Eliminación de la clave anterior después de una sustitución correcta.
+- ✅ Auditoría de huérfanos con dry-run obligatorio antes de borrar.
+- ⏳ Configurar variables R2 server-only en Vercel y ejecutar el primer dry-run.
 
 ---
 
@@ -103,9 +112,9 @@ import { updateParticipantScore, isSharedTournamentId } from '../services/leader
 
 ---
 
-### ⏳ PASO 1.4 — Integrar leaderboard en CalendarView (pestaña "Clasificación")
+### ✅ PASO 1.4 — Integrar leaderboard en CalendarView (pestaña "Clasificación")
 **Archivo:** `src/components/CalendarView.jsx`
-**Estado:** PENDIENTE
+**Estado:** COMPLETADO
 
 **Qué hay que hacer:**
 
@@ -176,9 +185,9 @@ setDetailTab('results');
 
 ---
 
-### ⏳ PASO 1.5 — Actualizar reglas de Firestore
+### ✅ PASO 1.5 — Actualizar reglas de Firestore
 **Archivo:** `firestore.rules`
-**Estado:** PENDIENTE
+**Estado:** COMPLETADO
 
 **Qué hay que hacer:**
 Añadir estas reglas al archivo para permitir que cualquiera lea los participantes (la clasificación es pública) pero solo el propio usuario pueda escribir su doc:
@@ -206,21 +215,21 @@ O desde la consola web de Firebase → Firestore → Rules.
 
 ## FASE 2 — Mejoras de UX
 
-### ⏳ PASO 2.1 — Conteo de participantes en CommunityExplorerModal
+### ✅ PASO 2.1 — Conteo de participantes en CommunityExplorerModal
 **Archivo:** `src/components/CommunityExplorerModal.jsx`
 
 Mostrar "👥 4 apuntadas" en cada tarjeta de torneo del catálogo.
 - Leer tamaño de `/tournaments/{id}/participants` al montar el modal
 - Usar `getDocs()` una sola vez (no tiempo real) para no saturar lecturas
 
-### ⏳ PASO 2.2 — Join automático al apuntarse
+### ✅ PASO 2.2 — Join automático al apuntarse
 **Archivos:** `src/components/CalendarView.jsx`, `src/contexts/UserDataContext.jsx`
 
 Cuando la usuaria pulsa "Apuntarse" en el modal de comunidad:
 - Además de añadir a `custom_tournaments`, llamar a `joinTournamentAsParticipant()`
 - Así aparece en la clasificación aunque aún no haya jugado
 
-### ⏳ PASO 2.3 — Badge de participantes en lista de torneos
+### ✅ PASO 2.3 — Badge de participantes en lista de torneos
 **Archivo:** `src/components/CalendarView.jsx` (lista principal)
 
 En las tarjetas de torneos compartidos, mostrar un badge con el número de participantes.
@@ -229,19 +238,19 @@ En las tarjetas de torneos compartidos, mostrar un badge con el número de parti
 
 ## FASE 3 — Funcionalidades avanzadas
 
-### ⏳ PASO 3.1 — Página pública de leaderboard
+### ✅ PASO 3.1 — Página pública de leaderboard
 **Ruta nueva:** `/leaderboard/:tournamentId`
 **Archivos:** `src/App.jsx` (añadir ruta), nuevo componente `src/components/PublicLeaderboardPage.jsx`
 
 Página sin login que cualquiera puede ver con link directo. Misma lógica que `TournamentLeaderboard` pero a pantalla completa.
 
-### ⏳ PASO 3.2 — Panel de admin para torneos centralizados
+### ✅ PASO 3.2 — Panel de admin para torneos centralizados
 **Archivo:** `src/components/admin/TournamentsAdminPanel.jsx`
 
 - Crear torneos directamente como "centralizados" (bandera `isCentral: true`)
 - Ver lista de participantes desde el panel de admin
 
-### ⏳ PASO 3.3 — Clasificaciones por ronda
+### ✅ PASO 3.3 — Clasificaciones por ronda
 **Archivo:** `src/components/TournamentLeaderboard.jsx`
 
 - Filtro por ronda: D1, D2, Total

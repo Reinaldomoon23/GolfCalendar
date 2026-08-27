@@ -33,7 +33,7 @@ import { useHandicap } from './hooks/useHandicap';
 import { useTournaments } from './hooks/useTournaments';
 
 // Services
-import { uploadProfilePhoto, updateUserProfile, recoverLegacyProfile } from './services/profile.service';
+import { invalidateProfilePhotoCache, uploadProfilePhoto, updateUserProfile, recoverLegacyProfile } from './services/profile.service';
 import { subscribeToPreferences, subscribeToResults, saveResult, saveAllResults, deleteResult, savePreferences } from './services/results.service';
 import { subscribeToChats } from './services/chat.service';
 import { subscribeToForegroundPushMessages } from './services/notifications.service';
@@ -617,6 +617,7 @@ function AppContent() {
       const freshData = snapshot.data();
       const managedUsernames = Array.isArray(freshData.managed_users) ? freshData.managed_users : [];
       const incomingPhoto = freshData.photo_url;
+      const incomingPhotoUpdatedAt = freshData.photo_updated_at || '';
       const incomingName = freshData.full_name;
       const currentManaged = JSON.stringify(user.managed_users || []);
       const incomingManaged = JSON.stringify(managedUsernames);
@@ -624,10 +625,15 @@ function AppContent() {
       setUser(prev => {
         if (!prev || prev.username !== user.username) return prev;
         const photoToUse = incomingPhoto && String(incomingPhoto).trim() !== '' ? incomingPhoto : '';
-        if (prev.photo_url !== photoToUse || prev.full_name !== incomingName || currentManaged !== incomingManaged) {
+        const photoChanged = prev.photo_url !== photoToUse
+          || String(prev.photo_updated_at || '') !== String(incomingPhotoUpdatedAt);
+        if (photoChanged || prev.full_name !== incomingName || currentManaged !== incomingManaged) {
           const updated = { ...prev, ...freshData, photo_url: photoToUse, manager_id: prev.manager_id };
           writeSavedUser(updated);
-          setPhotoVersion(Date.now());
+          if (photoChanged) {
+            void invalidateProfilePhotoCache(photoToUse, incomingPhotoUpdatedAt)
+              .finally(() => setPhotoVersion(Date.now()));
+          }
           return updated;
         }
         return prev;
@@ -683,6 +689,11 @@ function AppContent() {
         const freshPhoto = freshData.photo_url && String(freshData.photo_url).trim() !== ''
           ? freshData.photo_url
           : '';
+        const freshPhotoUpdatedAt = freshData.photo_updated_at || '';
+
+        void invalidateProfilePhotoCache(freshPhoto, freshPhotoUpdatedAt).then((invalidated) => {
+          if (invalidated) setPhotoVersion(Date.now());
+        });
 
         setLinkedUsers((previousProfiles) => {
           let changed = false;
@@ -701,6 +712,7 @@ function AppContent() {
 
             if (
               previousProfile.photo_url !== updatedProfile.photo_url
+              || String(previousProfile.photo_updated_at || '') !== String(updatedProfile.photo_updated_at || '')
               || previousProfile.full_name !== updatedProfile.full_name
             ) {
               changed = true;
@@ -717,6 +729,7 @@ function AppContent() {
           if (!previousUser || previousUser.username !== profileUsername) return previousUser;
           if (
             previousUser.photo_url === freshPhoto
+            && String(previousUser.photo_updated_at || '') === String(freshPhotoUpdatedAt)
             && previousUser.full_name === freshData.full_name
           ) {
             return previousUser;
@@ -728,10 +741,10 @@ function AppContent() {
             username: profileUsername,
             docId: profileDocId,
             photo_url: freshPhoto,
+            photo_updated_at: freshPhotoUpdatedAt,
             manager_id: previousUser.manager_id,
           };
           writeSavedUser(updatedUser);
-          setPhotoVersion(Date.now());
           return updatedUser;
         });
       }, (error) => {
