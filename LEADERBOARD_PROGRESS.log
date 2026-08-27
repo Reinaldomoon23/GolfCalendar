@@ -39,6 +39,12 @@ SESIÓN: 2026-08-27 | Codex
     - API rechaza métodos y tipos de imagen no permitidos.
     - El auditor se detiene sin credenciales y no puede borrar por defecto.
     - Bundle cliente sin AWS SDK, secretos R2 ni nombres de foto con timestamp.
+  Publicación:
+    - Commit 5d25d0e enviado a `origin/main`.
+    - El despliegue manual de Vercel queda pendiente: la CLI local no tiene
+      credenciales y el dominio aún sirve la versión anterior de la SPA.
+    - La limpieza real de R2 queda pendiente de credenciales; no se ha borrado
+      ningún objeto sin poder revisar antes el inventario dry-run.
 
 ==========================================================================
   PRÓXIMO PASO: INFRAESTRUCTURA — Configurar R2 y ejecutar dry-run
