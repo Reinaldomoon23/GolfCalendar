@@ -309,8 +309,7 @@ export default function LoginViewFirebase({ onLogin }) {
                     </div>
 
                     <button
-                        type="button"
-                        onClick={() => { void handleSubmit(); }}
+                        type="submit"
                         className="btn btn-primary"
                         style={{ marginTop: '1rem', width: '100%' }}
                         disabled={loading}
