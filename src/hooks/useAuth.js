@@ -60,7 +60,7 @@ export function useAuth({ setResults, setCustomTournaments, setPreferences, setH
         console.warn('[auth] Firebase tardó demasiado en resolver la sesión; mostrando el login');
         setAuthReady(true);
       }
-    }, 8000);
+    }, 3000);
 
     queueMicrotask(() => {
       if (!cancelled) setAuthReady(false);
