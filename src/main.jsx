@@ -4,7 +4,7 @@ import './index.css'
 import App from './App.jsx'
 import { initSentry } from './utils/sentry'
 
-const SW_RECOVERY_KEY = 'roundtracker-sw-recovery-v2';
+const SW_RECOVERY_KEY = 'roundtracker-sw-recovery-v3';
 
 async function recoverStaleServiceWorker() {
   if (!('serviceWorker' in navigator)) return;
