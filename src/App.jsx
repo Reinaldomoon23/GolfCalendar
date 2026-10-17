@@ -24,7 +24,7 @@ import ProfileModal from './components/ProfileModal';
 // Firebase
 import { db } from './firebase';
 import { onSnapshot } from 'firebase/firestore';
-import { getUserDocId, getUserProfileRef, fetchUserProfileByUsername } from './utils/userProfiles';
+import { getUserDocId, getUserProfileRef, fetchUserProfileByUsername, getUserSubcollectionRef } from './utils/userProfiles';
 import { selfHealPhoto } from './services/profile.service';
 import { writeSavedUser } from './utils/cache';
 
@@ -673,7 +673,6 @@ function AppContent() {
       console.log('🔥 Starting Nuke Process for', user.username);
       try {
         const { getDocs, writeBatch } = await import('firebase/firestore');
-        const { getUserSubcollectionRef } = await import('./utils/userProfiles');
         const batch = writeBatch(db);
         let count = 0;
         const resultsSnap = await getDocs(getUserSubcollectionRef(db, user, 'results'));
