@@ -115,13 +115,6 @@ function AppContent() {
         if (document.visibilityState === 'visible') r.update().catch(() => {});
       });
     },
-    onNeedRefresh() {
-      // Auto-apply silently on non-live pages
-      const isLivePage = window.location.pathname.includes('/live');
-      if (!isLivePage) {
-        updateServiceWorker(true);
-      }
-    },
     onRegisterError(error) { console.log('SW registration error', error); },
   });
 
