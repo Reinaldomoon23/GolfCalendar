@@ -125,6 +125,18 @@ RewriteRule ^(.*)$ /GolfTeam/$1 [R=301,L]
             deleteRemote: false // NUNCA borrar el root
         });
 
+        // Replace the old app-scoped worker too. Otherwise a cached worker
+        // under /GolfTeam/ can keep serving the old login bundle and block
+        // keyboard input even after the new files were uploaded.
+        await ftpDeploy.deploy({
+            ...config,
+            localRoot: tempDir,
+            remoteRoot: "/public_html/GolfTeam/",
+            include: ["sw.js"],
+            deleteRemote: false
+        });
+        console.log("✅ Service Worker antiguo de /GolfTeam/ desactivado.");
+
         // Limpiar carpeta temporal
         fs.rmSync(tempDir, { recursive: true, force: true });
         
