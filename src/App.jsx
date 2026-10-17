@@ -1,5 +1,4 @@
 import { Suspense, lazy, useState, useEffect, useRef, useMemo } from 'react';
-import { useRegisterSW } from 'virtual:pwa-register/react';
 import { BrowserRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { MessageCircle, X } from 'lucide-react';
 
@@ -105,19 +104,6 @@ function AppContent() {
   }, [location.pathname, navigate]);
 
 
-  const { updateServiceWorker } = useRegisterSW({
-    onRegistered(r) {
-      if (!r) return;
-      // Check for updates every 10 minutes
-      setInterval(() => { r.update().catch(() => {}); }, 10 * 60 * 1000);
-      // Also check when the user comes back to the tab
-      document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') r.update().catch(() => {});
-      });
-    },
-    onRegisterError(error) { console.log('SW registration error', error); },
-  });
-
   const handleAppUpdate = async () => {
     // 1. Unregister all service workers
     if (navigator.serviceWorker) {
@@ -133,9 +119,8 @@ function AppContent() {
         await caches.delete(key);
       }
     }
-    // 3. Clear local storage partially or just force reload
-    // vite-plugin-pwa reloads the page once after the new worker takes control.
-    await updateServiceWorker(true);
+    // 3. This is an explicit user action, so a single reload is intentional.
+    window.location.reload();
   };
 
   // ── Core state ───────────────────────────────────────────────────────────

@@ -18,6 +18,7 @@ export default defineConfig(() => {
         // Keep updates controlled by the app's explicit update action. Automatic
         // reloads can loop when an older PWA worker is still installed.
         registerType: 'prompt',
+        injectRegister: null,
         includeAssets: ['apple-touch-icon-180x180.png'],
         workbox: {
           cleanupOutdatedCaches: true,
