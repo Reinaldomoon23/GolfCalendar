@@ -125,17 +125,6 @@ function AppContent() {
     onRegisterError(error) { console.log('SW registration error', error); },
   });
 
-  useEffect(() => {
-    const handleControllerChange = () => {
-      // Don't auto-reload on live scorecard pages - it disrupts watchers mid-game
-      const isLivePage = window.location.pathname.includes('/live');
-      if (isLivePage) return;
-      window.location.reload();
-    };
-    navigator.serviceWorker?.addEventListener('controllerchange', handleControllerChange);
-    return () => navigator.serviceWorker?.removeEventListener('controllerchange', handleControllerChange);
-  }, []);
-
   const handleAppUpdate = async () => {
     // 1. Unregister all service workers
     if (navigator.serviceWorker) {
@@ -152,9 +141,8 @@ function AppContent() {
       }
     }
     // 3. Clear local storage partially or just force reload
-    updateServiceWorker(true);
-    // 4. Force hard reload
-    window.location.reload(true);
+    // vite-plugin-pwa reloads the page once after the new worker takes control.
+    await updateServiceWorker(true);
   };
 
   // ── Core state ───────────────────────────────────────────────────────────
