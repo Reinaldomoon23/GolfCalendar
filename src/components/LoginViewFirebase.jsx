@@ -106,13 +106,18 @@ export default function LoginViewFirebase({ onLogin }) {
                 );
                 const user = userCredential.user;
 
-                const profile = await fetchUserProfileByUid(db, user.uid, user.email);
-                const normalizedProfile = await ensureUserProfileDocument(db, {
-                    ...profile,
-                    uid: user.uid,
-                    username: profile?.username || normalizedUsernameInput,
-                    email: profile?.email || user.email || email
-                }, normalizedUsernameInput);
+                const profile = await withTimeout(
+                    fetchUserProfileByUid(db, user.uid, user.email),
+                    'El perfil está tardando demasiado. Comprueba la conexión e inténtalo de nuevo.'
+                );
+                const normalizedProfile = profile
+                    ? {
+                        ...profile,
+                        uid: user.uid,
+                        username: profile.username || normalizedUsernameInput,
+                        email: profile.email || user.email || email,
+                    }
+                    : null;
 
                 if (!normalizedProfile) {
                     throw new Error('Perfil de usuario no encontrado');
