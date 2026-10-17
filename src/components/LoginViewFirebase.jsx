@@ -27,6 +27,20 @@ export default function LoginViewFirebase({ onLogin }) {
         .toLowerCase()
         .replace(/\s+/g, '');
 
+    const resolveLoginEmail = (value) => {
+        const normalizedValue = String(value || '').trim().toLowerCase();
+        return normalizedValue.includes('@')
+            ? normalizedValue
+            : `${normalizeLoginName(normalizedValue)}@golfteam.app`;
+    };
+
+    const withTimeout = (promise, message) => Promise.race([
+        promise,
+        new Promise((_, reject) => {
+            window.setTimeout(() => reject(new Error(message)), 20000);
+        })
+    ]);
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
@@ -35,11 +49,14 @@ export default function LoginViewFirebase({ onLogin }) {
         try {
             // Generar email a partir del username
             const normalizedUsernameInput = normalizeLoginName(username);
-            const email = `${normalizedUsernameInput}@golfteam.app`;
+            const email = resolveLoginEmail(username);
 
             if (isRegister) {
                 // REGISTRO: Crear usuario en Firebase Auth
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const userCredential = await withTimeout(
+                    createUserWithEmailAndPassword(auth, email, password),
+                    'Firebase está tardando demasiado. Comprueba la conexión e inténtalo de nuevo.'
+                );
                 const user = userCredential.user;
 
                 // Actualizar displayName
@@ -77,7 +94,10 @@ export default function LoginViewFirebase({ onLogin }) {
 
             } else {
                 // LOGIN: Autenticar con Firebase
-                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const userCredential = await withTimeout(
+                    signInWithEmailAndPassword(auth, email, password),
+                    'Firebase está tardando demasiado. Comprueba la conexión e inténtalo de nuevo.'
+                );
                 const user = userCredential.user;
 
                 const profile = await fetchUserProfileByUid(db, user.uid, user.email);

@@ -55,6 +55,13 @@ export function useAuth({ setResults, setCustomTournaments, setPreferences, setH
     if (!IS_MULTI) return undefined;
 
     let cancelled = false;
+    const authReadyFallback = window.setTimeout(() => {
+      if (!cancelled) {
+        console.warn('[auth] Firebase tardó demasiado en resolver la sesión; mostrando el login');
+        setAuthReady(true);
+      }
+    }, 8000);
+
     queueMicrotask(() => {
       if (!cancelled) setAuthReady(false);
     });
@@ -81,6 +88,7 @@ export function useAuth({ setResults, setCustomTournaments, setPreferences, setH
 
     return () => {
       cancelled = true;
+      window.clearTimeout(authReadyFallback);
       unsubscribe();
     };
   }, [resetSessionState]);
