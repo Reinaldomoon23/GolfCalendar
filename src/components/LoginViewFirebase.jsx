@@ -309,10 +309,18 @@ export default function LoginViewFirebase({ onLogin }) {
                     </div>
 
                     <button
-                        type="submit"
+                        type="button"
+                        onClick={(event) => { void handleSubmit(event); }}
                         className="btn btn-primary"
-                        style={{ marginTop: '1rem', width: '100%' }}
+                        style={{
+                            marginTop: '1rem',
+                            width: '100%',
+                            minHeight: '48px',
+                            pointerEvents: 'auto',
+                            touchAction: 'manipulation',
+                        }}
                         disabled={loading}
+                        aria-busy={loading}
                     >
                         {loading ? <><Loader2 className="animate-spin" size={20} /><span>Conectando...</span></> : (
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
