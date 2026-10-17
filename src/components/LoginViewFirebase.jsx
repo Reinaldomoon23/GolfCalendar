@@ -42,8 +42,14 @@ export default function LoginViewFirebase({ onLogin }) {
     ]);
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
+        e?.preventDefault?.();
         setError('');
+
+        if (!username.trim() || !password) {
+            setError('Introduce el usuario y la contraseña');
+            return;
+        }
+
         setLoading(true);
 
         try {
@@ -136,6 +142,8 @@ export default function LoginViewFirebase({ onLogin }) {
                 errorMessage = 'La contraseña debe tener al menos 6 caracteres';
             } else if (err.code === 'auth/invalid-email') {
                 errorMessage = 'Usuario inválido';
+            } else if (err.code === 'auth/network-request-failed') {
+                errorMessage = 'No se puede conectar con Firebase. Comprueba la conexión del móvil.';
             } else if (err.message) {
                 errorMessage = err.message;
             }
@@ -190,7 +198,7 @@ export default function LoginViewFirebase({ onLogin }) {
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <form onSubmit={handleSubmit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     {isRegister && (
                         <>
                             <div>
@@ -301,12 +309,13 @@ export default function LoginViewFirebase({ onLogin }) {
                     </div>
 
                     <button
-                        type="submit"
+                        type="button"
+                        onClick={() => { void handleSubmit(); }}
                         className="btn btn-primary"
                         style={{ marginTop: '1rem', width: '100%' }}
                         disabled={loading}
                     >
-                        {loading ? <Loader2 className="animate-spin" size={20} /> : (
+                        {loading ? <><Loader2 className="animate-spin" size={20} /><span>Conectando...</span></> : (
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                                 <span>{isRegister ? 'Crear cuenta' : 'Iniciar sesión'}</span>
                                 <ArrowRight size={20} />
