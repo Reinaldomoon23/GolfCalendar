@@ -34,10 +34,10 @@ export default function LoginViewFirebase({ onLogin }) {
             : `${normalizeLoginName(normalizedValue)}@golfteam.app`;
     };
 
-    const withTimeout = (promise, message) => Promise.race([
+    const withTimeout = (promise, message, timeoutMs = 20000) => Promise.race([
         promise,
         new Promise((_, reject) => {
-            window.setTimeout(() => reject(new Error(message)), 20000);
+            window.setTimeout(() => reject(new Error(message)), timeoutMs);
         })
     ]);
 
@@ -106,22 +106,23 @@ export default function LoginViewFirebase({ onLogin }) {
                 );
                 const user = userCredential.user;
 
-                const profile = await withTimeout(
-                    fetchUserProfileByUid(db, user.uid, user.email),
-                    'El perfil está tardando demasiado. Comprueba la conexión e inténtalo de nuevo.'
-                );
-                const normalizedProfile = profile
-                    ? {
-                        ...profile,
-                        uid: user.uid,
-                        username: profile.username || normalizedUsernameInput,
-                        email: profile.email || user.email || email,
-                    }
-                    : null;
-
-                if (!normalizedProfile) {
-                    throw new Error('Perfil de usuario no encontrado');
+                let profile = null;
+                try {
+                    profile = await withTimeout(
+                        fetchUserProfileByUid(db, user.uid, user.email),
+                        'El perfil está tardando demasiado; continuando con el acceso básico.',
+                        5000
+                    );
+                } catch (profileError) {
+                    console.warn('[login] Profile lookup delayed; using Firebase identity:', profileError.message);
                 }
+                const normalizedProfile = {
+                    ...(profile || {}),
+                    uid: user.uid,
+                    username: profile?.username || normalizedUsernameInput,
+                    email: profile?.email || user.email || email,
+                    docId: user.uid,
+                };
 
                 const userData = {
                     uid: user.uid,
