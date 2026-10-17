@@ -3,7 +3,7 @@ import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
 export const firebaseConfig = {
-    apiKey: "AIzaSyBxbED6TcXd5yuWv5O5ViBqqBGXFfjXEw0",
+    apiKey: "AIzaSyC4Qu42mcpLckdxnl-C9V-LbpSC_QZk3aM",
     authDomain: "golfscorings-e4338.firebaseapp.com",
     projectId: "golfscorings-e4338",
     storageBucket: "golfscorings-e4338.firebasestorage.app",
