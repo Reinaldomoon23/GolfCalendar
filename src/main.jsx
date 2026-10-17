@@ -4,18 +4,18 @@ import './index.css'
 import App from './App.jsx'
 import { initSentry } from './utils/sentry'
 
-const DEV_SW_RECOVERY_KEY = 'roundtracker-dev-sw-recovery-v1';
+const SW_RECOVERY_KEY = 'roundtracker-sw-recovery-v2';
 
-async function recoverStaleDevelopmentServiceWorker() {
-  if (!import.meta.env.DEV || !('serviceWorker' in navigator)) return;
-  if (sessionStorage.getItem(DEV_SW_RECOVERY_KEY) === 'done') return;
+async function recoverStaleServiceWorker() {
+  if (!('serviceWorker' in navigator)) return;
+  if (localStorage.getItem(SW_RECOVERY_KEY) === 'done') return;
 
   const registrations = await navigator.serviceWorker.getRegistrations();
   if (registrations.length === 0) return;
 
-  // A worker from an earlier local build can keep navigating the tab even
-  // after the application code has been fixed. Recover once per tab session.
-  sessionStorage.setItem(DEV_SW_RECOVERY_KEY, 'done');
+  // A worker from an earlier build can keep navigating the mobile PWA even
+  // after the application code has been fixed. Recover once per browser.
+  localStorage.setItem(SW_RECOVERY_KEY, 'done');
   await Promise.all(registrations.map((registration) => registration.unregister()));
 
   if (window.caches) {
@@ -26,8 +26,8 @@ async function recoverStaleDevelopmentServiceWorker() {
   window.location.reload();
 }
 
-void recoverStaleDevelopmentServiceWorker().catch((error) => {
-  console.warn('[pwa] No se pudo recuperar el Service Worker local:', error);
+void recoverStaleServiceWorker().catch((error) => {
+  console.warn('[pwa] No se pudo recuperar el Service Worker:', error);
 });
 
 // Initialize error tracking
