@@ -1,0 +1,23 @@
+[
+  {
+    "courseName": "Club de Golf Sant Cugat",
+    "variants": [
+      {
+        "id": "sant-cugat-rojas-2026",
+        "label": "Rojas 2026",
+        "effectiveFrom": "2026-05-01",
+        "pars": [4, 4, 3, 5, 4, 4, 4, 4, 4, 4, 4, 3, 4, 3, 4, 4, 3, 5],
+        "meters": [279, 279, 137, 381, 268, 269, 290, 227, 298, 224, 241, 144, 255, 107, 316, 256, 121, 430],
+        "handicap": [5, 17, 11, 3, 15, 13, 1, 7, 9, 18, 16, 12, 14, 10, 4, 6, 8, 2],
+        "courseRating": 35.8,
+        "slopeRating": 122
+      },
+      {
+        "id": "sant-cugat-legacy",
+        "label": "Tarjeta anterior",
+        "effectiveTo": "2026-04-30",
+        "pars": [4, 3, 5, 4, 4, 3, 5, 4, 4, 4, 4, 4, 4, 4, 3, 4, 3, 4]
+      }
+    ]
+  }
+]
