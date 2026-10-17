@@ -36,7 +36,6 @@ import { useTournaments } from './hooks/useTournaments';
 import { uploadProfilePhoto, updateUserProfile, recoverLegacyProfile } from './services/profile.service';
 import { subscribeToPreferences, subscribeToResults, saveResult, saveAllResults, deleteResult, savePreferences } from './services/results.service';
 import { subscribeToChats } from './services/chat.service';
-import { subscribeToForegroundPushMessages } from './services/notifications.service';
 
 // Config
 import { IS_MULTI, DEFAULT_PREFERENCES } from './config/app';
@@ -232,21 +231,26 @@ function AppContent() {
   }, [chatNotice]);
 
   useEffect(() => {
+    if (!user?.uid && !user?.username) return undefined;
+
     let unsubscribe = () => {};
     let cancelled = false;
 
-    subscribeToForegroundPushMessages((payload) => {
-      setChatNotice({
-        chatId: payload.data?.chatId || null,
-        friendName: payload.notification?.title || 'Nuevo mensaje',
-        text: payload.notification?.body || payload.data?.body || 'Tienes una notificación nueva.',
+    import('./services/notifications.service').then(({ subscribeToForegroundPushMessages }) => {
+      if (cancelled) return;
+      return subscribeToForegroundPushMessages((payload) => {
+        setChatNotice({
+          chatId: payload.data?.chatId || null,
+          friendName: payload.notification?.title || 'Nuevo mensaje',
+          text: payload.notification?.body || payload.data?.body || 'Tienes una notificación nueva.',
+        });
+      }).then((unsub) => {
+        if (cancelled) {
+          unsub();
+          return;
+        }
+        unsubscribe = unsub;
       });
-    }).then((unsub) => {
-      if (cancelled) {
-        unsub();
-        return;
-      }
-      unsubscribe = unsub;
     }).catch((error) => {
       console.warn('[notifications] Foreground listener unavailable:', error);
     });
@@ -255,7 +259,7 @@ function AppContent() {
       cancelled = true;
       unsubscribe();
     };
-  }, []);
+  }, [user?.uid, user?.username]);
 
   const openChatNotice = () => {
     setChatNotice(null);
