@@ -20,7 +20,7 @@ Documento operativo de referencia para publicar y mantener la aplicación. No co
 - Equipo: `reinaldomoons-projects`
 - URL principal: <https://golf-calendar-v3.vercel.app>
 - Ruta de la aplicación: `/GolfTeam/`
-- Último despliegue verificado: `dpl_6p3cqGe9yZC6DisCsCmQyWQ3ivFQ`
+- Último despliegue verificado: `dpl_C9Mxk4FhheJVS7QcggPwoAbq1CJV`
 - Estado: `READY`
 - Protección: Vercel Authentication activa en el deployment
 

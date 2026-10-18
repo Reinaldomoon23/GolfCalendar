@@ -79,6 +79,10 @@ function AppRouterShell() {
   return isPublicRoute ? <PublicRoutes /> : <AppContent />;
 }
 
+// Stable callbacks: changing these on every render restarts useAuth's
+// subscription and creates a session-reset/render loop while signed out.
+const ignoreAuthReset = () => {};
+
 function AppContent() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -139,8 +143,8 @@ function AppContent() {
     setResults,
     setCustomTournaments,
     setPreferences,
-    setHandicap: () => {},    // patched below after handicap hook
-    setPdfUrl: () => {},      // patched below after handicap hook
+    setHandicap: ignoreAuthReset,
+    setPdfUrl: ignoreAuthReset,
   });
 
   // ── Handicap hook ────────────────────────────────────────────────────────
