@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { User, Lock, ArrowRight, Loader2, Eye, EyeOff } from 'lucide-react';
 import { auth, db } from '../firebase';
 import {
@@ -20,6 +20,7 @@ export default function LoginViewFirebase({ onLogin }) {
     const [isRegister, setIsRegister] = useState(false);
     const [fullName, setFullName] = useState('');
     const [federationId, setFederationId] = useState('');
+    const submitInFlight = useRef(false);
 
     const normalizeLoginName = (value) => String(value || '')
         .trim()
@@ -42,6 +43,7 @@ export default function LoginViewFirebase({ onLogin }) {
 
     const handleSubmit = async (e) => {
         e?.preventDefault?.();
+        if (submitInFlight.current) return;
         setError('');
 
         if (!username.trim() || !password) {
@@ -49,6 +51,7 @@ export default function LoginViewFirebase({ onLogin }) {
             return;
         }
 
+        submitInFlight.current = true;
         setLoading(true);
 
         try {
@@ -147,6 +150,7 @@ export default function LoginViewFirebase({ onLogin }) {
 
             setError(errorMessage);
         } finally {
+            submitInFlight.current = false;
             setLoading(false);
         }
     };
@@ -307,6 +311,11 @@ export default function LoginViewFirebase({ onLogin }) {
 
                     <button
                         type="submit"
+                        onClick={(event) => { void handleSubmit(event); }}
+                        onTouchEnd={(event) => {
+                            event.preventDefault();
+                            void handleSubmit(event);
+                        }}
                         className="btn btn-primary"
                         style={{
                             marginTop: '1rem',
