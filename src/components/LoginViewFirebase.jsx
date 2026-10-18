@@ -7,8 +7,7 @@ import {
     updateProfile
 } from 'firebase/auth';
 import {
-    ensureUserProfileDocument,
-    fetchUserProfileByUid
+    ensureUserProfileDocument
 } from '../utils/userProfiles';
 
 export default function LoginViewFirebase({ onLogin }) {
@@ -106,21 +105,13 @@ export default function LoginViewFirebase({ onLogin }) {
                 );
                 const user = userCredential.user;
 
-                let profile = null;
-                try {
-                    profile = await withTimeout(
-                        fetchUserProfileByUid(db, user.uid, user.email),
-                        'El perfil está tardando demasiado; continuando con el acceso básico.',
-                        5000
-                    );
-                } catch (profileError) {
-                    console.warn('[login] Profile lookup delayed; using Firebase identity:', profileError.message);
-                }
+                // Do not wait for Firestore here. Firebase Auth has already
+                // validated the credentials; the profile is synced by the
+                // authenticated app after the first render.
                 const normalizedProfile = {
-                    ...(profile || {}),
                     uid: user.uid,
-                    username: profile?.username || normalizedUsernameInput,
-                    email: profile?.email || user.email || email,
+                    username: normalizedUsernameInput,
+                    email: user.email || email,
                     docId: user.uid,
                 };
 
