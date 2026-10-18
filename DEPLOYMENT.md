@@ -20,7 +20,7 @@ Documento operativo de referencia para publicar y mantener la aplicación. No co
 - Equipo: `reinaldomoons-projects`
 - URL principal: <https://golf-calendar-v3.vercel.app>
 - Ruta de la aplicación: `/GolfTeam/`
-- Último despliegue verificado: `dpl_Bg8uvVxzsRp2th1R215EGE9XxD5a`
+- Último despliegue verificado: `dpl_6p3cqGe9yZC6DisCsCmQyWQ3ivFQ`
 - Estado: `READY`
 - Protección: Vercel Authentication activa en el deployment
 
@@ -69,7 +69,7 @@ Hostinger conserva la infraestructura histórica y puede servir una copia de la 
 https://reinaldomoon.top/GolfTeam/
 ```
 
-Última sincronización verificada: 17/10/2026. La aplicación y `profile.jpg` responden con HTTP 200; `api/users.json` y `data/debug_tournaments.log` responden con HTTP 403.
+Última sincronización verificada: 18/10/2026. La aplicación y `profile.jpg` responden con HTTP 200; `api/users.json` y `data/debug_tournaments.log` responden con HTTP 403.
 
 El script de publicación es `deploy_ftp_root.cjs` y utiliza:
 
@@ -203,7 +203,7 @@ Reglas:
 - ESLint termina con 0 errores y 0 avisos.
 - Esta carpeta ya tiene Git inicializado en la rama `main` y el remoto `origin` apunta a `https://github.com/Reinaldomoon23/GolfCalendar.git`.
 - `.env.local`, datos privados de usuarios, `dist/` y `node_modules/` están excluidos por `.gitignore`.
-- No se ha creado ningún commit ni se ha hecho push todavía.
+- Los cambios se mantienen versionados en la rama de trabajo y se publican después de pasar lint/build.
 
 ## Comprobaciones rápidas posteriores
 
