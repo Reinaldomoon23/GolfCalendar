@@ -104,7 +104,8 @@ export default function LoginViewFirebase({ onLogin }) {
                 // LOGIN: Autenticar con Firebase
                 const userCredential = await withTimeout(
                     signInWithEmailAndPassword(auth, email, password),
-                    'Firebase está tardando demasiado. Comprueba la conexión e inténtalo de nuevo.'
+                    'Firebase está tardando demasiado. Comprueba la conexión e inténtalo de nuevo.',
+                    8000
                 );
                 const user = userCredential.user;
 
