@@ -325,7 +325,11 @@ export default function LoginViewFirebase({ onLogin }) {
                             pointerEvents: 'auto',
                             touchAction: 'manipulation',
                         }}
-                        disabled={loading}
+                        // Keep the control interactive even if a previous
+                        // network attempt is still settling. submitInFlight
+                        // prevents duplicate authentication requests without
+                        // leaving the mobile UI with a permanently disabled
+                        // button.
                         aria-busy={loading}
                     >
                         {loading ? <><Loader2 className="animate-spin" size={20} /><span>Conectando...</span></> : (
