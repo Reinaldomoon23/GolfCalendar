@@ -17,6 +17,10 @@ import {
   updateParticipantScore,
 } from './leaderboard.service';
 import { resolveCanonicalTournamentId } from '../utils/tournamentIds';
+import {
+  deserializeResultFromFirestore,
+  serializeResultForFirestore,
+} from '../utils/resultSerialization';
 
 function getLeaderboardSyncId(tournamentId) {
   const canonicalId = resolveCanonicalTournamentId(tournamentId);
@@ -77,7 +81,7 @@ export function subscribeToResults(user, onUpdate) {
   const unsubscribe = onSnapshot(ref, (snapshot) => {
     const newResults = {};
     snapshot.forEach((doc) => {
-      newResults[doc.id] = doc.data();
+      newResults[doc.id] = deserializeResultFromFirestore(doc.data());
     });
     console.log('[results] Synced from Firebase:', Object.keys(newResults).length);
     onUpdate(newResults);
@@ -99,7 +103,7 @@ export function subscribeToResults(user, onUpdate) {
 export async function saveResult(user, tournamentId, resultData) {
   if (!user || !tournamentId) throw new Error('User and tournamentId are required');
   const ref = getUserSubdocRef(db, user, 'results', String(tournamentId));
-  await setDoc(ref, resultData);
+  await setDoc(ref, serializeResultForFirestore(resultData));
 
   syncParticipantScoreForResult(user, tournamentId, resultData).catch((err) => {
     console.warn('[results] Could not backfill participant score:', err);
