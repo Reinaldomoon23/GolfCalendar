@@ -847,7 +847,7 @@ function AppContent() {
             />
           } />
           <Route path="/stats" element={<StatsView user={user} linkedUsers={linkedUsers} results={mappedResults} tournaments={tournaments} />} />
-          <Route path="/training" element={<TrainingTestsView />} />
+          <Route path="/training" element={<TrainingTestsView user={user} />} />
           <Route path="/handicap" element={<HandicapView user={user} currentHandicap={handicap} history={history} results={mappedResults} tournaments={tournaments} />} />
           <Route path="/tournaments" element={
             <TournamentsCentralView 

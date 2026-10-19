@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Check, ClipboardList, Trash2 } from 'lucide-react';
-import { useAuthContext } from '../contexts/useAuthContext';
 import { createEmptyPuttingSession, getPuttingTest, PUTTING_TESTS, TRAINING_MOMENTS } from '../data/puttingTests';
 import { deleteTrainingTest, saveTrainingTest, subscribeToTrainingTests } from '../services/trainingTests.service';
 
@@ -29,8 +28,7 @@ function sessionMetrics(session) {
   };
 }
 
-export default function TrainingTestsView() {
-  const { user } = useAuthContext();
+export default function TrainingTestsView({ user }) {
   const [sessions, setSessions] = useState([]);
   const [session, setSession] = useState(() => ({ ...createEmptyPuttingSession(), id: makeSessionId() }));
   const [status, setStatus] = useState('');
