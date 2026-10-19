@@ -157,6 +157,10 @@ service cloud.firestore {
       match /push_tokens/{tokenId} {
         allow read, write: if isAdmin() || canAccessUser(userId);
       }
+
+      match /training_tests/{testId} {
+        allow read, write: if isAdmin() || canAccessUser(userId);
+      }
     }
 
     // =============================================================
