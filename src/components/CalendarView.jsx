@@ -1914,7 +1914,7 @@ export default function CalendarView({
                                             };
 
                                             return (
-                                                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: '0.65rem', alignItems: 'center' }}>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', alignItems: 'stretch' }}>
                                                     <div style={{ minWidth: 0 }}>
                                                         <input
                                                             type="date"
@@ -1924,7 +1924,7 @@ export default function CalendarView({
                                                         />
                                                     </div>
 
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#f1f5f9', padding: '0.5rem 0.65rem', borderRadius: '6px', whiteSpace: 'nowrap' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', alignSelf: 'flex-start', gap: '6px', background: '#f1f5f9', padding: '0.5rem 0.65rem', borderRadius: '6px', whiteSpace: 'nowrap' }}>
                                                         <input
                                                             id="multiDayCheck"
                                                             type="checkbox"
@@ -1936,7 +1936,7 @@ export default function CalendarView({
                                                     </div>
 
                                                     {isMulti && (
-                                                        <div style={{ gridColumn: '1 / -1', animation: 'fadeIn 0.3s ease' }}>
+                                                        <div style={{ animation: 'fadeIn 0.3s ease' }}>
                                                             <input
                                                                 type="date"
                                                                 value={endVal}
