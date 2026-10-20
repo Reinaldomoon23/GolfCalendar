@@ -1377,6 +1377,26 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
   Verificación:
     - Build Vite: correcto.
     - ESLint: correcto; permanece únicamente un warning preexistente de MobileScorecardEditor.jsx.
+
+==========================================================================
+  [COMPLETADO] IMPORTACIÓN — OCR para tarjetas Golf GameBook
+  Archivos modificados:
+    - src/components/ResultImportModal.jsx
+    - package.json
+    - package-lock.json
+  Resumen:
+    - Añadido OCR bajo demanda para imágenes de tarjetas.
+    - Reconoce bloques de Par y Resultado de ida/vuelta.
+    - Conserva Putts totales, GIR, fecha, campo, CR, slope y hándicap como resumen.
+    - No inventa putts individuales ni penalizaciones que la imagen no desglosa.
+    - Todo queda editable y requiere revisión antes de guardar.
+  Verificación:
+    - Build Vite: correcto.
+    - ESLint: correcto; permanece únicamente un warning preexistente de MobileScorecardEditor.jsx.
+
+==========================================================================
+  PRÓXIMO PASO: IMPORTACIÓN — Validar OCR con una captura real de Golf GameBook
+  Siguiente: Subir la tarjeta de Jordi y corregir cualquier lectura que no coincida.
     - Manifest generado: contiene `share_target` con acción `/GolfTeam/`.
 
 ==========================================================================
