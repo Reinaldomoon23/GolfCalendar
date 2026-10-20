@@ -1383,6 +1383,18 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
   PRÓXIMO PASO: IMPORTACIÓN — Probar con texto real exportado desde Golf GameBook
   Siguiente: Abrir "Importar resultados", pegar un ejemplo real y adaptar el parser al formato recibido.
 
+==========================================================================
+  [COMPLETADO] IMPORTACIÓN — Buscador de torneo destino
+  Archivos modificados:
+    - src/components/ResultImportModal.jsx
+  Resumen:
+    - Añadido buscador por nombre, campo, fecha u organizador.
+    - El listado se limita a las coincidencias y muestra su contador.
+    - Se mantiene la selección explícita; ningún torneo se selecciona automáticamente.
+  Verificación:
+    - Build Vite: correcto.
+    - ESLint: correcto; permanece únicamente un warning preexistente de MobileScorecardEditor.jsx.
+
 [COMPLETADO] TRAINING — Historial, comparativas y exportación de tests de putting
   Archivos modificados/creados:
     - src/utils/trainingStats.js

@@ -69,12 +69,20 @@ export default function ResultImportModal({
 }) {
     const orderedTournaments = useMemo(() => [...tournaments].sort((a, b) => String(a.dates || '').localeCompare(String(b.dates || ''))), [tournaments]);
     const [selectedId, setSelectedId] = useState('');
+    const [tournamentQuery, setTournamentQuery] = useState('');
     const [sourceText, setSourceText] = useState(initialText || initialUrl || '');
     const [fileName, setFileName] = useState('');
     const [rows, setRows] = useState(() => parseRows(initialText || '').rows);
     const [message, setMessage] = useState('');
 
     const selectedTournament = orderedTournaments.find((tournament) => String(tournament.id) === selectedId) || null;
+    const filteredTournaments = orderedTournaments.filter((tournament) => {
+        const query = tournamentQuery.trim().toLowerCase();
+        if (!query) return true;
+        return [tournament.name, tournament.course, tournament.dates, tournament.organizer]
+            .filter(Boolean)
+            .some((value) => String(value).toLowerCase().includes(query));
+    });
 
     const updateRow = (index, field, value) => {
         setRows((current) => current.map((row, rowIndex) => rowIndex === index ? { ...row, [field]: value } : row));
@@ -128,9 +136,11 @@ export default function ResultImportModal({
                 </div>
 
                 <label style={{ display: 'block', fontWeight: 700, marginBottom: '0.35rem' }}>Torneo de destino</label>
-                <select value={selectedId} onChange={(event) => setSelectedId(event.target.value)} style={{ width: '100%', padding: '0.7rem', borderRadius: '8px', border: '1px solid #cbd5e1', marginBottom: '1rem' }}>
+                <input value={tournamentQuery} onChange={(event) => setTournamentQuery(event.target.value)} placeholder="Buscar por nombre, campo o fecha..." aria-label="Buscar torneo de destino" style={{ width: '100%', boxSizing: 'border-box', padding: '0.7rem', borderRadius: '8px', border: '1px solid #cbd5e1', marginBottom: '0.45rem' }} />
+                <div style={{ fontSize: '0.78rem', color: '#64748b', marginBottom: '0.35rem' }}>{filteredTournaments.length} torneo{filteredTournaments.length === 1 ? '' : 's'} encontrado{filteredTournaments.length === 1 ? '' : 's'}</div>
+                <select value={selectedId} onChange={(event) => setSelectedId(event.target.value)} size={Math.min(Math.max(filteredTournaments.length + 1, 2), 7)} style={{ width: '100%', padding: '0.35rem', borderRadius: '8px', border: '1px solid #cbd5e1', marginBottom: '1rem', background: 'white' }}>
                     <option value="">Selecciona un torneo</option>
-                    {orderedTournaments.map((tournament) => <option key={tournament.id} value={tournament.id}>{tournament.name} · {tournament.dates} · {tournament.course || 'Campo sin indicar'}</option>)}
+                    {filteredTournaments.map((tournament) => <option key={tournament.id} value={tournament.id}>{tournament.name} · {tournament.dates} · {tournament.course || 'Campo sin indicar'}</option>)}
                 </select>
 
                 <label style={{ display: 'block', fontWeight: 700, marginBottom: '0.35rem' }}>Texto o enlace compartido</label>
