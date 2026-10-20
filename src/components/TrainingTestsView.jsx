@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Check, ClipboardList, Trash2 } from 'lucide-react';
+import { Check, ClipboardList, Download, Printer, Trash2 } from 'lucide-react';
 import { createEmptyPuttingSession, getPuttingTest, PUTTING_TESTS, TRAINING_MOMENTS } from '../data/puttingTests';
 import { deleteTrainingTest, saveTrainingTest, subscribeToTrainingTests } from '../services/trainingTests.service';
+import { downloadTextFile, formatMetric, getSessionMetrics, getSessionPeriod, sessionsToCsv, summarizeSessions } from '../utils/trainingStats';
 
 const pageStyle = { maxWidth: '1100px', margin: '0 auto', padding: '1rem', color: 'var(--color-text)' };
 const cardStyle = { background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '1rem', boxShadow: '0 8px 24px rgba(15, 23, 42, 0.05)' };
@@ -11,29 +12,21 @@ function makeSessionId() {
   return `putting-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function sessionMetrics(session) {
-  const attempts = (session.attempts || []).filter((attempt) => Number(attempt.putts) > 0);
-  const totalPutts = attempts.reduce((sum, attempt) => sum + Number(attempt.putts), 0);
-  const onePutts = attempts.filter((attempt) => Number(attempt.putts) === 1).length;
-  const threePutts = attempts.filter((attempt) => Number(attempt.putts) >= 3).length;
-  const withDistance = attempts.filter((attempt) => attempt.remainingAfterFirstPutt !== '');
-  const controlled = withDistance.filter((attempt) => Number(attempt.remainingAfterFirstPutt) <= 1).length;
-  return {
-    completed: attempts.length,
-    total: totalPutts,
-    average: attempts.length ? (totalPutts / attempts.length).toFixed(2) : '-',
-    onePuttRate: attempts.length ? `${Math.round((onePutts / attempts.length) * 100)}%` : '-',
-    threePuttRate: attempts.length ? `${Math.round((threePutts / attempts.length) * 100)}%` : '-',
-    distanceControl: withDistance.length ? `${Math.round((controlled / withDistance.length) * 100)}%` : '-',
-  };
-}
-
 export default function TrainingTestsView({ user }) {
   const [sessions, setSessions] = useState([]);
   const [session, setSession] = useState(() => ({ ...createEmptyPuttingSession(), id: makeSessionId() }));
   const [status, setStatus] = useState('');
+  const [periodType, setPeriodType] = useState('all');
+  const [periodValue, setPeriodValue] = useState('');
+  const [testFilter, setTestFilter] = useState('all');
   const selectedTest = useMemo(() => getPuttingTest(session.testId), [session.testId]);
-  const metrics = useMemo(() => sessionMetrics(session), [session]);
+  const metrics = useMemo(() => getSessionMetrics(session), [session]);
+  const filteredSessions = useMemo(() => sessions.filter((saved) => {
+    const periods = getSessionPeriod(saved);
+    return (testFilter === 'all' || saved.testId === testFilter) && (!periodValue || periods[periodType] === periodValue);
+  }), [periodType, periodValue, sessions, testFilter]);
+  const filteredSummary = useMemo(() => summarizeSessions(filteredSessions), [filteredSessions]);
+  const availablePeriods = useMemo(() => [...new Set(sessions.map((saved) => getSessionPeriod(saved)[periodType]).filter(Boolean))].sort().reverse(), [periodType, sessions]);
 
   useEffect(() => subscribeToTrainingTests(user, setSessions), [user]);
 
@@ -69,6 +62,10 @@ export default function TrainingTestsView({ user }) {
       setStatus('No se pudo eliminar el test');
     }
   };
+
+  const clearFilters = () => setPeriodValue('');
+  const exportCsv = () => downloadTextFile(`tests-putting-${new Date().toISOString().slice(0, 10)}.csv`, sessionsToCsv(filteredSessions));
+  const printReport = () => window.print();
 
   if (!user) return <div style={pageStyle}><div style={cardStyle}>Inicia sesión para registrar tests de entrenamiento.</div></div>;
 
@@ -112,11 +109,32 @@ export default function TrainingTestsView({ user }) {
       <div style={cardStyle}>
         <h2 style={{ marginTop: 0, fontSize: '1.1rem' }}>Resumen del test actual</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.6rem' }}>
-          {[['Completados', `${metrics.completed}/${selectedTest.attempts.length}`], ['Putts totales', metrics.total || '-'], ['Media', metrics.average], ['1 putt', metrics.onePuttRate], ['3 putts', metrics.threePuttRate], ['Control ≤1 m', metrics.distanceControl]].map(([label, value]) => <div key={label} style={{ background: 'var(--color-surface-soft)', borderRadius: '10px', padding: '0.8rem', textAlign: 'center' }}><div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>{label}</div><strong style={{ fontSize: '1.25rem' }}>{value}</strong></div>)}
+          {[['Completados', `${metrics.completed}/${selectedTest.attempts.length}`], ['Putts totales', metrics.totalPutts || '-'], ['Media', metrics.averagePutts === null ? '-' : metrics.averagePutts.toFixed(2)], ['1 putt', formatMetric(metrics.onePuttRate, '%')], ['3 putts', formatMetric(metrics.threePuttRate, '%')], ['Control ≤1 m', formatMetric(metrics.distanceControlRate, '%')]].map(([label, value]) => <div key={label} style={{ background: 'var(--color-surface-soft)', borderRadius: '10px', padding: '0.8rem', textAlign: 'center' }}><div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>{label}</div><strong style={{ fontSize: '1.25rem' }}>{value}</strong></div>)}
         </div>
       </div>
 
-      {sessions.length > 0 && <div style={{ ...cardStyle, marginTop: '1rem' }}><h2 style={{ marginTop: 0, fontSize: '1.1rem' }}>Tests guardados</h2>{sessions.map((saved) => { const savedTest = getPuttingTest(saved.testId); const savedMetrics = sessionMetrics(saved); return <div key={saved.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', padding: '0.8rem 0', borderBottom: '1px solid var(--color-border)' }}><div><strong>{savedTest.name}</strong><div style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>{saved.date} · {saved.moment} · {savedMetrics.completed}/{savedTest.attempts.length} intentos · media {savedMetrics.average}</div></div><button type="button" title="Eliminar test" onClick={() => handleDelete(saved.id)} style={{ border: 0, background: 'transparent', color: '#b91c1c', cursor: 'pointer' }}><Trash2 size={18} /></button></div>; })}</div>}
+      {sessions.length > 0 && <div style={{ ...cardStyle, marginTop: '1rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <h2 style={{ marginTop: 0, fontSize: '1.1rem' }}>Historial y comparativas</h2>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <button type="button" onClick={exportCsv} style={{ ...secondaryButtonStyle }}><Download size={15} /> Exportar CSV</button>
+            <button type="button" onClick={printReport} style={{ ...secondaryButtonStyle }}><Printer size={15} /> Imprimir / PDF</button>
+          </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.6rem', marginBottom: '0.9rem' }}>
+          <label>Periodo<select value={periodType} onChange={(event) => { setPeriodType(event.target.value); setPeriodValue(''); }} style={inputStyle}><option value="all">Todos</option><option value="week">Semana</option><option value="month">Mes</option><option value="season">Temporada</option></select></label>
+          <label>Valor<select value={periodValue} onChange={(event) => setPeriodValue(event.target.value)} disabled={periodType === 'all'} style={inputStyle}><option value="">Todos</option>{availablePeriods.map((period) => <option key={period} value={period}>{period}</option>)}</select></label>
+          <label>Tipo de test<select value={testFilter} onChange={(event) => setTestFilter(event.target.value)} style={inputStyle}><option value="all">Todos</option>{PUTTING_TESTS.map((test) => <option key={test.id} value={test.id}>{test.name}</option>)}</select></label>
+        </div>
+        {(periodValue || testFilter !== 'all') && <button type="button" onClick={() => { clearFilters(); setTestFilter('all'); }} style={{ ...secondaryButtonStyle, marginBottom: '0.8rem' }}>Limpiar filtros</button>}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '0.6rem', marginBottom: '1rem' }}>
+          {[['Tests', filteredSummary.tests], ['Intentos', filteredSummary.completed], ['Media putts', filteredSummary.averagePutts === null ? '-' : filteredSummary.averagePutts.toFixed(2)], ['1 putt', formatMetric(filteredSummary.onePuttRate, '%')], ['3 putts', formatMetric(filteredSummary.threePuttRate, '%')], ['Control ≤1 m', formatMetric(filteredSummary.distanceControlRate, '%')]].map(([label, value]) => <div key={label} style={{ background: 'var(--color-surface-soft)', borderRadius: '10px', padding: '0.7rem', textAlign: 'center' }}><div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>{label}</div><strong>{value}</strong></div>)}
+        </div>
+        {filteredSessions.map((saved) => { const savedTest = getPuttingTest(saved.testId); const savedMetrics = getSessionMetrics(saved); return <div key={saved.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', padding: '0.8rem 0', borderBottom: '1px solid var(--color-border)' }}><div><strong>{savedTest.name}</strong><div style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>{saved.date} · {saved.moment} · {savedMetrics.completed}/{savedTest.attempts.length} intentos · media {savedMetrics.averagePutts === null ? '-' : savedMetrics.averagePutts.toFixed(2)} · {getSessionPeriod(saved).week}</div></div><button type="button" title="Eliminar test" onClick={() => handleDelete(saved.id)} style={{ border: 0, background: 'transparent', color: '#b91c1c', cursor: 'pointer' }}><Trash2 size={18} /></button></div>; })}
+        {filteredSessions.length === 0 && <p style={{ color: 'var(--color-text-muted)' }}>No hay tests para estos filtros.</p>}
+      </div>}
     </div>
   );
 }
+
+const secondaryButtonStyle = { display: 'inline-flex', alignItems: 'center', gap: '0.35rem', border: '1px solid var(--color-border)', borderRadius: '999px', padding: '0.55rem 0.8rem', background: 'var(--color-bg)', color: 'inherit', fontWeight: 700, cursor: 'pointer' };
