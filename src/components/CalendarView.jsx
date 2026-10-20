@@ -1984,8 +1984,11 @@ export default function CalendarView({
                                     </div>
                                 </div>
 
+                                <details style={{ marginTop: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '0.9rem' }}>
+                                    <summary style={{ cursor: 'pointer', color: 'var(--color-primary)', fontWeight: '700', fontSize: '0.9rem' }}>Más opciones</summary>
+
                                 {/* Tags / Properties */}
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '1rem' }}>
                                     <label style={{ fontSize: '0.8rem', color: '#888' }}>Etiquetas</label>
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '8px' }}>
                                         <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', background: '#f8fafc', padding: '6px', borderRadius: '6px' }}>
@@ -2078,6 +2081,8 @@ export default function CalendarView({
                                         ))}
                                     </div>
                                 </div>
+
+                                </details>
 
                                 <button
                                     onClick={handleSaveDetails}
