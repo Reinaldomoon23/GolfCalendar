@@ -10,6 +10,7 @@ import { collection, doc, onSnapshot, setDoc, deleteDoc, serverTimestamp, query,
 import { getUserSubcollectionRef, getUserSubdocRef } from '../utils/userProfiles';
 import { getYear } from '../utils/dateHelpers';
 import { joinTournamentAsParticipant } from './leaderboard.service';
+import { saveResult, deleteResult } from './results.service';
 import {
   generateTournamentDeterministicId,
   resolveCanonicalTournamentId,
@@ -177,8 +178,6 @@ export async function deleteCustomTournament(user, tournamentId) {
  */
 export async function normalizeUserTournaments(user, customTournaments, resultsMap) {
   if (!user || !customTournaments.length) return;
-
-  const { saveResult, deleteResult } = await import('./results.service');
 
   for (const t of customTournaments) {
     const detId = resolveCanonicalTournamentId(

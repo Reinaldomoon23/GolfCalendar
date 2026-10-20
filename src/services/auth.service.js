@@ -11,6 +11,7 @@ import {
   ensureUserProfileDocument,
   fetchUserProfileByUid,
   fetchUserProfileByUsername,
+  inferUsernameFromEmail,
 } from '../utils/userProfiles';
 import { writeSavedUser, readSavedUser, writeLinkedUsers, clearSessionCache } from '../utils/cache';
 import { setUser as setSentryUser } from '../utils/sentry';
@@ -109,7 +110,7 @@ export async function loadManagedProfiles(ownerProfile) {
  * @param {{ onLogin: Function, onLogout: Function, onError: Function }} callbacks
  * @returns {Function} - Unsubscribe function
  */
-export function subscribeToAuthState({ onLogin, onLogout, onError }) {
+export function subscribeToAuthState({ onLogin, onLogout }) {
   let cancelled = false;
 
   const unsubscribe = onAuthStateChanged(auth, (authUser) => {
@@ -124,7 +125,25 @@ export function subscribeToAuthState({ onLogin, onLogout, onError }) {
         if (!cancelled) onLogin(session);
       } catch (error) {
         console.error('[auth] Error resolving session:', error);
-        if (!cancelled) onError?.(error);
+        // Firebase Auth has already validated the credentials. A Firestore
+        // profile/read/write problem must not turn a valid authenticated
+        // session back into the login screen. Continue with a minimal owner
+        // profile and let the authenticated UI repair/enrich it later.
+        if (!cancelled) {
+          const username = inferUsernameFromEmail(authUser.email);
+          const fallbackProfile = {
+            uid: authUser.uid,
+            username,
+            email: authUser.email || `${username}@golfteam.app`,
+            docId: authUser.uid,
+          };
+
+          onLogin?.({
+            ownerProfile: fallbackProfile,
+            activeUser: fallbackProfile,
+            managedProfiles: [],
+          });
+        }
       }
     })();
   });

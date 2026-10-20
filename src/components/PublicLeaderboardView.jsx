@@ -200,7 +200,7 @@ export default function PublicLeaderboardView() {
                         <p>Aún no hay resultados registrados para este torneo.</p>
                     </div>
                 ) : (
-                    displayParticipants.map((p, idx) => {
+                    displayParticipants.map((p) => {
                         const hasPlayerResult = hasRoundResult(p, activeRoundIdx);
                         const rankedIndex = rankedParticipants.findIndex((candidate) => candidate.username === p.username || candidate.id === p.id);
                         const position = rankedIndex + 1;
@@ -232,7 +232,12 @@ export default function PublicLeaderboardView() {
                                     {hasPlayerResult ? position : '—'}
                                 </span>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-                                    <ProfileImage username={p.username} size={32} style={{ borderRadius: '50%', flexShrink: 0 }} />
+                                    <ProfileImage
+                                        photoPath={p.photo_url}
+                                        displayName={p.full_name || p.username}
+                                        alt={p.full_name || p.username || 'Jugadora'}
+                                        style={{ width: 32, height: 32, borderRadius: '50%', flexShrink: 0, objectFit: 'cover' }}
+                                    />
                                     <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                                         <span style={{ fontWeight: '600', color: '#334155', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                             {p.fullName || p.username}

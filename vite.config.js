@@ -1,48 +1,38 @@
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 // https://vite.dev/config/
-export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), '');
+export default defineConfig(() => {
   const base = '/GolfTeam/';
 
   return {
     base: base,
+    // Only browser-safe assets belong in the static bundle. Legacy PHP and
+    // its private data remain outside Vercel's deployment output.
+    publicDir: 'public-app',
     plugins: [
       react(),
       VitePWA({
-        registerType: 'autoUpdate',
-        includeAssets: ['favicon.ico', 'apple-touch-icon-180x180.png', 'mask-icon.svg'],
+        // Keep updates controlled by the app's explicit update action. Automatic
+        // reloads can loop when an older PWA worker is still installed.
+        registerType: 'prompt',
+        injectRegister: null,
+        includeAssets: ['apple-touch-icon-180x180.png'],
         workbox: {
           cleanupOutdatedCaches: true,
           skipWaiting: true,
           clientsClaim: true,
           runtimeCaching: [
             {
-              urlPattern: ({ url }) => url.hostname.endsWith('.r2.dev'),
-              handler: 'CacheFirst',
-              options: {
-                cacheName: 'r2-profile-photos',
-                expiration: {
-                  maxEntries: 100,
-                  maxAgeSeconds: 60 * 60 * 24
-                },
-                cacheableResponse: {
-                  statuses: [0, 200]
-                }
-              }
-            },
-            {
               urlPattern: ({ url }) => url.pathname.includes('/profiles/'),
               handler: 'NetworkFirst',
               options: {
-                cacheName: 'legacy-profile-photos',
-                networkTimeoutSeconds: 5,
+                cacheName: 'user-profiles',
                 expiration: {
-                  maxEntries: 50,
-                  maxAgeSeconds: 60 * 60 * 24 * 7
+                  maxEntries: 10,
+                  maxAgeSeconds: 60 * 60 * 24 // 1 day
                 },
                 cacheableResponse: {
                   statuses: [0, 200]
@@ -70,10 +60,32 @@ export default defineConfig(({ mode }) => {
               sizes: '512x512',
               type: 'image/png'
             }
-          ]
+          ],
+          share_target: {
+            action: '/GolfTeam/',
+            method: 'GET',
+            params: {
+              title: 'title',
+              text: 'text',
+              url: 'url'
+            }
+          }
         }
       })
     ],
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes('node_modules')) return undefined;
+            if (id.includes('/firebase/') || id.includes('/@firebase/')) return 'firebase';
+            if (id.includes('/chart.js/') || id.includes('/react-chartjs-2/')) return 'charts';
+            if (id.includes('/html2canvas/')) return 'pdf-export';
+            return undefined;
+          }
+        }
+      }
+    },
     server: {
       proxy: {
         // Dynamic proxying might be tricky. Let's cover both cases or generic.

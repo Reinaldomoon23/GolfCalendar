@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { doc, getDoc, onSnapshot, collection } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -15,21 +15,21 @@ import {
     getTournamentIdCandidates
 } from '../services/tournaments.service';
 
+const CORE_PLAYERS = ['nicole', 'txell', 'ona', 'maria', 'sofia', 'adriana', 'mariaros', 'jordi'];
+
 export default function TeamLiveScorecard() {
     const { tournamentId: eventId } = useParams();
     const canonicalEventId = resolveCanonicalTournamentId(eventId);
     const location = useLocation();
     const searchParams = new URLSearchParams(location.search);
     const playersStr = searchParams.get('players');
-    const playersList = playersStr ? playersStr.split(',') : [];
+    const playersList = useMemo(() => (playersStr ? playersStr.split(',') : []), [playersStr]);
 
     const [loading, setLoading] = useState(true);
     const [profiles, setProfiles] = useState({});
     const [tournament, setTournament] = useState(null);
     const [results, setResults] = useState({});
     const [selectedRound, setSelectedRound] = useState(null);
-
-    const CORE_PLAYERS = ['nicole', 'txell', 'ona', 'maria', 'sofia', 'adriana', 'mariaros', 'jordi'];
 
     // Fetch unified users info from Firestore
     useEffect(() => {
@@ -49,7 +49,7 @@ export default function TeamLiveScorecard() {
             }
         };
         fetchUsers();
-    }, [playersStr]);
+    }, [playersList]);
 
     // Fetch tournament (from one of the players, assume same data for now, or official)
     useEffect(() => {
@@ -110,7 +110,7 @@ export default function TeamLiveScorecard() {
             setTournament(foundTournament);
         };
         fetchTournament();
-    }, [canonicalEventId, playersStr, profiles]);
+    }, [canonicalEventId, eventId, playersList, profiles]);
 
     // Setup Realtime listeners for all requested players
     useEffect(() => {
@@ -170,7 +170,7 @@ export default function TeamLiveScorecard() {
         });
 
         return () => unsubscribes.forEach(u => u());
-    }, [canonicalEventId, eventId, playersStr, profiles, tournament?.name, tournamentsData?.length]);
+    }, [canonicalEventId, eventId, playersList, profiles, tournament?.name]);
 
     const getScoreColor = (strokes, par) => {
         if (!strokes || !par) return 'transparent';

@@ -5,14 +5,15 @@
  */
 
 // Environment Mode: 'single' (Nicole) or 'multi' (Team)
-export const APP_MODE = import.meta.env.VITE_APP_MODE || 'single';
+export const APP_MODE = import.meta.env.VITE_APP_MODE || 'multi';
 export const IS_MULTI = APP_MODE === 'multi';
 
 // Default user for Single Mode
 export const DEFAULT_USER = {
   username: 'nicole',
   full_name: 'Calendario Nicole Likhomanova',
-  photo_url: 'nicole.jpg',
+  // Hostinger keeps Nicole's existing photo at /GolfTeam/profile.jpg.
+  photo_url: 'profile.jpg',
 };
 
 // Default user preferences

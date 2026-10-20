@@ -247,9 +247,9 @@ export default function StatsView({ user, linkedUsers = [], results = {}, tourna
             }
         };
         fetchCompareUser();
-    }, [compareTo, filterMode, filterValue]); // Si cambias el filtro, vuelve a calcular la de tu amiga
+    }, [compareTo, filterMode, filterValue, tournaments, validComparisons]); // Si cambias el filtro, vuelve a calcular la de tu amiga
 
-    const processData = (data, tournList) => {
+    function processData(data, tournList) {
         if (!data) return;
 
         const allRounds = [];
@@ -426,7 +426,7 @@ export default function StatsView({ user, linkedUsers = [], results = {}, tourna
             parStats,
             puttStats: { total: puttTotal, rounds: allPutts.length, average: puttAvg, best: puttBest, worst: puttWorst }
         });
-    };
+    }
 
     // Chart Data - History vs Par
     const chartData = {

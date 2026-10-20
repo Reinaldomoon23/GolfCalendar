@@ -42,15 +42,11 @@ export function useTournaments(user, preferences, handleUpdatePreferences, resul
   const [subscribedTournaments, setSubscribedTournaments] = useState([]); 
   const [subscribedIds, setSubscribedIds] = useState([]);
   const [currentSeason, setCurrentSeason] = useState('2026');
-  const [availableSeasons, setAvailableSeasons] = useState(['2026', '2025']);
   const hasNormalized = useRef(false);
 
   // ─── Load base data based on season ───────────────────────────────────────
   useEffect(() => {
-    if (isDisabled) {
-      setBaseTournaments([]);
-      return;
-    }
+    if (isDisabled) return;
     const loadSeason = async () => {
       try {
         const loader = SEASONS_DATA[currentSeason];
@@ -91,7 +87,7 @@ export function useTournaments(user, preferences, handleUpdatePreferences, resul
     if (!user?.username) return;
     const unsub = subscribeToCustomTournaments(user, setCustomTournaments);
     return () => unsub();
-  }, [user?.username, isDisabled]);
+  }, [user, isDisabled]);
 
   // ─── Normalization (Migration) ─────────────────────────────────────────────
   useEffect(() => {
@@ -100,7 +96,7 @@ export function useTournaments(user, preferences, handleUpdatePreferences, resul
       hasNormalized.current = true;
       normalizeUserTournaments(user, customTournaments, results);
     }
-  }, [user?.username, customTournaments.length, !!results, isDisabled]);
+  }, [user, customTournaments, results, isDisabled]);
 
   // ─── Subscribe to shared community tournaments ────────────────────────────
   useEffect(() => {
@@ -110,7 +106,7 @@ export function useTournaments(user, preferences, handleUpdatePreferences, resul
       setSharedTournaments(othersShared);
     });
     return () => unsub();
-  }, [user?.username, user?.uid, isDisabled]);
+  }, [user, isDisabled]);
 
   // ─── Subscribe to tournaments the user has joined ─────────────────────────
   useEffect(() => {
@@ -121,19 +117,20 @@ export function useTournaments(user, preferences, handleUpdatePreferences, resul
       if (rawIds) setSubscribedIds(rawIds);
     });
     return () => unsub();
-  }, [user?.username, isDisabled]);
+  }, [user, isDisabled]);
 
   // ─── Merge ───────────────────────────────────────────────────────────────
   const tournaments = useMemo(() => {
     if (isDisabled) return [];
+    const normalizedResults = { ...(results || {}) };
     if (results) {
       Object.keys(results).forEach((resId) => {
         if (!isNaN(resId) || resId.length < 5) {
           const resData = results[resId];
           if (resData && resData.tournamentName && resData.tournamentDates) {
             const newId = buildLegacyTournamentId(resData.tournamentName, resData.tournamentDates);
-            if (newId && !results[newId]) {
-              results[newId] = resData;
+            if (newId && !normalizedResults[newId]) {
+              normalizedResults[newId] = resData;
             }
           }
         }
@@ -153,8 +150,8 @@ export function useTournaments(user, preferences, handleUpdatePreferences, resul
       if (!alreadyPresent) merged.push(st);
     });
     if (results) {
-      Object.keys(results).forEach((resId) => {
-        const resData = results[resId];
+      Object.keys(normalizedResults).forEach((resId) => {
+        const resData = normalizedResults[resId];
         if (!resData) return;
         const alreadyExists = merged.some(t => 
           String(t.id) === String(resId) ||
@@ -185,15 +182,12 @@ export function useTournaments(user, preferences, handleUpdatePreferences, resul
     });
 
     return uniqueMerged;
-  }, [baseTournaments, customTournaments, subscribedTournaments, preferences, user?.username, results, isDisabled]);
+  }, [baseTournaments, customTournaments, subscribedTournaments, preferences, user, results, isDisabled]);
 
-  useEffect(() => {
-    if (isDisabled) {
-      setAvailableSeasons(['2026', '2025']);
-      return;
-    }
-    setAvailableSeasons(getAvailableSeasons(tournaments));
-  }, [tournaments.length, isDisabled]);
+  const availableSeasons = useMemo(
+    () => (isDisabled ? ['2026', '2025'] : getAvailableSeasons(tournaments)),
+    [isDisabled, tournaments]
+  );
 
   const filteredTournaments = useMemo(
     () => filterBySeason(tournaments, currentSeason),

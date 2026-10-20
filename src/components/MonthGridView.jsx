@@ -68,7 +68,6 @@ export default function MonthGridView({ tournaments, onTournamentClick, onDateCl
 
     // Get events for a specific day
     const getEventsForDay = (date) => {
-        const checkTime = date.getTime();
         // Normalize time to start of day for comparison
         const dayStart = new Date(date);
         dayStart.setHours(0, 0, 0, 0);

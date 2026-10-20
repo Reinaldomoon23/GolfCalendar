@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ClipboardPaste, Save, Search, Calculator } from 'lucide-react';
-import { collection, doc, getDoc, getDocs, serverTimestamp, setDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { updateParticipantScore } from '../../services/leaderboard.service';
 import { dedupeAdminUsers } from '../../utils/adminUserRecords';
@@ -169,7 +169,7 @@ function QuickResultsAdminPanel() {
     }
 
     loadData();
-  }, []);
+  }, [notify]);
 
   const filteredUsers = useMemo(() => {
     const term = normalizeText(userSearch);
@@ -226,7 +226,7 @@ function QuickResultsAdminPanel() {
     return () => {
       cancelled = true;
     };
-  }, [selectedUserId, selectedTournamentId, roundKey]);
+  }, [selectedUserId, selectedTournamentId, roundKey, notify]);
 
   const handleExtract = () => {
     const values = parseNumbersFromText(pasteText);

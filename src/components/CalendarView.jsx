@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 
@@ -196,7 +196,7 @@ export default function CalendarView({
 
     // --- NEW: Editing Tournament Details State ---
     const [editingDetails, setEditingDetails] = useState({});
-    const readSavedMobileMode = () => {
+    const readSavedMobileMode = useCallback(() => {
         try {
             const saved = localStorage.getItem('golf_tracker_mobile_mode');
             if (saved) {
@@ -205,11 +205,14 @@ export default function CalendarView({
                     return { cardIdx: parsed.cardIdx, holeIdx: parsed.holeIdx };
                 }
             }
-        } catch (e) { }
+        } catch {
+            return null;
+        }
         return null; // { cardIdx, holeIdx }
-    };
+    }, [id]);
     const [mobileMode, setMobileMode] = useState(readSavedMobileMode);
     const [isEditing, setIsEditing] = useState(false);
+    const [isEditingResults, setIsEditingResults] = useState(false);
 
     useEffect(() => {
         if (mobileMode && id) {
@@ -240,7 +243,7 @@ export default function CalendarView({
             window.removeEventListener('pageshow', restoreMobileMode);
             document.removeEventListener('visibilitychange', restoreMobileMode);
         };
-    }, [id, mobileMode]);
+    }, [id, mobileMode, readSavedMobileMode]);
 
     const closeMobileMode = () => {
         localStorage.removeItem('golf_tracker_mobile_mode');
@@ -287,7 +290,7 @@ export default function CalendarView({
                 tee_time: selectedTournament.tee_time || existingResult.tee_time || null
             });
         }
-    }, [selectedTournament, location.state, selectedResult?.track_putts, selectedResult?.track_girs, selectedResult?.tee_time]);
+    }, [selectedTournament, selectedResult, location.state]);
 
     const handleSaveChanges = () => {
         if (!selectedTournament) return;
@@ -349,7 +352,6 @@ export default function CalendarView({
 
 
     // Result Editing State
-    const [isEditingResults, setIsEditingResults] = useState(false);
     const [formData, setFormData] = useState({
         position: '',
         rounds: [],
@@ -474,9 +476,6 @@ export default function CalendarView({
 
             console.log("DEBUG: CalendarView init", { tId: t.id, existing, resultsKeys: Object.keys(results) });
 
-            // Calculate Pars
-            const calculatedPars = roundDates.map(() => Array(18).fill(''));
-
             // Lookup course pars (Loose matching)
             const courseData = findCourseData(t.course);
             const scorecard = resolveCourseScorecard(t, courseData);
@@ -507,6 +506,8 @@ export default function CalendarView({
                         pars: mergedPars,
                         strokes: normalizeHoleArray(card.strokes),
                         putts: normalizeHoleArray(card.putts),
+                        penalties: normalizeHoleArray(card.penalties),
+                        puttDistances: Array.from({ length: 18 }, (_, holeIndex) => Array.isArray(card.puttDistances?.[holeIndex]) ? card.puttDistances[holeIndex] : []),
                         girs: normalizeHoleArray(card.girs)
                     };
                 }
@@ -516,6 +517,8 @@ export default function CalendarView({
                     pars: defaultPars.map(p => p || ''),
                     strokes: Array(18).fill(''),
                     putts: Array(18).fill(''),
+                    penalties: Array(18).fill(''),
+                    puttDistances: Array.from({ length: 18 }, () => []),
                     girs: Array(18).fill('')
                 };
             };
@@ -535,7 +538,7 @@ export default function CalendarView({
                 scorecards: initialScorecards
             });
         }
-    }, [id, JSON.stringify(results[id])]);
+    }, [id, results, selectedTournament]);
 
     // New Tournament Form State
     const [newTournament, setNewTournament] = useState({
@@ -713,7 +716,14 @@ export default function CalendarView({
             const newArray = [...(roundCard[field] || Array(18).fill(''))];
             newArray[holeIdx] = value;
 
-            const updatedCard = { ...roundCard, [field]: newArray };
+            const updatedCard = field === 'puttDistances'
+                ? {
+                    ...roundCard,
+                    puttDistances: Array.from({ length: 18 }, (_, index) => index === holeIdx
+                        ? (Array.isArray(value) ? value : [])
+                        : (roundCard.puttDistances?.[index] || []))
+                }
+                : { ...roundCard, [field]: newArray };
 
             // Calculate Totals Automation
             let newRounds = [...prev.rounds];
@@ -762,6 +772,8 @@ export default function CalendarView({
                 pars: defaultPars.map(p => p || ''),
                 strokes: Array(18).fill(''),
                 putts: Array(18).fill(''),
+                penalties: Array(18).fill(''),
+                puttDistances: Array.from({ length: 18 }, () => []),
                 girs: Array(18).fill('')
             };
 
@@ -891,7 +903,7 @@ export default function CalendarView({
         return () => {
             if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
         };
-    }, [formData, isEditingResults, selectedTournament, editingDetails.track_putts, editingDetails.track_girs, editingDetails.tee_time]);
+    }, [formData, isEditingResults, selectedTournament, editingDetails, onSaveSpecificResult]);
 
     const handleSaveResults = () => {
         if (!selectedTournament) return;
@@ -996,7 +1008,7 @@ export default function CalendarView({
         today.setHours(0, 0, 0, 0);
 
         // Helper to check if currently in progress
-        const isInProgress = (t) => {
+        const _isInProgress = (t) => {
             if (!t.dates) return false;
             const { start, end } = parseDateHelper(t.dates);
             // Check if today is within range [start, end]
@@ -1060,7 +1072,7 @@ export default function CalendarView({
                 if (calendarType === 'month') return true;
 
                 if (!t.dates) return true; // TBD usually future
-                const { start, end } = parseDateHelper(t.dates);
+                const { end } = parseDateHelper(t.dates);
 
                 // Keep if In Progress Or Future
                 // Future: end >= today ? No, strictly future starts > today?
@@ -1074,9 +1086,8 @@ export default function CalendarView({
             if (filter === 'conflicts') return t.conflict;
             if (filter === 'grand_prix') return t.grand_prix;
 
-            // Default check
-            const y = getYear(t.dates);
-            return y === currentSeason;
+            // Unknown filters should not make the calendar disappear.
+            return true;
         }).sort((a, b) => {
             const da = parseDate(a.dates);
             const db = parseDate(b.dates);
@@ -1087,7 +1098,7 @@ export default function CalendarView({
     const filteredTournaments = getFilteredTournaments();
 
     // Grouping
-    const groupedTournaments = useMemo(() => {
+    const _groupedTournaments = useMemo(() => {
         const groups = {};
         filteredTournaments.forEach(t => {
             const date = parseDate(t.dates);
@@ -1250,11 +1261,11 @@ export default function CalendarView({
 
     // ...
 
-    const renderTournamentCard = (t) => {
+    const _renderTournamentCard = (t) => {
         const { start, end } = parseDateHelper(t.dates);
         const todayTime = new Date().setHours(0, 0, 0, 0);
         const inProgress = start <= todayTime && todayTime <= end;
-        const isFinished = end < todayTime;
+        const _isFinished = end < todayTime;
 
         return (
             <div
@@ -1540,7 +1551,6 @@ export default function CalendarView({
                                             totalPar = basePar * validRoundsCount;
                                         }
 
-                                        const diff = results[t.id].total - totalPar;
                                         const finalDiff = results[t.id].total - totalPar;
 
                                         const diffStr = finalDiff > 0 ? `(+${finalDiff})` : finalDiff < 0 ? `(${finalDiff})` : '(E)';
@@ -1907,17 +1917,17 @@ export default function CalendarView({
                                             };
 
                                             return (
-                                                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                                                    <div style={{ width: '200px' }}>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', alignItems: 'stretch' }}>
+                                                    <div style={{ minWidth: 0 }}>
                                                         <input
                                                             type="date"
                                                             value={startVal}
                                                             onChange={(e) => updateDates(e.target.value, undefined)}
-                                                            style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '1rem', cursor: 'pointer' }}
+                                                            style={{ width: '100%', boxSizing: 'border-box', padding: '0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '1rem', cursor: 'pointer' }}
                                                         />
                                                     </div>
 
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#f1f5f9', padding: '0.5rem 0.8rem', borderRadius: '6px' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', alignSelf: 'flex-start', gap: '6px', background: '#f1f5f9', padding: '0.5rem 0.65rem', borderRadius: '6px', whiteSpace: 'nowrap' }}>
                                                         <input
                                                             id="multiDayCheck"
                                                             type="checkbox"
@@ -1929,7 +1939,7 @@ export default function CalendarView({
                                                     </div>
 
                                                     {isMulti && (
-                                                        <div style={{ width: '200px', animation: 'fadeIn 0.3s ease' }}>
+                                                        <div style={{ animation: 'fadeIn 0.3s ease' }}>
                                                             <input
                                                                 type="date"
                                                                 value={endVal}
@@ -1945,7 +1955,7 @@ export default function CalendarView({
                                     </div>
 
                                     {/* ROW 3: Par & Organizer Grid */}
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(80px, 0.65fr) minmax(0, 1.35fr)', gap: '0.75rem' }}>
                                         {/* Par */}
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                                             <label style={{ fontSize: '0.85rem', color: '#666', fontWeight: '500' }}>Par del Campo</label>
@@ -1977,8 +1987,11 @@ export default function CalendarView({
                                     </div>
                                 </div>
 
+                                <details style={{ marginTop: '1rem', marginBottom: '1.25rem', borderTop: '1px solid #e2e8f0', paddingTop: '0.9rem' }}>
+                                    <summary style={{ cursor: 'pointer', color: 'var(--color-primary)', fontWeight: '700', fontSize: '0.9rem' }}>Más opciones</summary>
+
                                 {/* Tags / Properties */}
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '1rem' }}>
                                     <label style={{ fontSize: '0.8rem', color: '#888' }}>Etiquetas</label>
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '8px' }}>
                                         <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', background: '#f8fafc', padding: '6px', borderRadius: '6px' }}>
@@ -2071,6 +2084,8 @@ export default function CalendarView({
                                         ))}
                                     </div>
                                 </div>
+
+                                </details>
 
                                 <button
                                     onClick={handleSaveDetails}
@@ -2328,7 +2343,6 @@ export default function CalendarView({
                                                 onClick={async (e) => {
                                                     e.preventDefault();
                                                     const link = `${window.location.origin}/live/${user?.username}/${t.id}?r=${idx}`;
-                                                    const shareTitle = `${user?.full_name || user?.username} - ${selectedTournament?.name || t.name}`;
                                                     const fullMessage = `⛳ Sigue la vuelta de ${user?.full_name || user?.username}\n\n🏆 ${selectedTournament?.name || t.name}\n📍 ${selectedTournament?.location || selectedTournament?.course || t.location || t.course || ''}\n\n🔴 EN DIRECTO\n\n👉 ${link}`;
 
                                                     if (navigator.share) {
@@ -2370,7 +2384,6 @@ export default function CalendarView({
                                                         e.preventDefault();
                                                         const players = managedUsers.length > 0 ? managedUsers.join(',') : [user?.username, ...(user?.managed_users || [])].filter(Boolean).join(',');
                                                         const link = `${window.location.origin}/live-team/${t.id}?players=${players}&r=${idx}`;
-                                                        const shareTitle = `Equipo ${user?.full_name || user?.username} - ${selectedTournament?.name || t.name}`;
                                                         const fullMessage = `⛳ Sigue las vueltas del equipo en vivo\n\n🏆 ${selectedTournament?.name || t.name}\n📍 ${selectedTournament?.location || selectedTournament?.course || t.location || t.course || ''}\n👥 Múltiples jugadores\n\n🔴 EN DIRECTO\n\n👉 ${link}`;
 
                                                         if (navigator.share) {
@@ -2777,36 +2790,6 @@ export default function CalendarView({
                                         </div>
                                     </>
                                 )}
-                            </div>
-
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
-                                <div>
-                                    <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600', fontSize: '0.9rem' }}>Posición Final</label>
-                                    <input
-                                        type="text"
-                                        placeholder="Ej: T5"
-                                        value={formData.position}
-                                        onChange={(e) => {
-                                            setIsEditingResults(true);
-                                            setFormData(prev => ({ ...prev, position: e.target.value }));
-                                        }}
-                                        style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
-                                    />
-                                </div>
-                                <div>
-                                    <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600', fontSize: '0.9rem' }}>Handicap Inicio Torneo</label>
-                                    <input
-                                        type="number"
-                                        step="0.1"
-                                        placeholder="Ej: 14.5"
-                                        value={formData.handicap || ''}
-                                        onChange={(e) => {
-                                            setIsEditingResults(true);
-                                            setFormData(prev => ({ ...prev, handicap: e.target.value }));
-                                        }}
-                                        style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
-                                    />
-                                </div>
                             </div>
 
                             {/* Tag Toggles */}

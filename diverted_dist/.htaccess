@@ -1,8 +1,0 @@
-<IfModule mod_rewrite.c>
-RewriteEngine On
-RewriteBase /
-RewriteCond %{REQUEST_URI} ^/api [NC]
-RewriteRule ^.*$ - [L]
-RewriteCond %{REQUEST_URI} !^/api [NC]
-RewriteRule ^(.*)$ https://golf-calendar-v3.vercel.app/$1 [R=301,L]
-</IfModule>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, Edit, Trash2, Download } from 'lucide-react';
 import { db } from '../../firebase';
 import { collection, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore';
@@ -41,12 +41,7 @@ function TournamentsAdminPanel() {
     details: ''
   });
 
-  useEffect(() => {
-    loadTournaments();
-    loadSharedTournaments();
-  }, []);
-
-  const loadSharedTournaments = async () => {
+  const loadSharedTournaments = useCallback(async () => {
     try {
       const snap = await getDocs(collection(db, 'shared_tournaments'));
       const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -58,9 +53,9 @@ function TournamentsAdminPanel() {
     } catch (error) {
       console.error('Error loading shared tournaments:', error);
     }
-  };
+  }, []);
 
-  const loadTournaments = async () => {
+  const loadTournaments = useCallback(async () => {
     setLoading(true);
     try {
       const tournamentsSnapshot = await getDocs(collection(db, 'tournaments'));
@@ -79,7 +74,12 @@ function TournamentsAdminPanel() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [notify]);
+
+  useEffect(() => {
+    loadTournaments();
+    loadSharedTournaments();
+  }, [loadTournaments, loadSharedTournaments]);
 
   const handleCreateTournament = async (e) => {
     e.preventDefault();

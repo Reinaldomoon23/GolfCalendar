@@ -16,7 +16,7 @@ function isBlockedTournament(tournament) {
   );
 }
 
-export default function TournamentsCentralView({ user, allTournaments = [], activeCalendarTournaments = [], subscribedTournaments = [], subscribedIds = [], onJoinTournament, onLeaveTournament }) {
+export default function TournamentsCentralView({ user, allTournaments = [], subscribedIds = [], onJoinTournament }) {
   const [search, setSearch] = useState('');
   const [filterCountry, setFilterCountry] = useState('Todos');
   const [filterCircuit, setFilterCircuit] = useState('Todos');
@@ -118,12 +118,6 @@ export default function TournamentsCentralView({ user, allTournaments = [], acti
   const handleJoin = (t) => {
     if (onJoinTournament) {
       onJoinTournament(t);
-    }
-  };
-
-  const handleLeave = (t) => {
-    if (onLeaveTournament) {
-      onLeaveTournament(t.id);
     }
   };
 

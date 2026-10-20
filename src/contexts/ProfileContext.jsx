@@ -9,23 +9,22 @@
  * - Real-time profile synchronization
  */
 
-import { createContext, useContext, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
-import { useAuthContext } from './AuthContext';
+import { useAuthContext } from './useAuthContext';
+import { ProfileContext } from './profile-context';
 import { getUserDocId, getUserProfileRef, fetchUserProfileByUsername } from '../utils/userProfiles';
-import { invalidateProfilePhotoCache, uploadProfilePhoto, updateUserProfile, recoverLegacyProfile } from '../services/profile.service';
+import { uploadProfilePhoto, updateUserProfile, recoverLegacyProfile, selfHealPhoto } from '../services/profile.service';
 import { writeSavedUser } from '../utils/cache';
 import { IS_MULTI } from '../config/app';
-
-const ProfileContext = createContext(null);
 
 export function ProfileProvider({ children }) {
   const { user, setUser, setLinkedUsers } = useAuthContext();
   const activeUserDocId = getUserDocId(user);
 
   // ── Photo state ──────────────────────────────────────────────────────────
-  const [photoVersion, setPhotoVersion] = useState(Date.now());
+  const [photoVersion, setPhotoVersion] = useState(() => Date.now());
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
   // ── Profile modal state ──────────────────────────────────────────────────
@@ -57,10 +56,10 @@ export function ProfileProvider({ children }) {
       setUser(updatedUser);
       writeSavedUser(updatedUser);
       setPhotoVersion(Date.now());
-      notify('Foto actualizada en Cloudflare R2.', 'success');
+      notify('Foto actualizada correctamente.', 'success');
     } catch (err) {
-      console.error('R2 Upload error:', err);
-      notify(`Error al subir a Cloudflare R2: ${err.message || 'Error desconocido'}`, 'error');
+      console.error('Photo upload error:', err);
+      notify(`Error al subir la foto: ${err.message || 'Error desconocido'}`, 'error');
     } finally {
       setIsUploadingPhoto(false);
     }
@@ -145,27 +144,22 @@ export function ProfileProvider({ children }) {
       const freshData = snapshot.data();
       const managedUsernames = Array.isArray(freshData.managed_users) ? freshData.managed_users : [];
       const incomingPhoto = freshData.photo_url;
-      const incomingPhotoUpdatedAt = freshData.photo_updated_at || '';
       const incomingName = freshData.full_name;
       const currentManaged = JSON.stringify(user.managed_users || []);
       const incomingManaged = JSON.stringify(managedUsernames);
 
       setUser((prev) => {
         if (!prev || prev.username !== user.username) return prev;
-        const photoToUse = incomingPhoto && String(incomingPhoto).trim() !== '' ? incomingPhoto : '';
-        const photoChanged = prev.photo_url !== photoToUse
-          || String(prev.photo_updated_at || '') !== String(incomingPhotoUpdatedAt);
+        const photoToUse = incomingPhoto && String(incomingPhoto).trim() !== '' ? incomingPhoto : prev.photo_url;
+        void selfHealPhoto(prev, incomingPhoto);
         if (
-          photoChanged ||
+          prev.photo_url !== photoToUse ||
           prev.full_name !== incomingName ||
           currentManaged !== incomingManaged
         ) {
           const updated = { ...prev, ...freshData, photo_url: photoToUse, manager_id: prev.manager_id };
           writeSavedUser(updated);
-          if (photoChanged) {
-            void invalidateProfilePhotoCache(photoToUse, incomingPhotoUpdatedAt)
-              .finally(() => setPhotoVersion(Date.now()));
-          }
+          setPhotoVersion(Date.now());
           return updated;
         }
         return prev;
@@ -192,7 +186,7 @@ export function ProfileProvider({ children }) {
     });
 
     return () => unsubProfile();
-  }, [activeUserDocId, user?.username]);
+  }, [activeUserDocId, user, setLinkedUsers, setUser]);
 
   const value = {
     // Photo
@@ -304,10 +298,3 @@ export function ProfileProvider({ children }) {
   );
 }
 
-export function useProfile() {
-  const context = useContext(ProfileContext);
-  if (!context) {
-    throw new Error('useProfile must be used within ProfileProvider');
-  }
-  return context;
-}

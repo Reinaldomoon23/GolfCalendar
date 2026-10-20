@@ -1,0 +1,9 @@
+# Legacy Hostinger-only backend and private data. Vercel uses /api/*.js.
+public/
+api/api/
+scripts/
+manual/
+scratch/
+backup_*/
+build_backups/
+LEADERBOARD_PROGRESS.log

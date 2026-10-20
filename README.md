@@ -9,14 +9,13 @@
 ## 🚀 Inicio Rápido y Despliegue (IMPORTANTE PARA IAs)
 
 1. **Despliegue a Producción (Vercel)**:  
-   La arquitectura de despliegue actual depende EN SU TOTALIDAD de Vercel. 
-   Para publicar código en vivo basta con hacer:
+   La producción principal se publica en Vercel. Para publicar la aplicación:
    ```bash
-   git add .
-   git commit -m "Descripción"
-   git push origin HEAD
+   npm run lint
+   npm run build -- --mode production
+   npm run deploy
    ```
-   🚨 **PROHIBIDO EL USO DE FTP O SCRIPTS (`deploy.sh`, `deploy.cjs`)**. La infraestructura antigua de `reinaldomoon.top/GolfTeam/` ha sido relevada por Vercel. Para detalles completos de infraestructura lee `DEPLOYMENT_PIPELINE.md`.
+   Hostinger se conserva como despliegue legacy opcional y requiere credenciales FTP rotadas. Consulta la documentación completa en [DEPLOYMENT.md](./DEPLOYMENT.md).
 
 2. **Entorno de desarrollo local**:
    ```bash

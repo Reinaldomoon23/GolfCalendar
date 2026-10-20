@@ -28,9 +28,9 @@ export default function CommunityExplorerModal({
     const [loadingCounts, setLoadingCounts] = useState(false);
     const [joiningId, setJoiningId] = useState(null); // Loading state per card
 
-    const safeSharedTournaments = Array.isArray(sharedTournaments) ? sharedTournaments : [];
-    const safeJoinedTournaments = Array.isArray(joinedTournaments) ? joinedTournaments : [];
-    const safeSubscribedTournaments = Array.isArray(subscribedTournaments) ? subscribedTournaments : [];
+    const safeSharedTournaments = useMemo(() => (Array.isArray(sharedTournaments) ? sharedTournaments : []), [sharedTournaments]);
+    const safeJoinedTournaments = useMemo(() => (Array.isArray(joinedTournaments) ? joinedTournaments : []), [joinedTournaments]);
+    const safeSubscribedTournaments = useMemo(() => (Array.isArray(subscribedTournaments) ? subscribedTournaments : []), [subscribedTournaments]);
 
     // Fetch participant counts once when modal opens
     useEffect(() => {

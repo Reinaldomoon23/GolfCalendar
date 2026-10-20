@@ -20,7 +20,7 @@ function AnalyticsAdminPanel() {
     loadStats();
   }, []);
 
-  const loadStats = async () => {
+  async function loadStats() {
     setLoading(true);
 
     try {
@@ -54,7 +54,7 @@ function AnalyticsAdminPanel() {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   if (loading) {
     return <div style={{ textAlign: 'center', padding: '3rem' }}>Cargando estadísticas...</div>;

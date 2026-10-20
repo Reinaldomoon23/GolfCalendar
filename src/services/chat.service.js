@@ -188,7 +188,7 @@ async function sendChatPushNotification(payload) {
     try {
       const data = await response.json();
       if (data?.error) message = data.error;
-    } catch (error) {
+    } catch {
       // Keep the generic message if the API did not return JSON.
     }
     throw new Error(message);

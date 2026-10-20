@@ -3,10 +3,18 @@ const ftpDeploy = new FtpDeploy();
 const path = require('path');
 const fs = require('fs');
 
+const ftpUser = process.env.ROUNDTRACKER_FTP_USER;
+const ftpPassword = process.env.ROUNDTRACKER_FTP_PASSWORD;
+const ftpHost = process.env.ROUNDTRACKER_FTP_HOST || 'ftp.reinaldomoon.top';
+
+if (!ftpUser || !ftpPassword) {
+    throw new Error('Faltan ROUNDTRACKER_FTP_USER o ROUNDTRACKER_FTP_PASSWORD en el entorno.');
+}
+
 const config = {
-    user: "jordi@reinaldomoon.top",
-    password: "DanzigXtothec23$",
-    host: "ftp.reinaldomoon.top",
+    user: ftpUser,
+    password: ftpPassword,
+    host: ftpHost,
     port: 21,
     localRoot: path.join(__dirname, "dist"),
     remoteRoot: "/public_html/GolfTeam/",
@@ -28,6 +36,33 @@ const config = {
         console.log("📤 Desplegando App completa a /GolfTeam/...");
         await ftpDeploy.deploy(config);
         console.log("✅ Despliegue en /GolfTeam/ completado.");
+
+        // Protect legacy API data files while keeping PHP endpoints executable.
+        const apiSecurityRoot = path.join(__dirname, "public", "api");
+        const apiSecurityFile = path.join(apiSecurityRoot, ".htaccess");
+        if (fs.existsSync(apiSecurityFile)) {
+            await ftpDeploy.deploy({
+                ...config,
+                localRoot: apiSecurityRoot,
+                remoteRoot: "/public_html/GolfTeam/api/",
+                include: [".htaccess"],
+                deleteRemote: false
+            });
+            console.log("✅ Datos internos de la API protegidos mediante .htaccess.");
+        }
+
+        const dataSecurityRoot = path.join(__dirname, "public", "data");
+        const dataSecurityFile = path.join(dataSecurityRoot, ".htaccess");
+        if (fs.existsSync(dataSecurityFile)) {
+            await ftpDeploy.deploy({
+                ...config,
+                localRoot: dataSecurityRoot,
+                remoteRoot: "/public_html/GolfTeam/data/",
+                include: [".htaccess"],
+                deleteRemote: false
+            });
+            console.log("✅ Carpeta de datos legacy protegida mediante .htaccess.");
+        }
 
         // 2. Crear un .htaccess QUIRÚRGICO para la Raíz
         // Este archivo SOLO redirigirá lo necesario y respetará tus otras webs
@@ -66,7 +101,7 @@ RewriteRule ^(.*)$ /GolfTeam/$1 [R=301,L]
         fs.writeFileSync(path.join(tempDir, ".htaccess"), surgicalHtaccess);
         
         // Copiar el Kill Switch para el Service Worker
-        const killSwitchPath = path.join(__dirname, "public", "sw-killswitch.js");
+        const killSwitchPath = path.join(__dirname, "public-app", "sw-killswitch.js");
         if (fs.existsSync(killSwitchPath)) {
             fs.copyFileSync(killSwitchPath, path.join(tempDir, "sw.js"));
             console.log("🛠️ Incluyendo Service Worker Kill Switch...");
@@ -75,7 +110,7 @@ RewriteRule ^(.*)$ /GolfTeam/$1 [R=301,L]
         // Keep notification icons available at the domain root for users with
         // an older cached bundle that still requests /pwa-192x192.png.
         for (const iconName of ["pwa-192x192.png", "pwa-512x512.png"]) {
-            const iconPath = path.join(__dirname, "public", iconName);
+            const iconPath = path.join(__dirname, "public-app", iconName);
             if (fs.existsSync(iconPath)) {
                 fs.copyFileSync(iconPath, path.join(tempDir, iconName));
             }
@@ -89,6 +124,18 @@ RewriteRule ^(.*)$ /GolfTeam/$1 [R=301,L]
             include: [".htaccess", "sw.js", "pwa-192x192.png", "pwa-512x512.png"],
             deleteRemote: false // NUNCA borrar el root
         });
+
+        // Replace the old app-scoped worker too. Otherwise a cached worker
+        // under /GolfTeam/ can keep serving the old login bundle and block
+        // keyboard input even after the new files were uploaded.
+        await ftpDeploy.deploy({
+            ...config,
+            localRoot: tempDir,
+            remoteRoot: "/public_html/GolfTeam/",
+            include: ["sw.js"],
+            deleteRemote: false
+        });
+        console.log("✅ Service Worker antiguo de /GolfTeam/ desactivado.");
 
         // Limpiar carpeta temporal
         fs.rmSync(tempDir, { recursive: true, force: true });

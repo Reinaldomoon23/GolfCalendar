@@ -17,7 +17,6 @@ import {
     getTournamentIdCandidates
 } from '../services/tournaments.service';
 import { getResultProgress, subscribeToLeaderboard } from '../services/leaderboard.service';
-import { getKnownProfilePhotoUrl } from '../utils/profilePhotos';
 
 function normalizeTournamentText(value) {
     return String(value || '')
@@ -26,6 +25,26 @@ function normalizeTournamentText(value) {
         .replace(/[\u0300-\u036f]/g, '')
         .replace(/[^a-z0-9]+/g, ' ')
         .trim();
+}
+
+const KNOWN_CLOUDFLARE_PROFILE_PHOTOS = {
+    nicole: 'nicole_1770126902.jpg',
+    ona: 'ona.jpg',
+    txell: 'txell.jpg',
+};
+
+function getKnownCloudflareProfilePhoto(participant) {
+    const username = normalizeTournamentText(participant?.username || participant?.id).replace(/\s+/g, '');
+    if (KNOWN_CLOUDFLARE_PROFILE_PHOTOS[username]) {
+        return KNOWN_CLOUDFLARE_PROFILE_PHOTOS[username];
+    }
+
+    const normalizedName = normalizeTournamentText(participant?.fullName || participant?.full_name || participant?.name);
+    if (normalizedName.includes('nicole')) return KNOWN_CLOUDFLARE_PROFILE_PHOTOS.nicole;
+    if (normalizedName.includes('ona martinez')) return KNOWN_CLOUDFLARE_PROFILE_PHOTOS.ona;
+    if (normalizedName.includes('txell')) return KNOWN_CLOUDFLARE_PROFILE_PHOTOS.txell;
+
+    return null;
 }
 
 function resultMatchesTournament(resultId, resultData, candidateIds, tournamentMeta) {
@@ -160,7 +179,7 @@ export default function PublicScorecardView() {
     const queryRIdx = searchParams.get('r');
     const queryView = searchParams.get('view');
 
-    const [loading, setLoading] = useState(true);
+    const [, setLoading] = useState(true);
     const [userProfile, setUserProfile] = useState(null);
     const [tournament, setTournament] = useState(null);
     const [result, setResult] = useState(null);
@@ -280,7 +299,7 @@ export default function PublicScorecardView() {
             }
         };
         fetchStats();
-    }, [profileDocId, username]);
+    }, [profileDocId, username, userProfile]);
 
     // Fetch user info from Firestore
     useEffect(() => {
@@ -425,7 +444,7 @@ export default function PublicScorecardView() {
             }
         };
         fetchTournament();
-    }, [canonicalEventId, profileDocId, username, userProfile, profileReady]);
+    }, [canonicalEventId, profileDocId, username, userProfile, profileReady, eventId]);
 
     useEffect(() => {
         if (!profileReady) return;
@@ -542,7 +561,7 @@ export default function PublicScorecardView() {
         });
 
         return () => unsubscribe();
-    }, [profileDocId, username, canonicalEventId, eventId, profileReady, tournament?.id]);
+    }, [profileDocId, username, canonicalEventId, eventId, profileReady, tournament, userProfile, notificationIconUrl]);
 
     // ── Public shared leaderboard for the same tournament ─────────────────
     useEffect(() => {
@@ -685,7 +704,7 @@ export default function PublicScorecardView() {
         if (activeRoundTab === null && foundActiveRIdx !== null) {
             setActiveRoundTab(foundActiveRIdx);
         }
-    }, [foundActiveRIdx]);
+    }, [foundActiveRIdx, activeRoundTab]);
 
     // ── Update derived data BEFORE conditional returns ──────────────────────
     
@@ -885,7 +904,7 @@ export default function PublicScorecardView() {
             const enrichedParticipant = { ...participant, fullName };
             return {
                 ...enrichedParticipant,
-                photo_url: participant.photo_url || profile.photo_url || getKnownProfilePhotoUrl(enrichedParticipant),
+                photo_url: participant.photo_url || profile.photo_url || getKnownCloudflareProfilePhoto(enrichedParticipant),
             };
         })
         .sort((a, b) => {
@@ -1119,7 +1138,6 @@ export default function PublicScorecardView() {
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '8px' }}>
                             <ProfileImage
                                 photoPath={userProfile?.photo_url || activeResult?.photo_url}
-                                username={username}
                                 displayName={userProfile?.full_name || username}
                                 alt={username}
                                 style={{ width: '48px', height: '48px', borderRadius: '50%', border: '2px solid #3b82f6', objectFit: 'cover' }}
@@ -1771,7 +1789,7 @@ export default function PublicScorecardView() {
                                 <div style={{ fontSize: '0.8rem' }}>Cuando alguien se apunte o guarde resultado, aparecerá aquí.</div>
                             </div>
                         ) : (
-                            displayedLeaderboardParticipants.map((participant, idx) => {
+                            displayedLeaderboardParticipants.map((participant) => {
                                 const hasActiveRoundResult = hasRoundResult(participant, activeLeaderboardRound);
                                 const rankedIndex = rankedLeaderboardParticipants.findIndex((candidate) => (
                                     (candidate.username || candidate.id) === (participant.username || participant.id)
@@ -1833,20 +1851,33 @@ export default function PublicScorecardView() {
                                                 {hasActiveRoundResult ? position : '—'}
                                             </div>
                                             <div style={{ padding: '12px 8px', minWidth: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                <ProfileImage
-                                                    photoPath={participant.photo_url}
-                                                    username={participant.username}
-                                                    displayName={participant.fullName || participant.username}
-                                                    alt={participant.fullName || participant.username}
-                                                    style={{
-                                                        width: '30px',
-                                                        height: '30px',
-                                                        borderRadius: '50%',
-                                                        objectFit: 'cover',
-                                                        border: isExpanded || isCurrent ? '2px solid #3b82f6' : '1px solid #334155',
-                                                        flexShrink: 0
-                                                    }}
-                                                />
+                                                {participant.photo_url ? (
+                                                    <ProfileImage
+                                                        photoPath={participant.photo_url}
+                                                        displayName={participant.fullName || participant.username}
+                                                        alt={participant.fullName || participant.username}
+                                                        style={{
+                                                            width: '30px',
+                                                            height: '30px',
+                                                            borderRadius: '50%',
+                                                            objectFit: 'cover',
+                                                            border: isExpanded || isCurrent ? '2px solid #3b82f6' : '1px solid #334155',
+                                                            flexShrink: 0
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <div
+                                                        aria-hidden="true"
+                                                        style={{
+                                                            width: '30px',
+                                                            height: '30px',
+                                                            borderRadius: '50%',
+                                                            border: isExpanded ? '2px solid #3b82f6' : '1px solid #334155',
+                                                            background: '#0f172a',
+                                                            flexShrink: 0
+                                                        }}
+                                                    />
+                                                )}
                                                 <div style={{ minWidth: 0, flex: '1 1 auto' }}>
                                                     <div style={{
                                                         fontWeight: '800',

@@ -116,7 +116,7 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  const { username, license } = req.query;
+  const { license } = req.query;
 
   let pdfUrl = '';
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Search, UserPlus, Edit, Trash2, Key, Shield, LogIn } from 'lucide-react';
 import { initializeApp as initializeFirebaseApp, deleteApp } from 'firebase/app';
 import { useNavigate } from 'react-router-dom';
@@ -53,11 +53,7 @@ function UsersAdminPanel() {
   });
 
   // Cargar usuarios
-  useEffect(() => {
-    loadUsers();
-  }, []);
-
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     setLoading(true);
     try {
       const usersSnapshot = await getDocs(collection(db, 'users'));
@@ -77,7 +73,11 @@ function UsersAdminPanel() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [notify]);
+
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
 
   // Buscar usuarios
   useEffect(() => {
@@ -129,7 +129,7 @@ function UsersAdminPanel() {
 
       secondaryApp = initializeFirebaseApp(
         firebaseConfig,
-        `admin-user-create-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+        `admin-user-create-${crypto.randomUUID()}`
       );
       secondaryAuth = getAuth(secondaryApp);
       await setPersistence(secondaryAuth, inMemoryPersistence);
@@ -409,12 +409,12 @@ function UsersAdminPanel() {
     });
   };
 
-  const normalizeManagedUsers = (value) => (
-    String(value || '')
+  function normalizeManagedUsers(value) {
+    return String(value || '')
       .split(',')
       .map((username) => username.trim().toLowerCase())
-      .filter(Boolean)
-  );
+      .filter(Boolean);
+  }
 
   const handleOpenUserArea = (targetUser) => {
     if (!targetUser?.username) return;
