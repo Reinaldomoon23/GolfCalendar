@@ -5,7 +5,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 // ... imports ...
 
 // ... imports ...
-import { ChevronRight, Info, Calendar, Trophy, Plus, MapPin, Trash2, Share2, Filter, CalendarDays, Save, AlertTriangle, List, MoreVertical, Radio, Users } from 'lucide-react';
+import { ChevronRight, Info, Calendar, Trophy, Plus, MapPin, Trash2, Share2, Filter, CalendarDays, Save, AlertTriangle, List, MoreVertical, Radio, Users, FileUp } from 'lucide-react';
 import MobileScorecardEditor from './MobileScorecardEditor';
 import spanishCourses from '../data/spanish_courses.json';
 import CalendarFilters from './CalendarFilters';
@@ -18,6 +18,7 @@ import TournamentDetailBadges from './TournamentDetailBadges';
 import { generateTournamentDeterministicId } from '../services/tournaments.service';
 import TournamentLeaderboard from './TournamentLeaderboard';
 import TournamentReport from './TournamentReport';
+import ResultImportModal from './ResultImportModal';
 import { useFeedbackLayer } from './FeedbackLayer';
 import { isSharedTournamentId } from '../services/leaderboard.service';
 import { fetchTournamentWeatherSamples } from '../services/weather.service';
@@ -177,6 +178,8 @@ export default function CalendarView({
     const [showAddForm, setShowAddForm] = useState(false);
     const [isCommunityModalOpen, setIsCommunityModalOpen] = useState(false);
     const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [importPayload, setImportPayload] = useState({ text: '', url: '' });
 
     // Adaptive Course List State
     const [customCourses, setCustomCourses] = useState(() => {
@@ -193,6 +196,29 @@ export default function CalendarView({
         id ? tournaments.find(t => String(t.id) === id) || null : null
         , [id, tournaments]);
     const selectedResult = selectedTournament ? results[selectedTournament.id] : null;
+
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const sharedText = params.get('text') || params.get('title') || '';
+        const sharedUrl = params.get('url') || '';
+        if (params.get('share') === '1' || sharedText || sharedUrl) {
+            setImportPayload({ text: sharedText, url: sharedUrl });
+            setIsImportModalOpen(true);
+        }
+    }, [location.search]);
+
+    const closeImportModal = () => {
+        setIsImportModalOpen(false);
+        if (location.search) navigate(location.pathname, { replace: true });
+    };
+
+    const handleImportedResults = async (tournamentId, importedResult) => {
+        if (!onSaveSpecificResult) return;
+        await onSaveSpecificResult(tournamentId, importedResult);
+        notify('Resultados importados en el torneo seleccionado.', 'success');
+        closeImportModal();
+        navigate(`/event/${tournamentId}`);
+    };
 
     // --- NEW: Editing Tournament Details State ---
     const [editingDetails, setEditingDetails] = useState({});
@@ -3075,6 +3101,13 @@ export default function CalendarView({
                     >
                         <Share2 size={18} /> Explorar
                     </button>
+                    <button
+                        className="btn btn-secondary"
+                        onClick={() => setIsImportModalOpen(true)}
+                        style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '10px 15px', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'white', color: '#1e293b', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '600' }}
+                    >
+                        <FileUp size={18} /> Importar resultados
+                    </button>
                     <button className="btn btn-primary" onClick={() => setShowAddForm(true)}>
                         <Plus size={18} style={{ marginRight: '5px' }} /> Nuevo Torneo
                     </button>
@@ -3102,6 +3135,16 @@ export default function CalendarView({
                     onChange={setNewTournament}
                     onClose={() => setShowAddForm(false)}
                     onSubmit={handleAddTournament}
+                />
+            )}
+
+            {isImportModalOpen && (
+                <ResultImportModal
+                    tournaments={tournaments}
+                    initialText={importPayload.text}
+                    initialUrl={importPayload.url}
+                    onClose={closeImportModal}
+                    onSave={handleImportedResults}
                 />
             )}
 
