@@ -19,6 +19,7 @@ export default function TrainingTestsView({ user }) {
   const [periodType, setPeriodType] = useState('all');
   const [periodValue, setPeriodValue] = useState('');
   const [testFilter, setTestFilter] = useState('all');
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 700px)').matches);
   const selectedTest = useMemo(() => getPuttingTest(session.testId), [session.testId]);
   const metrics = useMemo(() => getSessionMetrics(session), [session]);
   const filteredSessions = useMemo(() => sessions.filter((saved) => {
@@ -29,6 +30,13 @@ export default function TrainingTestsView({ user }) {
   const availablePeriods = useMemo(() => [...new Set(sessions.map((saved) => getSessionPeriod(saved)[periodType]).filter(Boolean))].sort().reverse(), [periodType, sessions]);
 
   useEffect(() => subscribeToTrainingTests(user, setSessions), [user]);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 700px)');
+    const handleChange = (event) => setIsMobile(event.matches);
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
 
   const updateAttempt = (index, field, value) => {
     setSession((current) => ({
@@ -87,8 +95,16 @@ export default function TrainingTestsView({ user }) {
         </div>
         <p style={{ color: 'var(--color-text-muted)', marginTop: 0 }}>{selectedTest.description} Anota los putts necesarios hasta embocar.</p>
 
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '620px' }}>
+        {isMobile ? <div style={{ display: 'grid', gap: '0.65rem' }}>
+          {session.attempts.map((attempt, index) => <div key={`${attempt.distance}-${attempt.direction}-${index}`} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '0.75rem', background: 'var(--color-surface-soft)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '0.65rem' }}><strong>{attempt.distance} m</strong><span style={{ color: 'var(--color-text-muted)' }}>{attempt.direction}</span></div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
+              <label style={{ fontSize: '0.78rem', fontWeight: 700 }}>Putts hasta embocar<input type="number" min="1" max="8" inputMode="numeric" value={attempt.putts} onChange={(event) => updateAttempt(index, 'putts', event.target.value)} style={{ ...inputStyle, marginTop: '0.25rem' }} aria-label={`Putts ${attempt.distance} metros ${attempt.direction}`} /></label>
+              <label style={{ fontSize: '0.78rem', fontWeight: 700 }}>Distancia restante<input type="number" min="0" max="20" step="0.25" inputMode="decimal" value={attempt.remainingAfterFirstPutt} onChange={(event) => updateAttempt(index, 'remainingAfterFirstPutt', event.target.value)} style={{ ...inputStyle, marginTop: '0.25rem' }} aria-label={`Distancia restante ${attempt.distance} metros ${attempt.direction}`} /></label>
+            </div>
+          </div>)}
+        </div> : <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead><tr style={{ textAlign: 'left', borderBottom: '2px solid var(--color-border)' }}><th style={{ padding: '0.6rem' }}>Distancia</th><th style={{ padding: '0.6rem' }}>Pendiente</th><th style={{ padding: '0.6rem', width: '130px' }}>Putts hasta embocar</th><th style={{ padding: '0.6rem', width: '150px' }}>Distancia restante tras 1.º putt</th></tr></thead>
             <tbody>{session.attempts.map((attempt, index) => <tr key={`${attempt.distance}-${attempt.direction}-${index}`} style={{ borderBottom: '1px solid var(--color-border)' }}>
               <td style={{ padding: '0.6rem', fontWeight: 800 }}>{attempt.distance} m</td>
@@ -97,7 +113,7 @@ export default function TrainingTestsView({ user }) {
               <td style={{ padding: '0.6rem' }}><input type="number" min="0" max="20" step="0.25" inputMode="decimal" value={attempt.remainingAfterFirstPutt} onChange={(event) => updateAttempt(index, 'remainingAfterFirstPutt', event.target.value)} style={inputStyle} aria-label={`Distancia restante ${attempt.distance} metros ${attempt.direction}`} /></td>
             </tr>)}</tbody>
           </table>
-        </div>
+        </div>}
 
         <label style={{ display: 'block', marginTop: '1rem' }}>Observaciones<textarea value={session.notes} onChange={(event) => setSession((current) => ({ ...current, notes: event.target.value }))} style={{ ...inputStyle, minHeight: '80px', resize: 'vertical' }} /></label>
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.75rem', marginTop: '1rem' }}>
