@@ -1914,17 +1914,17 @@ export default function CalendarView({
                                             };
 
                                             return (
-                                                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                                                    <div style={{ width: '200px' }}>
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: '0.65rem', alignItems: 'center' }}>
+                                                    <div style={{ minWidth: 0 }}>
                                                         <input
                                                             type="date"
                                                             value={startVal}
                                                             onChange={(e) => updateDates(e.target.value, undefined)}
-                                                            style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '1rem', cursor: 'pointer' }}
+                                                            style={{ width: '100%', boxSizing: 'border-box', padding: '0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '1rem', cursor: 'pointer' }}
                                                         />
                                                     </div>
 
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#f1f5f9', padding: '0.5rem 0.8rem', borderRadius: '6px' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#f1f5f9', padding: '0.5rem 0.65rem', borderRadius: '6px', whiteSpace: 'nowrap' }}>
                                                         <input
                                                             id="multiDayCheck"
                                                             type="checkbox"
@@ -1936,7 +1936,7 @@ export default function CalendarView({
                                                     </div>
 
                                                     {isMulti && (
-                                                        <div style={{ width: '200px', animation: 'fadeIn 0.3s ease' }}>
+                                                        <div style={{ gridColumn: '1 / -1', animation: 'fadeIn 0.3s ease' }}>
                                                             <input
                                                                 type="date"
                                                                 value={endVal}
@@ -1952,7 +1952,7 @@ export default function CalendarView({
                                     </div>
 
                                     {/* ROW 3: Par & Organizer Grid */}
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(80px, 0.65fr) minmax(0, 1.35fr)', gap: '0.75rem' }}>
                                         {/* Par */}
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                                             <label style={{ fontSize: '0.85rem', color: '#666', fontWeight: '500' }}>Par del Campo</label>
