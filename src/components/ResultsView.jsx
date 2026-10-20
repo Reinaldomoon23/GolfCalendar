@@ -230,31 +230,6 @@ export default function ResultsView({ initialTournamentId, results = {}, tournam
                         ))}
                     </div>
 
-                    {/* Meta Inputs */}
-                    <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '1rem' }}>
-                        <div style={{ flex: 1 }}>
-                            <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600', fontSize: '0.9rem' }}>Posición Final</label>
-                            <input
-                                type="text"
-                                placeholder="Ej: T5"
-                                value={formData.position}
-                                onChange={(e) => setFormData(prev => ({ ...prev, position: e.target.value }))}
-                                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
-                            />
-                        </div>
-                        <div style={{ flex: 1 }}>
-                            <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600', fontSize: '0.9rem' }}>Handicap Inicio Torneo</label>
-                            <input
-                                type="number"
-                                step="0.1"
-                                placeholder="Ej: 14.5"
-                                value={formData.handicap || ''}
-                                onChange={(e) => setFormData(prev => ({ ...prev, handicap: e.target.value }))}
-                                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
-                            />
-                        </div>
-                    </div>
-
                     <div style={{ display: 'flex', gap: '1rem' }}>
                         <button className="btn btn-outline-danger" style={{ flex: 1, padding: '12px', justifyContent: 'center', borderColor: '#ef4444', color: '#ef4444' }} onClick={handleDeleteResult}>
                             <Trash2 size={18} style={{ marginRight: '8px' }} />

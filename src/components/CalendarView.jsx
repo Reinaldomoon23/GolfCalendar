@@ -2789,36 +2789,6 @@ export default function CalendarView({
                                 )}
                             </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
-                                <div>
-                                    <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600', fontSize: '0.9rem' }}>Posición Final</label>
-                                    <input
-                                        type="text"
-                                        placeholder="Ej: T5"
-                                        value={formData.position}
-                                        onChange={(e) => {
-                                            setIsEditingResults(true);
-                                            setFormData(prev => ({ ...prev, position: e.target.value }));
-                                        }}
-                                        style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
-                                    />
-                                </div>
-                                <div>
-                                    <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600', fontSize: '0.9rem' }}>Handicap Inicio Torneo</label>
-                                    <input
-                                        type="number"
-                                        step="0.1"
-                                        placeholder="Ej: 14.5"
-                                        value={formData.handicap || ''}
-                                        onChange={(e) => {
-                                            setIsEditingResults(true);
-                                            setFormData(prev => ({ ...prev, handicap: e.target.value }));
-                                        }}
-                                        style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
-                                    />
-                                </div>
-                            </div>
-
                             {/* Tag Toggles */}
 
 
