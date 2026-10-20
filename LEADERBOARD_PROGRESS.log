@@ -1,0 +1,2305 @@
+# LEADERBOARD_PROGRESS.log
+
+==========================================================================
+SESIÓN: 2026-10-14 | Codex
+==========================================================================
+
+[COMPLETADO] FEATURE — Distancia individual de putts en modo móvil
+  Archivos modificados:
+    - src/components/MobileScorecardEditor.jsx
+    - src/components/CalendarView.jsx
+  Resumen:
+    - Se añadió `puttDistances`, un array de distancias por putt y por hoyo.
+    - Slider por putt con intervalos de 0,25 m hasta 1 m, 0,50 m hasta 3 m,
+      y 1 m desde 3 m, limitado a 20 m.
+    - Compatible con tarjetas antiguas y guardado mediante el autosave existente.
+  Verificación:
+    - Build directo con Vite: correcto.
+
+  PRÓXIMO PASO: Probar el slider en dispositivo real y confirmar persistencia.
+
+[COMPLETADO] UX — Añadir putts individualmente en modo móvil
+  Archivo modificado:
+    - src/components/MobileScorecardEditor.jsx
+  Resumen:
+    - Añadidos controles directos `−` y `+` para eliminar o añadir putts.
+    - Cada putt añadido muestra su propio slider de distancia hasta 20 m.
+    - Se mantienen los campos existentes de golpes, GIR y valores relativos.
+  Verificación:
+    - Build directo con Vite: correcto.
+
+[COMPLETADO] UX — Escala visual no lineal para distancia de putts
+  Archivo modificado:
+    - src/components/MobileScorecardEditor.jsx
+  Resumen:
+    - Los primeros 5 m ocupan el 50% del slider.
+    - Los 15 m restantes ocupan el otro 50%, manteniendo el máximo de 20 m.
+  Verificación:
+    - Build directo con Vite: correcto.
+
+[COMPLETADO] HARDENING — Saneamiento de despliegue y subida segura de avatares
+  Fecha: 2026-10-17
+  Archivos modificados/creados:
+    - vite.config.js
+    - public-app/*
+    - .vercelignore
+    - public/api/.htaccess
+    - public/data/.htaccess
+    - deploy_ftp_root.cjs
+    - src/firebase.js
+    - src/services/profile.service.js
+    - src/components/ProfileImage.jsx
+    - src/config/app.js
+    - storage.rules
+    - firebase.json
+    - eslint.config.js
+    - package.json / package-lock.json / pnpm-lock.yaml
+  Resumen:
+    - El build de Vercel ya no copia PHP, JSON de usuarios, logs, PDFs ni datos legacy.
+    - Las fotos nuevas usan Firebase Storage autenticado y límite de 5 MB; no se usan secretos R2 en el navegador.
+    - El modo multi queda como valor por defecto para que actualizar, cerrar sesión y editar perfil no dependan de una variable ausente.
+    - El FTP ya no contiene credenciales en código y prepara protección de API/data legacy mediante .htaccess.
+    - Se corrigieron errores de ESLint, mutación de resultados y dependencias no utilizadas.
+  Verificación:
+    - npm run build:production: correcto; sin PHP, users.json, logs ni public/public en dist.
+    - npm run lint: 0 errores, 49 avisos de dependencias de hooks.
+    - npm audit --omit=dev: 0 críticas, 0 moderadas, 4 altas transitorias de Firebase/Firestore sin reparación compatible disponible.
+    - Vercel production dpl_uwnmJ9TRFs9UnFe27kHzUaxApENg: READY.
+    - Vercel ya no entrega los archivos privados; devuelve únicamente el shell HTML de la SPA.
+    - Pendiente externo: desplegar storage.rules tras `firebase login` y subir los .htaccess a Hostinger tras configurar las variables FTP.
+
+  PRÓXIMO PASO: AUTENTICACIÓN — Iniciar sesión en Firebase CLI y configurar las credenciales FTP rotadas; después repetir la protección de Hostinger y probar subida de avatar con una cuenta real.
+# Players Calendar — Sistema de Clasificación General
+# Actualizar este archivo cada vez que se complete un paso del roadmap
+
+==========================================================================
+SESIÓN: 2026-06-27 | Codex
+==========================================================================
+
+[COMPLETADO] INFORMES — Meteorología horaria y análisis por ronda
+  Archivos modificados/creados:
+    - api/_weather_utils.js
+    - api/collect_weather.js
+    - api/get_weather_samples.js
+    - src/services/weather.service.js
+    - src/utils/tournamentReport.js
+    - src/components/TournamentReport.jsx
+    - src/components/CalendarView.jsx
+    - src/config/api.js
+    - vercel.json
+    - .github/workflows/collect-weather.yml
+  Resumen:
+    Se añadió una ejecución horaria vía GitHub Actions para recoger viento, racha,
+    temperatura y humedad de torneos activos, guardando muestras bajo
+    tournaments/{id}/weather_samples/{fecha_hora}. Los informes cargan esas
+    muestras desde API serverless y muestran condiciones globales del torneo
+    y condiciones por ronda cuando hay datos disponibles.
+  Verificación:
+    - npm run build
+    - import de api/collect_weather.js y api/get_weather_samples.js
+
+==========================================================================
+SESIÓN: 2026-06-23 | Codex
+==========================================================================
+
+[COMPLETADO] DOCUMENTACIÓN — Manual de uso RoundTracker
+  Archivos creados:
+    - manual/manual_roundtracker.docx
+    - manual/manual_roundtracker.pdf
+    - scratch/create_manual_roundtracker.py
+  Resumen:
+    Se creó una primera versión del manual de uso para jugadoras/familias con
+    ilustraciones tipo móvil, pasos de login, torneos, resultados, modo móvil,
+    clasificación, compartir, perfil y recuperación de contraseña.
+    Se renderizó el DOCX a PNG/PDF y se revisó visualmente la maquetación.
+
+[COMPLETADO] COMUNIDAD FASE 1 — Amigas y agenda futura
+  Archivos modificados:
+    - src/services/friends.service.js
+    - src/components/FriendsView.jsx
+    - src/components/NavTabs.jsx
+    - src/App.jsx
+    - firestore.rules
+  Resumen:
+    Se añadió una pestaña "Amigas" con búsqueda de jugadoras, solicitudes
+    entrantes/salientes, aceptar/rechazar, eliminar amistad y agenda futura
+    de amigas aceptadas basada en sus torneos suscritos.
+    La búsqueda permite encontrar usuarias por username, nombre completo,
+    apellidos o licencia federativa, para no depender de recordar el usuario.
+  Verificación:
+    - npm run build
+
+[COMPLETADO] HOTFIX — Borrado persistente de torneos oficiales
+  Archivos modificados:
+    - src/hooks/useTournaments.js
+    - src/components/CalendarView.jsx
+  Resumen:
+    Se corrigió el borrado de torneos oficiales/suscritos para que el ID
+    canónico se calcule antes de buscar torneos custom, no se limpie
+    `hiddenIds` por existir resultados y la UI espere el borrado real antes
+    de mostrar éxito. Esto evita que torneos como el Orden de Mérito de
+    Nicole del 19/07/2026 reaparezcan tras confirmar el borrado.
+  Verificación:
+    - npm run build
+
+[COMPLETADO] COMUNIDAD FASE 1.1 — Perfil mínimo obligatorio
+  Archivos modificados:
+    - src/services/friends.service.js
+    - src/components/FriendsView.jsx
+    - firestore.rules
+  Resumen:
+    La sección Amigas ahora exige completar nombre, primer apellido,
+    segundo apellido y licencia federativa antes de buscar/enviar solicitudes
+    o ver agenda de amigas. Se guardan campos estructurados y `full_name`
+    sincronizado para mantener compatibilidad con el resto de la app.
+  Verificación:
+    - npm run build
+
+[COMPLETADO] COMUNIDAD FASE 1.2 — Agenda de amigas accionable
+  Archivos modificados:
+    - src/App.jsx
+    - src/components/FriendsView.jsx
+  Resumen:
+    La agenda de amigas ahora permite filtrar por amiga, próximos 30 días
+    o torneos donde la usuaria también está apuntada. Cada torneo muestra
+    estado, etiqueta de coincidencia y acciones para abrir el torneo,
+    clasificación pública o live de la amiga cuando aplica.
+  Verificación:
+    - npm run build
+
+==========================================================================
+SESIÓN: 2026-04-26 | Modelo: Antigravity (Google DeepMind)
+==========================================================================
+
+[COMPLETADO] PASO 1.1 — leaderboard.service.js
+  Archivo creado: src/services/leaderboard.service.js
+  Funciones implementadas:
+    - isSharedTournamentId(id) → detecta torneos centralizados
+    - joinTournamentAsParticipant(user, tournamentId, meta) → registra jugadora sin score
+    - updateParticipantScore(user, tournamentId, resultData) → escribe resumen público
+    - subscribeToLeaderboard(tournamentId, callback) → tiempo real, ordenado por golpes
+
+[COMPLETADO] PASO 1.2 — Auto-sync en UserDataContext.jsx
+  Archivo modificado: src/contexts/UserDataContext.jsx
+  Cambio: handleSaveSpecificResult() ahora llama a updateParticipantScore()
+  en background para torneos con ID centralizado (contiene '_').
+
+[COMPLETADO] PASO 1.3 — TournamentLeaderboard.jsx
+  Archivo creado: src/components/TournamentLeaderboard.jsx
+  Props: tournamentId, par, currentUsername
+  Muestra: tabla ordenada, medallas top3, usuario resaltado, estado vacío.
+
+--------------------------------------------------------------------------
+[COMPLETADO] PASO 1.4 — Integrar pestaña "Clasificación" en CalendarView.jsx
+  Archivo modificado: src/components/CalendarView.jsx
+  Cambio: Añadidas pestañas "Mis Resultados" y "Clasificación" condicionadas a isSharedTournamentId().
+  Estado añadido detailTab y lógica de condicional de renderizado para mostrar TournamentLeaderboard.
+--------------------------------------------------------------------------
+
+--------------------------------------------------------------------------
+[COMPLETADO] PASO 1.5 — Reglas de Seguridad de Firestore
+  Archivo modificado: firestore.rules
+  Cambio: Añadidas reglas para la colección tournaments_leaderboard permitiendo lectura pública y escritura autenticada.
+--------------------------------------------------------------------------
+
+==========================================================================
+ FASE 2: GESTIÓN DE TORNEOS (REFACTORIZACIÓN)
+==========================================================================
+
+--------------------------------------------------------------------------
+[COMPLETADO] PASO 2.1 y 2.2 — Nueva Arquitectura de Suscripción a Torneos
+--------------------------------------------------------------------------
+  Archivos modificados: 
+    - src/services/tournaments.service.js
+    - src/hooks/useTournaments.js
+    - src/components/CommunityExplorerModal.jsx
+    - src/components/CalendarView.jsx
+    - src/App.jsx
+  Resumen:
+    Se ha implementado el modelo de "Suscripción" en lugar de "Copia Local".
+    Al pulsar "Apuntarse", se guarda una referencia en `/users/{uid}/subscribed_tournaments/{id}`.
+    El `CommunityExplorerModal` ahora muestra el recuento en vivo de cuántas jugadoras están apuntadas usando un contador optimizado.
+    Se puede hacer Join y Leave (Desapuntarse).
+
+==========================================================================
+SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
+==========================================================================
+
+[COMPLETADO] CORRECCIÓN DE EMERGENCIA — Despliegue Quirúrgico
+  Archivos modificados: 
+    - deploy_ftp_root.cjs
+    - deploy_force_redirect.cjs
+  Resumen:
+    Se ha modificado el sistema de despliegue para evitar que la app de golf tome el control de todo el root de Hostinger.
+    - El build completo ahora se aloja solo en `/GolfTeam/`.
+    - Se ha implementado un `.htaccess` inteligente en la raíz que:
+      1. Detecta si el archivo/carpeta solicitado existe físicamente (permite otras webs).
+      2. Redirige SOLO rutas específicas de la app (/live, /stats, etc.) a Vercel.
+      3. Preserva el acceso a la API en Hostinger.
+
+[COMPLETADO] PASO 2.3 — Badge de participantes (Leaderboard)
+  Archivos modificados:
+    - src/services/tournaments.service.js
+    - src/components/CalendarView.jsx
+  Resumen:
+    Implementado contador atómico (Firestore increment) para participantes.
+    Añadido badge visual en la lista principal de torneos.
+
+==========================================================================
+ SESIÓN: 2026-04-29 | Modelo: Antigravity (Google DeepMind)
+==========================================================================
+
+[COMPLETADO] CORRECCIÓN DE INFRAESTRUCTURA — Subdirectorios y Base Relativa
+  Archivos modificados: 
+    - vite.config.js (base: './')
+    - deploy_ftp_root.cjs (remoteRoot: '/Player_HCP/')
+    - deploy_force_redirect.cjs
+  Resumen:
+    Se ha corregido el problema de la "pantalla en blanco" al usar base relativa.
+    La app ahora es compatible con despliegues en cualquier subcarpeta.
+    Se ha configurado reinaldomoon.top/Player_HCP/ como la ruta principal en Hostinger.
+
+[COMPLETADO] PASO 3.1 — Página pública de leaderboard (/leaderboard/:id)
+  Archivo creado: src/components/PublicLeaderboardView.jsx
+  Resumen: Creada vista pública con diseño premium, carga de metadatos del torneo y tabla de posiciones en tiempo real.
+  Corrección técnica: Configurada base absoluta (/Player_HCP/) para soportar rutas profundas.
+
+[COMPLETADO] PASO 3.2 — Botón "Compartir Clasificación"
+  Archivo modificado: src/components/CalendarView.jsx
+  Resumen: Añadido botón en la pestaña de clasificación que genera el link público dinámicamente y permite compartirlo por WhatsApp/Portapapeles.
+
+==========================================================================
+ SESIÓN: 2026-04-30 | Modelo: Antigravity (Google DeepMind)
+==========================================================================
+
+[COMPLETADO] FASE 3.1 & 3.2 — Clasificación Pública y Botón de Compartir
+  Archivos modificados: 
+    - src/components/PublicLeaderboardView.jsx (NUEVO)
+    - src/App.jsx (Routing)
+    - vite.config.js (Base absoluta /Player_HCP/)
+    - src/components/CalendarView.jsx (Botón Compartir)
+  Resumen:
+    Cualquier persona con el link puede ver la clasificación en vivo.
+    Los usuarios pueden compartir el link directamente desde la app.
+
+==========================================================================
+ SESIÓN: 2026-04-30 (Continuación) | Modelo: Antigravity
+==========================================================================
+
+[COMPLETADO] ESTANDARIZACIÓN DE NOMENCLATURA Y LIMPIEZA UI (FASE 2)
+  Archivos modificados: 
+    - src/components/TournamentsCentralView.jsx
+    - src/components/CalendarView.jsx
+  Resumen:
+    - Eliminados los badges de ID / Organizador que mostraban códigos técnicos (ej: "12") en todas las vistas de lista.
+    - La interfaz ahora es 100% limpia, centrada en el nombre del torneo y la información de juego.
+    - Se mantiene la arquitectura de IDs deterministas (slug+fecha) internamente para escalabilidad.
+
+==========================================================================
+ SESIÓN: 2026-05-01 (Continuación)
+==========================================================================
+
+[COMPLETADO] CORRECCIÓN DE DUPLICADOS Y BORRADO EN CALENDARIO
+  Archivos modificados:
+    - src/components/CalendarView.jsx
+    - src/hooks/useTournaments.js
+  Resumen:
+    - Ultra-normalización de la clave de deduplicación de torneos (Set en CalendarView).
+    - Agregado onClick stopPropagation al wrapper del menú contextual para asegurar que el borrado funcione de inmediato sin cerrarse antes de ejecutarse.
+    - Exclusión de torneos ocultos/borrados de las suscripciones en useTournaments.
+
+[COMPLETADO] PERSISTENCIA DE RUTA PARA SAFARI / IOS
+  Archivos modificados:
+    - src/App.jsx
+  Resumen:
+    - Guardado de la última ruta visitada en localStorage para recuperar automáticamente el torneo activo en Safari/iOS tras volver del modo segundo plano (background).
+
+==========================================================================
+  PRÓXIMO PASO: PASO 3.3 — Panel de Control de Administrador
+==========================================================================
+  Siguiente: Crear una vista centralizada para ver todos los torneos activos en la comunidad y su participación.
+
+
+==========================================================================
+ SESIÓN: 2026-05-03 | Modelo: Antigravity (Google DeepMind)
+==========================================================================
+
+[COMPLETADO] PASO 3.2/3.3 — Panel de Control de Administrador para Torneos Centralizados
+  Archivos modificados: 
+    - src/components/admin/TournamentsAdminPanel.jsx
+  Resumen:
+    - Se añadió un sistema de pestañas ("Oficiales RFEG/FCG" vs "Centralizados").
+    - Ahora el administrador puede ver la lista de torneos compartidos y cuánta gente hay apuntada en cada uno.
+    - Se añadió un formulario para "Crear Torneo Centralizado" directamente desde el panel (con ID determinista y `isCentral: true`).
+    - Se incluyó la funcionalidad de "Ver Participantes", que carga y ordena los resultados de la subcolección `participants` de cada torneo.
+
+==========================================================================
+  PRÓXIMO PASO: PASO 3.4 — Clasificaciones por ronda
+==========================================================================
+  Siguiente: Añadir filtros por ronda (D1, D2, Total) en el componente TournamentLeaderboard.jsx.
+
+[COMPLETADO] HOTFIX — Auto-detección de jugadoras en vivo por mismo torneo
+  Archivos modificados:
+    - src/components/PublicScorecardView.jsx
+  Resumen:
+    - La pestaña "CLASIFICACIÓN" del modo vivo combina el roster público con resultados públicos encontrados automáticamente en `users/*/results`.
+    - El match se hace por ID canónico/legacy y, si hace falta, por nombre + fecha + campo del torneo.
+    - Verificado en preview: `/live/ona/circuito-miguel-angel-jimenez-infantil_10052026?r=0` muestra Ona y Nicole con sus scores.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Persistir auto-descubrimiento en participants
+==========================================================================
+  Siguiente: Cuando el modo vivo detecte resultados del mismo torneo, considerar escribir/normalizar esos participantes en `tournaments/{id}/participants` desde un proceso autenticado/admin para reducir lecturas públicas.
+
+[COMPLETADO] UX — Filas clicables en clasificación del modo vivo
+  Archivos modificados:
+    - src/components/PublicScorecardView.jsx
+  Resumen:
+    - Cada fila de la clasificación pública enlaza al detalle `/live/{username}/{tournamentId}` de esa jugadora.
+    - Se conserva el mismo torneo y el parámetro de ronda `r` cuando existe.
+    - Verificado en preview: click en Nicole desde Catalunya Infantil navega a `/live/nicole/{Catalunya Infantil ID}`.
+
+[COMPLETADO] UX — Leaderboard desplegable con hoyos inline
+  Archivos modificados:
+    - src/components/PublicScorecardView.jsx
+  Resumen:
+    - Las filas de la clasificación pública ahora expanden/contraen el detalle por hoyos debajo de la jugadora en lugar de navegar a otra ruta.
+    - El detalle muestra por ronda los hoyos 1-18, par y golpes, con colores de resultado.
+    - Se conserva soporte de teclado Enter/Espacio y estado visual "Ocultar hoyos".
+    - Verificado en preview: click en Nicole despliega la Ronda 1 con sus golpes por hoyo debajo de su fila.
+
+[COMPLETADO] HARDENING — Backfill automático de participantes con score
+  Archivos modificados:
+    - src/services/results.service.js
+    - src/services/leaderboard.service.js
+    - src/App.jsx
+    - src/contexts/UserDataContext.jsx
+  Resumen:
+    - `saveResult()` ahora sincroniza automáticamente el score público en `tournaments/{id}/participants/{username}` usando el ID canónico del torneo.
+    - `subscribeToResults()` hace backfill silencioso de resultados existentes al cargar, con firma por sesión para evitar reescrituras repetidas.
+    - Al borrar un resultado se limpia el score público y se conserva a la jugadora como participante pendiente.
+    - Se eliminaron escrituras duplicadas desde `App.jsx` y `UserDataContext.jsx`; el servicio de resultados queda como única puerta de sincronización.
+    - Build verificado con `npm run build`.
+
+[COMPLETADO] HOTFIX — Persistencia reforzada del modo móvil de marcar
+  Archivos modificados:
+    - src/components/CalendarView.jsx
+  Resumen:
+    - El modo móvil de marcar ya no borra su estado de `localStorage` cuando React desmonta o remonta temporalmente el overlay.
+    - Al volver desde otra app en iPhone, `pageshow`/`visibilitychange` restaura automáticamente torneo, ronda y hoyo si había una sesión activa.
+    - El estado persistido solo se limpia al cerrar explícitamente el editor o terminar la ronda.
+    - Build verificado con `npm run build`.
+
+[COMPLETADO] HARDENING — Sustitución de alert/confirm en flujos principales
+  Archivos modificados:
+    - src/components/CalendarView.jsx
+    - src/components/TournamentsCentralView.jsx
+    - src/App.jsx
+    - src/contexts/ProfileContext.jsx
+  Resumen:
+    - Eliminados `alert()` y `window.confirm()` de calendario, central de torneos, perfil, foto, reset/cache y herramientas principales de usuario.
+    - Añadidos toasts no bloqueantes y modales de confirmación propios con estilos inline.
+    - "Ver quién" en la central ahora despliega la lista inline en lugar de usar un alert nativo.
+    - Build verificado con `npm run build`.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Sustituir alert/confirm en paneles secundarios/admin
+==========================================================================
+  Siguiente: Reemplazar los usos restantes en `ResultsView.jsx`, `TournamentsAdminPanel.jsx`, `UsersAdminPanel.jsx`, `SystemAdminPanel.jsx` y `SecurityAdminPanel.jsx`.
+
+[COMPLETADO] HARDENING — Sustitución completa de alert/confirm restantes
+  Archivos modificados:
+    - src/components/FeedbackLayer.jsx
+    - src/components/ResultsView.jsx
+    - src/components/admin/SecurityAdminPanel.jsx
+    - src/components/admin/SystemAdminPanel.jsx
+    - src/components/admin/TournamentsAdminPanel.jsx
+    - src/components/admin/UsersAdminPanel.jsx
+  Resumen:
+    - Añadido `useFeedbackLayer()` reutilizable para toasts y confirmaciones propias.
+    - Eliminados todos los usos restantes de `alert()` y `window.confirm()` en `src`.
+    - Los paneles secundarios/admin mantienen confirmaciones destructivas con modal propio y mensajes no bloqueantes.
+    - Build verificado con `npm run build`.
+
+[COMPLETADO] HOTFIX — Fotos de perfil en clasificación del modo vivo
+  Archivos modificados:
+    - src/components/PublicScorecardView.jsx
+    - src/services/leaderboard.service.js
+  Resumen:
+    - La clasificación pública ahora enriquece cada participante leyendo su perfil público por username para resolver `photo_url`.
+    - Las futuras escrituras de `participants` guardan también `photo_url`.
+    - Verificado en preview: la vista solicita fotos desde Cloudflare para Ona, Nicole y Txell; Maria Ros cae a avatar porque su perfil `mariaros` no expone `photo_url`.
+    - Ajuste posterior: si una jugadora no tiene `photo_url`, no se solicita avatar generado; se muestra un placeholder neutro.
+    - Ajuste posterior: Nicole, Ona y Txell resuelven su foto conocida de Cloudflare aunque el documento público `participants` aún no tenga `photo_url`.
+
+[COMPLETADO] HOTFIX — Clasificación conjunta dentro del modo vivo
+  Archivos modificados:
+    - src/components/PublicScorecardView.jsx
+  Resumen:
+    - La ruta pública `/live/:username/:id` abre por defecto en la pestaña "CLASIFICACIÓN".
+    - La clasificación de esa página ya no lee resultados privados de una lista fija de jugadoras; ahora escucha `tournaments/{id}/participants`.
+    - Verificado en preview: `/live/ona/{Catalunya Infantil ID}` muestra Maria Ros, Nicole, Ona y Txell en la misma tabla.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Backfill automático de participantes con score
+==========================================================================
+  Siguiente: Generalizar el backfill para que cualquier resultado existente bajo un ID canónico actualice `tournaments/{id}/participants/{username}` sin depender de acciones manuales.
+
+[COMPLETADO] UX — Compartir clasificación usando modo vivo
+  Archivos modificados:
+    - src/components/CalendarView.jsx
+  Resumen:
+    - El botón "Compartir Clasificación Pública" vuelve a generar enlaces `/live/{username}/{tournamentId}?r=0`.
+    - Se abandona la ruta `/leaderboard/{id}` para este flujo porque el leaderboard integrado en modo vivo es la vista preferida.
+    - Se eliminó el `alert()` de fallback en este botón; la acción copia en portapapeles y registra el enlace en consola.
+    - Build y despliegue ejecutados con `npm run deploy:all`.
+
+[COMPLETADO] UX — Hoyo actual por jugadora en clasificación viva
+  Archivos modificados:
+    - src/services/leaderboard.service.js
+    - src/components/PublicScorecardView.jsx
+  Resumen:
+    - Se añadió `getResultProgress()` para calcular estado público desde `scorecards`: `Hoyo X`, `R2 · Hoyo X`, `Finalizada` o `Pendiente`.
+    - Las futuras escrituras de `tournaments/{id}/participants/{username}` guardan `status`, `currentRound`, `currentHole`, `holesPlayed` y `progressLabel`.
+    - La clasificación pública `/live/:username/:id` añade columna `HOYO` y también calcula el progreso al descubrir resultados existentes.
+    - Corrección adicional: el `vs par` de vueltas parciales se calcula contra el par de los hoyos jugados, no contra el par completo de 18 hoyos.
+    - Build verificado con `npm run build`.
+
+[COMPLETADO] PERFORMANCE — Carga inicial más ligera para Safari
+  Archivos modificados:
+    - src/App.jsx
+  Resumen:
+    - Las rutas públicas (`/live`, `/live-team`, `/leaderboard`) se separaron del arranque privado de la app.
+    - Los componentes principales pasan a cargarse con `React.lazy()` y `Suspense`.
+    - La vista viva ya no ejecuta el arranque privado completo ni registra el service worker desde `AppContent`.
+    - Build verificado: el bundle principal bajó de ~1.67 MB a ~1.10 MB y `PublicScorecardView` queda como chunk separado (~37 KB).
+
+[COMPLETADO] UX — Click en leaderboard abre puntuación por hoyos
+  Archivos modificados:
+    - src/components/PublicScorecardView.jsx
+  Resumen:
+    - Las filas del leaderboard vivo enlazan a `/live/{username}/{tournamentId}?r=...&view=scorecard`.
+    - La vista pública sincroniza la pestaña activa con `view=scorecard` o `view=leaderboard`.
+    - Verificado en preview: click en Nicole desde la clasificación abre directamente `MI VUELTA` con la tabla de hoyos 1-18.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Backfill automático de participantes con score
+==========================================================================
+  Siguiente: Generalizar el backfill para que cualquier resultado existente bajo un ID canónico actualice `tournaments/{id}/participants/{username}` sin depender de acciones manuales.
+
+==========================================================================
+ SESIÓN: 2026-05-14 | Modelo: Codex GPT-5
+==========================================================================
+
+[COMPLETADO] DATOS — Unificación de torneos futuros comunes
+  Archivos modificados:
+    - scratch/unify_future_common_tournaments.mjs
+  Firestore actualizado:
+    - users/{mariaros,nicole,ona,txell}/subscribed_tournaments/{id}
+    - users/{mariaros,nicole,ona,txell}/custom_tournaments/{id} eliminados cuando eran equivalentes
+    - tournaments/{id}/participants/{username}
+  Resumen:
+    - Se compararon los torneos futuros de Maria Ros, Nicole, Ona y Txell desde 2026-05-14.
+    - Se excluyó explícitamente el Campionat de Catalunya Infantil del 16/05/2026.
+    - Se unificaron como torneos comunes:
+      1. XXV Junior & Baby Cup Infantil/Aleví/Benjamí — 07/06/2026 — Maria Ros, Nicole.
+      2. Campionat de Catalunya Absolut i 2a (WAGR) — 11/07/2026-12/07/2026 — Maria Ros, Nicole, Ona, Txell.
+      3. Campionat de Catalunya Matchplay Sub-18/16/14/12/10 — 19/09/2026-20/09/2026 — Ona, Txell.
+      4. Campionat de Catalunya Sub-18 i Sub-16 (WAGR) — 02/10/2026-04/10/2026 — Maria Ros, Nicole, Ona, Txell.
+    - Verificado: los custom equivalentes ya no existen y los rosters públicos de participants están creados.
+    - Corrección posterior: `.firebaserc` apuntaba al proyecto antiguo `golfscoring-a9a6c`, mientras la app usa `golfscorings-e4338`.
+    - Se desplegaron `firestore.rules` al proyecto real `golfscorings-e4338` y se escribieron también los 4 documentos en `shared_tournaments`.
+    - Ajuste posterior: por decisión de producto, las 4 jugadoras (`mariaros`, `nicole`, `ona`, `txell`) quedan apuntadas a los 4 torneos futuros comunes, aunque originalmente no todas los tuvieran en su calendario.
+    - Verificado: los 4 torneos futuros tienen las 4 en `subscribed_tournaments`, `tournaments/{id}/participants` y `shared_tournaments.unifiedPlayers`.
+
+==========================================================================
+ SESIÓN: 2026-05-12 | Modelo: Codex GPT-5
+==========================================================================
+
+[COMPLETADO] DATOS — Unificación Catalunya Infantil para jugadoras comunes
+  Archivos modificados:
+    - scratch/unify_catalunya_infantil_participants.mjs
+  Firestore actualizado:
+    - users/{mariaros,nicole,ona,txell}/subscribed_tournaments/{Catalunya Infantil ID}
+    - tournaments/{Catalunya Infantil ID}/participants/{mariaros,nicole,ona,txell}
+  Resumen:
+    - Maria Ros, Nicole, Ona y Txell apuntan ahora al mismo ID canónico del `Campionat de Catalunya Infantil`.
+    - El roster público de clasificación contiene las cuatro jugadoras.
+    - Ona ya tenía un resultado privado bajo ese ID; todavía no hay scores públicos porque no hay golpes/rounds completos guardados.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Backfill automático de participantes con score
+==========================================================================
+  Siguiente: Generalizar el backfill para que cualquier resultado existente bajo un ID canónico actualice `tournaments/{id}/participants/{username}` sin depender de acciones manuales.
+
+[COMPLETADO] HOTFIX — Metadata pública para leaderboard conjunto
+  Archivos modificados:
+    - src/components/PublicLeaderboardView.jsx
+  Resumen:
+    - La página pública `/leaderboard/:id` ahora resuelve IDs canónicos y usa el catálogo local como fallback si Firestore bloquea metadatos.
+    - Verificado en preview: el Catalunya Infantil muestra Maria Ros, Nicole, Ona y Txell en una clasificación común.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Backfill automático de participantes con score
+==========================================================================
+  Siguiente: Generalizar el backfill para que cualquier resultado existente bajo un ID canónico actualice `tournaments/{id}/participants/{username}` sin depender de acciones manuales.
+
+==========================================================================
+ SESIÓN: 2026-05-10 | Modelo: Codex GPT-5
+==========================================================================
+
+[COMPLETADO] HOTFIX — Enlaces legacy del modo vivo para torneos locales
+  Archivos modificados:
+    - src/utils/tournamentIds.js
+    - src/components/PublicScorecardView.jsx
+    - src/components/TeamLiveScorecard.jsx
+  Resumen:
+    - `getTournamentIdCandidates()` ahora trata strings/números sin fecha como IDs explícitos y devuelve candidatos canónicos/legacy.
+    - Las vistas públicas `/live` y `/live-team` ya reconocen torneos locales aunque `src/data/tournaments.json` use ID numérico y el enlace use el ID determinista legacy.
+    - Verificado en local y producción limpia sin service worker: `/live/ona/circuito-miguel-angel-jimenez-infantil_10052026?r=0` carga el torneo correcto.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Sustituir alert()/window.confirm()
+==========================================================================
+  Siguiente: Reemplazar confirmaciones y avisos nativos por UI silenciosa o componentes inline, respetando la regla del proyecto.
+
+[COMPLETADO] HOTFIX — Icono PWA de notificaciones en modo vivo
+  Archivos modificados:
+    - src/components/PublicScorecardView.jsx
+    - deploy_ftp_root.cjs
+  Resumen:
+    - Las notificaciones del modo vivo ya usan `import.meta.env.BASE_URL` para resolver el icono bajo `/GolfTeam/`.
+    - El deploy también sube `pwa-192x192.png` y `pwa-512x512.png` al root para cubrir navegadores con bundles antiguos cacheados que aún soliciten `/pwa-192x192.png`.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Firestore shared_tournaments y transporte live
+==========================================================================
+  Siguiente: Revisar si conviene forzar long polling de Firestore solo si los errores de QUIC afectan realmente a la recepción de datos en vivo.
+
+==========================================================================
+ SESIÓN: 2026-05-09 | Modelo: Codex GPT-5
+==========================================================================
+
+[COMPLETADO] ESTABILIZACIÓN — Leaderboard en vivo centralizado
+  Archivos modificados:
+    - src/App.jsx
+    - src/services/tournaments.service.js
+    - src/components/PublicLeaderboardView.jsx
+    - src/components/TournamentLeaderboard.jsx
+  Resumen:
+    - El flujo real de guardado en App.jsx ahora sincroniza los resultados de torneos centralizados con `/tournaments/{id}/participants`.
+    - Al apuntarse a un torneo compartido, la jugadora se registra como participante pendiente antes de tener score.
+    - La vista pública `/leaderboard/:id` lee la misma fuente centralizada que la pestaña interna, eliminando la dependencia incorrecta de `tournament_results`.
+    - Corregidos imports de Firestore necesarios para los contadores de suscripción.
+
+[COMPLETADO] PASO 3.4 — Clasificaciones por ronda
+  Archivo modificado:
+    - src/components/TournamentLeaderboard.jsx
+  Resumen:
+    - Añadido selector Total/R1/R2/... en la clasificación interna.
+    - La tabla se reordena en tiempo real según la ronda seleccionada o el total acumulado.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Sustituir alert()/window.confirm()
+==========================================================================
+
+==========================================================================
+ SESIÓN: 2026-05-09 | Modelo: Codex GPT-5 (Continuación)
+==========================================================================
+
+[COMPLETADO] MANTENIMIENTO — Corrección de extracción y reparación de histórico de hándicap
+  Archivos modificados:
+    - api/get_handicap.js
+    - src/services/handicap.service.js
+  Resumen:
+    - Endurecido el parser del PDF de RFEG para dejar de extraer el último decimal arbitrario de cada fila.
+    - La sincronización de handicap_history en Firestore ahora repara entradas existentes si cambia el valor detectado para una fecha.
+    - Corregido en producción el dato contaminado de Nicole del 2026-05-03 (15.7 → 5.7) y desplegada la app pública.
+
+[COMPLETADO] MANTENIMIENTO — Limpieza de catálogo y permisos admin
+  Archivos modificados:
+    - src/data/seasons/tournaments_2026.json
+  Resumen:
+    - Eliminado del catálogo 2026 el torneo oficial inexistente "Campionat de Catalunya Infantil, Aleví i Benjamí".
+
+[COMPLETADO] MANTENIMIENTO — Migración de códigos de torneos futuros a ID canónico v2
+  Archivos modificados:
+    - src/utils/tournamentIds.js
+    - src/services/tournaments.service.js
+    - src/hooks/useTournaments.js
+    - src/components/PublicScorecardView.jsx
+    - src/components/TeamLiveScorecard.jsx
+    - src/components/CalendarView.jsx
+    - src/components/admin/TournamentsAdminPanel.jsx
+    - src/data/seasons/tournaments_2026.json
+    - src/data/tournaments.json
+    - scratch/migrate_future_tournament_ids.mjs
+  Resumen:
+    - A partir del 11/05/2026 los torneos usan un ID v2 más robusto: fecha inicio/fin + organizador + campo + slug + hash corto.
+    - Añadido mapa explícito de migración old→new y resolución canónica para mantener compatibilidad con enlaces y referencias legacy.
+    - Migrados en Firestore 16 torneos oficiales futuros, 4 participant rosters, 1 resultado legacy, 14 custom_tournaments, 4 subscribed_tournaments y 8 documentos de preferencias.
+    - Verificado que los docs antiguos críticos (ej. tournament 15 y subscribed/result asociados) ya no existen y que sus equivalentes canónicos sí.
+    - Detectado aparte que `shared_tournaments` devuelve `permission-denied` desde cliente autenticado en scripts; la migración principal se ha hecho saltando esa colección porque la app ya puede resolver esos torneos desde `tournaments`.
+
+[COMPLETADO] HOTFIX — Recuperación de modo vivo público tras migración de IDs
+  Archivos modificados:
+    - src/App.jsx
+    - src/hooks/useTournaments.js
+    - src/components/PublicScorecardView.jsx
+    - src/components/TeamLiveScorecard.jsx
+    - src/services/tournaments.service.js
+  Resumen:
+    - Las rutas públicas (`/live`, `/live-team`, `/leaderboard`) ya no montan listeners privados de `shared_tournaments`, evitando `permission-denied` innecesarios.
+    - La vista pública ahora espera a resolver el UID del usuario y también busca el torneo en `subscribed_tournaments`, no solo en `custom_tournaments` u oficiales.
+    - Corregido el parámetro de ruta de `live-team` (`tournamentId`) y blindado el render cuando una ronda todavía no tiene `scorecard`.
+    - Verificación real con navegador automatizado en producción: `/live/nicole/15` y `/live-team/demo/15?players=nicole,ona` cargan sin `Torneo no encontrado` ni errores de consola.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Revisar acceso cliente a shared_tournaments
+==========================================================================
+  Siguiente: Aclarar por qué `shared_tournaments` falla con `permission-denied` en scripts autenticados y, en paralelo, seguir sustituyendo `alert()/window.confirm()` por UI silenciosa.
+    - Promocionados Nicole y Jordi como administradores en Firestore para gestionar torneos comunitarios desde el panel admin.
+
+[COMPLETADO] MANTENIMIENTO — Bloqueo explícito de torneo fantasma en central
+  Archivos modificados:
+    - src/components/TournamentsCentralView.jsx
+  Resumen:
+    - Añadido filtro defensivo para ocultar el torneo fantasma "Campionat de Catalunya Infantil, Aleví i Benjamí" del 06/06/2026 - 07/06/2026 aunque reaparezca por caché o datasets heredados.
+
+[COMPLETADO] MANTENIMIENTO — Ocultar torneos pasados en la central
+  Archivos modificados:
+    - src/components/TournamentsCentralView.jsx
+  Resumen:
+    - Eliminada la excepción que mantenía visibles los torneos ya pasados cuando la usuaria estaba inscrita.
+
+[COMPLETADO] MANTENIMIENTO — Ajuste visual de la acción "Ver quién"
+  Archivos modificados:
+    - src/components/TournamentsCentralView.jsx
+  Resumen:
+    - Sustituido el botón nativo por una acción secundaria tipo chip, coherente con la estética de badges y acciones de la central.
+
+[COMPLETADO] MANTENIMIENTO — Unificación de inscripciones y roster público
+  Archivos modificados:
+    - src/services/tournaments.service.js
+    - src/components/TournamentsCentralView.jsx
+  Resumen:
+    - Las inscripciones a torneos oficiales también se reflejan en `tournaments/{id}/participants/{username}`.
+    - La central ahora lee conteo y nombres desde esa subcolección pública, eliminando la inconsistencia entre el badge de inscritas y el detalle de "Ver quién".
+    - Al desapuntarse, también se elimina el documento público de participante para evitar rosters fantasma.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Sustituir alert()/window.confirm()
+==========================================================================
+  Siguiente: Reemplazar confirmaciones y avisos nativos por UI silenciosa o componentes inline, respetando la regla del proyecto.
+
+==========================================================================
+ SESIÓN: 2026-05-04 | Modelo: Antigravity (Google DeepMind)
+==========================================================================
+
+[COMPLETADO] MEJORAS DE ESTABILIDAD Y PWA (MOBILE)
+  Archivos modificados: 
+    - src/App.jsx
+    - src/components/CalendarView.jsx
+    - src/components/MobileScorecardEditor.jsx
+  Resumen:
+    - Corrección de la pérdida de estado en la tarjeta de puntuación (PWA iOS) al cambiar de app, redirigiendo a la ruta `/event/:id` automáticamente al volver a cargar.
+    - Integración de Screen Wake Lock API (`navigator.wakeLock`) para mantener la pantalla encendida automáticamente mientras se tiene abierta la ventana de anotación en el campo.
+
+[COMPLETADO] CORRECCIÓN DE PARSEO DE HÁNDICAP RFEG
+  Archivos modificados:
+    - api/get_handicap.js
+  Resumen:
+    - Solucionado el fallo donde el scraper ignoraba el primer dígito del hándicap si el texto del PDF de la RFEG venía comprimido sin espacios (ej. convirtiendo 11.4 a 1.4).
+    - Se ha implementado un nuevo sistema robusto basado en separar por bloques de fecha y extraer el último número decimal absoluto.
+
+==========================================================================
+  PRÓXIMO PASO: PASO 3.4 — Clasificaciones por ronda
+==========================================================================
+  Siguiente: Añadir filtros por ronda (D1, D2, Total) en el componente TournamentLeaderboard.jsx.
+
+[COMPLETADO] ADMIN — Contraseñas temporales seguras
+  Archivos modificados:
+    - api/set_temp_password.js
+    - src/components/admin/UsersAdminPanel.jsx
+    - package.json
+    - package-lock.json
+  Resumen:
+    - Añadido endpoint serverless protegido con Firebase Admin SDK para cambiar la contraseña de un usuario por UID.
+    - El endpoint verifica el ID token del solicitante y exige `role: admin` en `users/{uid}` antes de ejecutar `updateUser()`.
+    - El panel de usuarios ahora incluye accion "Temporal" que genera una contraseña fuerte, la asigna y la muestra una sola vez para entregarla a la usuaria.
+    - Se marca el perfil con `must_change_password: true` y metadatos de auditoria (`temporary_password_assigned_at/by`).
+    - Verificado `npm run build` y que no se reintroducen `alert()` ni `window.confirm()`.
+  Nota operativa:
+    - Vercel necesita configurar `FIREBASE_SERVICE_ACCOUNT_JSON` o `FIREBASE_SERVICE_ACCOUNT_BASE64` (o `FIREBASE_CLIENT_EMAIL` + `FIREBASE_PRIVATE_KEY`) del proyecto `golfscorings-e4338` para que el endpoint pueda ejecutar Firebase Admin.
+
+=========================================================================
+  PRÓXIMO PASO: OPERACIÓN — Configurar service account Firebase Admin en Vercel
+=========================================================================
+  Siguiente: Añadir el service account correcto de `golfscorings-e4338` a Vercel y probar la accion "Temporal" con un usuario interno.
+
+[COMPLETADO] OPERACIÓN ADMIN — Password temporal de Maria Ros
+  Datos modificados:
+    - Firebase Auth: usuario `mariaros@golfteam.app` (`PJXYMRB36jTkWkFY7v1k8Sz7kRj2`)
+    - Firestore: `users/PJXYMRB36jTkWkFY7v1k8Sz7kRj2`
+  Resumen:
+    - Contraseña cambiada a la temporal solicitada por el administrador.
+    - Perfil marcado con `must_change_password: true` y metadatos de asignación temporal.
+    - Verificado login correcto con Identity Toolkit sin exponer tokens.
+
+[COMPLETADO] HARDENING OPERATIVO — Firebase Admin en Vercel
+  Configuracion modificada:
+    - Vercel Production: `FIREBASE_SERVICE_ACCOUNT_BASE64` añadido como variable cifrada.
+  Resumen:
+    - Generada una key nueva del service account `firebase-adminsdk-fbsvc@golfscorings-e4338.iam.gserviceaccount.com`.
+    - Cargada en Vercel como secreto cifrado y eliminada la copia temporal local.
+    - Redeploy completo ejecutado con `npm run deploy:all`.
+    - Verificado `/api/set_temp_password`: ya no falla por falta de Firebase Admin y devuelve `401 Falta token de autenticacion` cuando se llama sin token, que es el comportamiento seguro esperado.
+  Siguiente:
+    - Probar desde el panel admin real el boton `Temporal` con una cuenta interna si hace falta validar flujo end-to-end con ID token de administrador.
+
+[COMPLETADO] OPERACIÓN ADMIN — Alta batch de Itziar y Paula Albadalejo
+  Datos creados/modificados:
+    - Firebase Auth: `itziar@golfteam.app` (`nfAPpZ2WXlMkNPDAKAiAvUTSG2K3`)
+    - Firebase Auth: `paulaalbadalejo@golfteam.app` (`tdD3UbBr0WeR0ydBxJMJPqGQlMy2`)
+    - Firestore: `users/{uid}`, `usernames/{username}`
+    - Firestore: `custom_tournaments` y `subscribed_tournaments` copiados desde Nicole excluyendo Camiral.
+    - Firestore: `tournaments/{id}/participants/{username}` creado como participante pendiente para cada torneo suscrito.
+  Resumen:
+    - Itziar creada con 10 torneos personalizados y 10 suscripciones copiadas desde Nicole.
+    - Paula Albadalejo creada con 10 torneos personalizados y 10 suscripciones copiadas desde Nicole.
+    - No se detectaron documentos de Nicole con `Camiral` en las colecciones copiadas, por lo que no hubo exclusiones aplicadas.
+    - Verificado login correcto de ambas cuentas y mapeo `usernames` correcto.
+
+[COMPLETADO] OPERACIÓN ADMIN — Corrección nombre Itziar
+  Datos modificados:
+    - Firestore: `users/nfAPpZ2WXlMkNPDAKAiAvUTSG2K3.full_name`
+    - Firestore: 10 documentos `tournaments/{id}/participants/itziar`
+  Resumen:
+    - Nombre completo actualizado a `Itziar de Ormaechea`.
+    - Leaderboards públicos actualizados para mostrar el nombre completo correcto.
+
+==========================================================================
+ SESIÓN: 2026-05-16 | Modelo: Codex GPT-5
+==========================================================================
+
+[COMPLETADO] OPERACIÓN ADMIN — Login por nombre completo para nuevas altas
+  Archivos modificados:
+    - src/components/LoginViewFirebase.jsx
+  Datos modificados:
+    - Firebase Auth: Itziar migrada de `itziar@golfteam.app` a `itziardeormaechea@golfteam.app`
+    - Firestore: `users/nfAPpZ2WXlMkNPDAKAiAvUTSG2K3.username`
+    - Firestore: `usernames/itziar` eliminado y `usernames/itziardeormaechea` creado
+    - Firestore: 10 documentos `tournaments/{id}/participants/itziar` migrados a `itziardeormaechea`
+  Resumen:
+    - El login normaliza el nombre escrito quitando espacios y pasando a minúsculas antes de construir el email interno.
+    - Itziar puede entrar con `Itziar de Ormaechea` / `Itziar`.
+    - Paula puede entrar con `Paula Albadalejo` / `Albadalejo`.
+    - Los usuarios existentes no se han migrado salvo Itziar, respetando la decisión de producto.
+
+[COMPLETADO] UX — Clasificación solo por ronda/día activo
+  Archivos modificados:
+    - src/components/PublicScorecardView.jsx
+    - src/components/PublicLeaderboardView.jsx
+    - src/components/TournamentLeaderboard.jsx
+    - src/services/leaderboard.service.js
+  Resumen:
+    - En torneos de varios días, el leaderboard vivo detecta la ronda correspondiente a la fecha actual.
+    - Una jugadora solo entra en la clasificación del día si tiene golpes o total en esa ronda concreta.
+    - Si tiene resultados de días anteriores pero todavía no ha empezado la ronda actual, queda debajo como `Sin resultados`.
+    - Al introducir cualquier golpe de la ronda activa, sube automáticamente a la clasificación general usando su acumulado.
+    - La misma regla se aplica a la vista pública `/leaderboard/:id` y a las pestañas R1/R2/... del leaderboard interno.
+    - Build verificado con `npm run build`.
+    - Despliegue completo ejecutado con `npm run deploy:all` y verificado en `https://reinaldomoon.top/GolfTeam/`.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Revisión de ordenación acumulada multi-ronda
+==========================================================================
+  Siguiente: Validar con datos reales de torneo de varios días que el acumulado mantiene la clasificación correcta cuando varias jugadoras empiezan la ronda activa en momentos distintos.
+
+[COMPLETADO] HOTFIX UX — Evitar `RNAN` en leaderboard público
+  Archivos modificados:
+    - src/components/PublicScorecardView.jsx
+  Resumen:
+    - Corregida la etiqueta secundaria de participantes sin resultado cuando la ronda activa no es numérica.
+    - Si no hay ronda válida, ahora muestra `Sin resultados` en lugar de `Sin resultados RNaN`.
+    - Build verificado con `npm run build`.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Revisión de ordenación acumulada multi-ronda
+==========================================================================
+  Siguiente: Validar con datos reales de torneo de varios días que el acumulado mantiene la clasificación correcta cuando varias jugadoras empiezan la ronda activa en momentos distintos.
+
+[COMPLETADO] HOTFIX — Contraseñas temporales desde dominio Hostinger
+  Archivos modificados:
+    - src/config/api.js
+    - src/components/admin/UsersAdminPanel.jsx
+  Resumen:
+    - El botón `Temporal` del panel de usuarios llamaba a `/api/set_temp_password` relativo al dominio actual.
+    - En `reinaldomoon.top/GolfTeam` eso apuntaba a Hostinger, donde el endpoint no existe y devolvía 404.
+    - Se centralizó el endpoint en `API_ENDPOINTS.setTempPassword` apuntando a `https://golf-calendar-v3.vercel.app/api/set_temp_password`.
+    - Build verificado con `npm run build`.
+    - Despliegue completo ejecutado con `npm run deploy:all` y verificado que el bundle publicado contiene la URL correcta.
+
+==========================================================================
+ SESIÓN: 2026-05-24 | Modelo: Codex GPT-5
+==========================================================================
+
+[COMPLETADO] DATOS — Tarjeta roja Golf Sant Cugat
+  Archivos modificados:
+    - src/data/spanish_courses.json
+  Resumen:
+    - Actualizada la tarjeta de `Club de Golf Sant Cugat` con los pares de tees rojas de la tarjeta facilitada.
+    - Añadidos metadatos de metros, handicap de hoyos, `courseRating` 35.8 y `slopeRating` 122.
+    - Verificado que la tarjeta suma par 70 y 4522 metros.
+    - Validado con `node check_courses.cjs` y `npm run build`.
+
+[COMPLETADO] HOTFIX — Refresco de tarjetas antiguas de Sant Cugat
+  Archivos modificados:
+    - src/components/CalendarView.jsx
+  Resumen:
+    - Los resultados ya inicializados con la tarjeta antigua de Sant Cugat ahora se refrescan a la tarjeta roja vigente.
+    - La corrección sustituye solo los pares guardados cuando coinciden con la firma antigua conocida; conserva golpes, putts y GIR.
+    - Unificado el lookup flexible de campos para par del torneo, edición, inicialización y reset de tarjeta.
+    - Validado con `node check_courses.cjs` y `npm run build`.
+    - Despliegue completo ejecutado con `npm run deploy:all`.
+    - Verificado en producción que `/GolfTeam/assets/CalendarView-D_VrXvTR.js` contiene la tarjeta correcta.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Revisión de ordenación acumulada multi-ronda
+==========================================================================
+  Siguiente: Validar con datos reales de torneo de varios días que el acumulado mantiene la clasificación correcta cuando varias jugadoras empiezan la ronda activa en momentos distintos.
+
+==========================================================================
+ SESIÓN: 2026-06-22 | Modelo: Codex GPT-5
+==========================================================================
+
+[COMPLETADO] HOTFIX UX — Nombres legibles en leaderboard móvil
+  Archivos modificados:
+    - src/components/PublicScorecardView.jsx
+  Resumen:
+    - Compactadas las columnas POS/HOYO/TOTAL/VS PAR en la clasificación pública móvil.
+    - Los nombres de jugadoras pueden ocupar dos líneas antes de truncarse.
+    - La columna HOYO ya no muestra `Sin resultados` cuando no hay vuelta activa; ese estado queda solo debajo del nombre para evitar solapes.
+    - Build verificado con `npm run build` en checkout limpio fuera de Google Drive.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Revisión de ordenación acumulada multi-ronda
+==========================================================================
+  Siguiente: Validar con datos reales de torneo de varios días que el acumulado mantiene la clasificación correcta cuando varias jugadoras empiezan la ronda activa en momentos distintos.
+
+[COMPLETADO] DATOS — Campeonato de España Infantil en La Manga Campo Sur
+  Archivos modificados:
+    - src/data/tournaments.json
+    - src/data/seasons/tournaments_2026.json
+    - src/data/spanish_courses.json
+    - scratch/update_la_manga_campo_sur.mjs
+  Firestore actualizado:
+    - tournaments/{Campeonato de España Infantil ID}
+    - 3 documentos subscribed_tournaments existentes
+    - 1 resultado existente con `tournamentCourse`
+  Resumen:
+    - El torneo `Campeonato de España Infantil, Alevín y Benjamín 2026 "Memorial Juan Antonio Andreu"` queda asignado a `La Manga Campo Sur`.
+    - Añadida tarjeta `La Manga Campo Sur` como alias de `La Manga Club`, par 73, para que el scorecard resuelva correctamente los pares.
+    - Actualizados 5 documentos existentes en Firestore con `scratch/update_la_manga_campo_sur.mjs --apply`.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Revisión de ordenación acumulada multi-ronda
+==========================================================================
+  Siguiente: Validar con datos reales de torneo de varios días que el acumulado mantiene la clasificación correcta cuando varias jugadoras empiezan la ronda activa en momentos distintos.
+
+[COMPLETADO] OPERACIÓN ADMIN — Alta de Ona y Txell en Campeonato de España Infantil
+  Archivos modificados:
+    - scratch/check_campeonato_espana_roster.mjs
+  Firestore actualizado:
+    - users/{Ona UID}/subscribed_tournaments/{Campeonato de España Infantil ID}
+    - users/{Txell UID}/subscribed_tournaments/{Campeonato de España Infantil ID}
+    - tournaments/{Campeonato de España Infantil ID}/participants/{ona}
+    - tournaments/{Campeonato de España Infantil ID}/participants/{txell}
+  Resumen:
+    - Se comprobó que el roster público solo tenía `itziardeormaechea`, `nicole` y `paulaalbadalejo`.
+    - Ona Martinez Cucco y Txell Alós no tenían suscripción ni documento `participants`.
+    - Creadas ambas suscripciones y participantes pendientes para que aparezcan en el leaderboard.
+    - Verificado después de aplicar: roster público contiene `itziardeormaechea`, `nicole`, `ona`, `paulaalbadalejo`, `txell`.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Revisión de ordenación acumulada multi-ronda
+==========================================================================
+  Siguiente: Validar con datos reales de torneo de varios días que el acumulado mantiene la clasificación correcta cuando varias jugadoras empiezan la ronda activa en momentos distintos.
+
+[COMPLETADO] OPERACIÓN ADMIN — Alta de Maria Ros en Campeonato de España Infantil
+  Firestore actualizado:
+    - users/{Maria Ros UID}/subscribed_tournaments/{Campeonato de España Infantil ID}
+    - tournaments/{Campeonato de España Infantil ID}/participants/{mariaros}
+  Resumen:
+    - Se comprobó que `mariaros` no tenía suscripción, resultado ni documento `participants` para el campeonato.
+    - Creada la suscripción al torneo en `La Manga Campo Sur`.
+    - Creado el participante pendiente `mariaros` para que aparezca en el leaderboard.
+    - Verificado después de aplicar: roster público contiene `itziardeormaechea`, `mariaros`, `nicole`, `ona`, `paulaalbadalejo`, `txell`.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Revisión de ordenación acumulada multi-ronda
+==========================================================================
+  Siguiente: Validar con datos reales de torneo de varios días que el acumulado mantiene la clasificación correcta cuando varias jugadoras empiezan la ronda activa en momentos distintos.
+
+[COMPLETADO] OPERACIÓN ADMIN — Alta de Ion Lage
+  Archivos modificados:
+    - scratch/create_iona_user.mjs
+  Datos creados:
+    - Firebase Auth: `iona@golfteam.app`
+    - Firestore: `users/{os0a0zq8gyPFyKa3T9H81hfgD8i2}`
+    - Firestore: `usernames/iona`
+    - Firestore: `users/{uid}/subscribed_tournaments/{Campeonato de España Infantil ID}`
+    - Firestore: `tournaments/{Campeonato de España Infantil ID}/participants/iona`
+  Resumen:
+    - Creada usuaria `iona` con nombre completo `Ion Lage`.
+    - Alta en Campeonato de España Infantil en `La Manga Campo Sur` como participante pendiente.
+    - Verificado login correcto con `iona@golfteam.app` y que el roster público contiene `iona`, `itziardeormaechea`, `mariaros`, `nicole`, `ona`, `paulaalbadalejo`, `txell`.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Revisión de ordenación acumulada multi-ronda
+==========================================================================
+  Siguiente: Validar con datos reales de torneo de varios días que el acumulado mantiene la clasificación correcta cuando varias jugadoras empiezan la ronda activa en momentos distintos.
+
+[COMPLETADO] OPERACIÓN ADMIN — Alta de Julia Carrera Costa
+  Archivos modificados:
+    - scratch/create_julia_carrera_user.mjs
+  Datos creados:
+    - Firebase Auth: `juliacarrera@golfteam.app`
+    - Firestore: `users/{lQ79UhIbk2bfoVuA2MATKJTUQh32}`
+    - Firestore: `usernames/juliacarrera`
+  Resumen:
+    - Creada usuaria `juliacarrera` con nombre completo `Julia Carrera Costa`.
+    - Añadida licencia federativa `CB19299471`.
+    - Perfil de comunidad marcado como completo para que pueda ser encontrada por nombre y licencia.
+    - Verificado login correcto con `juliacarrera@golfteam.app`.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Revisión de ordenación acumulada multi-ronda
+==========================================================================
+  Siguiente: Validar con datos reales de torneo de varios días que el acumulado mantiene la clasificación correcta cuando varias jugadoras empiezan la ronda activa en momentos distintos.
+
+[COMPLETADO] OPERACIÓN ADMIN — Licencia federativa de Paula
+  Firestore actualizado:
+    - users/{tdD3UbBr0WeR0ydBxJMJPqGQlMy2}
+  Resumen:
+    - Actualizada `paulaalbadalejo` con licencia federativa `CB23971024`.
+    - Regenerado `search_text` para que pueda encontrarse por licencia en Comunidad/Amigas.
+    - Verificado después de aplicar: el documento mantiene `full_name: Paula Albadalejo` y `federation_id: CB23971024`.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Revisión de ordenación acumulada multi-ronda
+==========================================================================
+  Siguiente: Validar con datos reales de torneo de varios días que el acumulado mantiene la clasificación correcta cuando varias jugadoras empiezan la ronda activa en momentos distintos.
+
+[COMPLETADO] OPERACIÓN ADMIN — Perfil y licencia de Iona Lage Vilella
+  Firestore actualizado:
+    - users/{os0a0zq8gyPFyKa3T9H81hfgD8i2}
+  Resumen:
+    - Actualizada `iona` con nombre completo `Iona Lage Vilella`.
+    - Guardados campos estructurados: `first_name`, `last_name_1`, `last_name_2`.
+    - Añadida licencia federativa `CB35977549`.
+    - Marcado `profile_completed: true` y regenerado `search_text` para Comunidad/Amigas.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Revisión de ordenación acumulada multi-ronda
+==========================================================================
+  Siguiente: Validar con datos reales de torneo de varios días que el acumulado mantiene la clasificación correcta cuando varias jugadoras empiezan la ronda activa en momentos distintos.
+
+[COMPLETADO] OPERACIÓN ADMIN — Perfil y licencia de Itziar de Ormaechea Plans
+  Firestore actualizado:
+    - users/{nfAPpZ2WXlMkNPDAKAiAvUTSG2K3}
+  Resumen:
+    - Actualizada `itziardeormaechea` con nombre completo `Itziar de Ormaechea Plans`.
+    - Guardados campos estructurados: `first_name`, `last_name_1`, `last_name_2`.
+    - Añadida licencia federativa `CB04067410`.
+    - Marcado `profile_completed: true` y regenerado `search_text` para Comunidad/Amigas.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Revisión de ordenación acumulada multi-ronda
+==========================================================================
+  Siguiente: Validar con datos reales de torneo de varios días que el acumulado mantiene la clasificación correcta cuando varias jugadoras empiezan la ronda activa en momentos distintos.
+
+[COMPLETADO] OPERACIÓN ADMIN — Ocultar Orden de Mérito Camiral a Julia
+  Firestore actualizado:
+    - users/{lQ79UhIbk2bfoVuA2MATKJTUQh32}/settings/preferences
+  Resumen:
+    - Añadidos a `hiddenIds` los 12 torneos base `ORDEN DE MERITO` de `CAMIRAL` con `type: merit`.
+    - Eliminadas de forma defensiva posibles suscripciones/participantes de `juliacarrera` para esos IDs.
+    - Verificado por lectura de Firestore: `hiddenIds` contiene los 12 IDs y no falta ninguno.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Revisión de ordenación acumulada multi-ronda
+==========================================================================
+  Siguiente: Validar con datos reales de torneo de varios días que el acumulado mantiene la clasificación correcta cuando varias jugadoras empiezan la ronda activa en momentos distintos.
+
+[COMPLETADO] HOTFIX — Actualización de hándicap con IDs RFEG que empiezan por cero
+  Archivos modificados:
+    - api/get_handicap.js
+    - src/services/handicap.service.js
+    - src/components/AppHeader.jsx
+    - public/api/get_handicap.php
+    - public/api/debug_pdf_text.php
+    - public/api/get_handicap_history_pdf.php
+  Resumen:
+    - Corregida la generación de URLs `summaryhandicap` para conservar los ceros iniciales del ID RFEG.
+    - Itziar (`CB04067410`) necesita `067410.pdf`; antes se generaba `67410.pdf`, que RFEG devuelve con error 500.
+    - Verificado que `https://api.rfeg.es/files/summaryhandicap/067410.pdf` descarga como PDF válido y parsea `NUEVO HÁNDICAP: 3.6`.
+    - Verificado el handler local `api/get_handicap.js` con licencia `CB04067410`.
+    - Build verificado con `npm run build`.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Revisión de ordenación acumulada multi-ronda
+==========================================================================
+  Siguiente: Validar con datos reales de torneo de varios días que el acumulado mantiene la clasificación correcta cuando varias jugadoras empiezan la ronda activa en momentos distintos.
+
+[COMPLETADO] OPERACIÓN ADMIN — Ocultar Orden de Mérito a todos salvo Nicole y Jordi
+  Firestore actualizado:
+    - users/{0pszHtoDzIfPfanqSZH3G3hM6bG3}/settings/preferences
+    - users/{JKilWPzF04bdRzZ3M1IebTEKEAC2}/settings/preferences
+    - users/{M16d05z59jOHh036bhOJUDeNJAO2}/settings/preferences
+    - users/{mjY4pgCQY2gpvTBhzfZqBTiq8fj2}/settings/preferences
+    - users/{nfAPpZ2WXlMkNPDAKAiAvUTSG2K3}/settings/preferences
+    - users/{os0a0zq8gyPFyKa3T9H81hfgD8i2}/settings/preferences
+    - users/{tdD3UbBr0WeR0ydBxJMJPqGQlMy2}/settings/preferences
+  Resumen:
+    - Añadidos a `hiddenIds` los 12 torneos `ORDEN DE MERITO` para todos los usuarios salvo `nicole` y `jordi`.
+    - Perfiles actualizados: `sofia`, `maria`, `adriana`, `david`, `itziardeormaechea`, `iona`, `paulaalbadalejo`.
+    - Perfiles ya correctos sin cambios: `juliacarrera`, `mariaros`, `ona`, `txell`.
+    - Verificado por lectura de Firestore: no falta ningún ID de Orden de Mérito en usuarios no excluidos.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Revisión de ordenación acumulada multi-ronda
+==========================================================================
+  Siguiente: Validar con datos reales de torneo de varios días que el acumulado mantiene la clasificación correcta cuando varias jugadoras empiezan la ronda activa en momentos distintos.
+
+[COMPLETADO] HARDENING — Auditoría de hándicap RFEG para todos los usuarios
+  Archivos modificados:
+    - api/get_handicap.js
+  Resumen:
+    - Revisadas las 13 licencias federativas guardadas en Firestore.
+    - Detectados dos casos con ID PDF de 6 dígitos empezando por cero: `itziardeormaechea` (`067410.pdf`) y `sofia` (`036032.pdf`).
+    - Confirmado que todos los PDFs directos existen; varios usuarios reciben 500 intermitente de RFEG en el primer intento.
+    - Añadidos 5 reintentos con backoff corto en la API de Vercel y validación de cabecera `%PDF`.
+    - Verificado localmente el handler con `paulaalbadalejo`, `itziardeormaechea` y `sofia`.
+    - Build verificado con `npm run build`.
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Revisión de ordenación acumulada multi-ronda
+==========================================================================
+  Siguiente: Validar con datos reales de torneo de varios días que el acumulado mantiene la clasificación correcta cuando varias jugadoras empiezan la ronda activa en momentos distintos.
+
+[COMPLETADO] COMUNIDAD FASE 2 — Chat básico entre amigas
+  Archivos modificados:
+    - src/services/chat.service.js
+    - src/components/FriendsView.jsx
+    - firestore.rules
+  Resumen:
+    - Añadida colección `chats/{chatId}` con mensajes en `messages/{messageId}`.
+    - El chat solo se puede crear entre miembros de una amistad aceptada.
+    - Añadida pestaña `Chat` en Comunidad, botón de chat en cada amiga y conversación 1:1 en tiempo real.
+    - Añadido contador visual de chats no leídos mediante `unread_by`.
+    - Reglas Firestore limitan lectura/escritura a miembros del chat y mensajes de texto de hasta 1000 caracteres.
+  Verificación:
+    - npm run build
+
+==========================================================================
+  PRÓXIMO PASO: COMUNIDAD FASE 2.1 — Pulir chat y notificaciones
+==========================================================================
+  Siguiente: Probar chat con dos cuentas reales, ajustar UX móvil si hace falta y decidir si añadimos notificaciones push o moderación/admin.
+
+[COMPLETADO] COMUNIDAD FASE 2.1 — UX móvil, gestión y seguridad del chat
+  Archivos modificados:
+    - src/services/chat.service.js
+    - src/components/FriendsView.jsx
+    - firestore.rules
+  Resumen:
+    - En móvil, el chat pasa a navegación lista → conversación con botón de volver.
+    - Añadidas acciones de conversación: ocultar, reportar y bloquear.
+    - Las conversaciones ocultas desaparecen para la usuaria y reaparecen si se abre de nuevo o llega un mensaje nuevo.
+    - Los chats bloqueados impiden enviar nuevos mensajes y muestran estado bloqueado.
+    - Añadido botón Chat en la agenda de amigas, con borrador inicial sobre el torneo seleccionado.
+    - Añadida colección `chat_reports` restringida: las usuarias solo pueden crear reportes y solo admin puede leer/moderar.
+  Verificación:
+    - npm run build
+
+==========================================================================
+  PRÓXIMO PASO: COMUNIDAD FASE 2.2 — Notificaciones reales y moderación admin
+==========================================================================
+  Siguiente: Probar con dos cuentas reales en producción, decidir Web Push/Firebase Messaging y crear vista admin para revisar `chat_reports`.
+
+[COMPLETADO] COMUNIDAD FASE 2.2 — Moderación admin de reportes de chat
+  Archivos modificados:
+    - src/components/admin/AdminDashboardView.jsx
+    - src/components/admin/ChatReportsAdminPanel.jsx
+  Resumen:
+    - Añadida pestaña `Chat` dentro del panel de administración.
+    - Los administradores pueden listar reportes de `chat_reports`, filtrarlos por abiertos/revisados/descartados y refrescar la lista.
+    - Cada reporte muestra denunciante, usuaria reportada, motivo, último mensaje guardado y estado de revisión.
+    - Añadidas acciones admin: marcar revisado, descartar y bloquear el chat reportado.
+    - Confirmado que el reset de contraseña admin ya existe en `UsersAdminPanel`: email de recuperación y contraseña temporal generada desde `/api/set_temp_password`.
+  Verificación:
+    - npm run build
+
+==========================================================================
+  PRÓXIMO PASO: COMUNIDAD FASE 2.3 — Prueba real y notificaciones
+==========================================================================
+  Siguiente: Probar chat/reportes con dos cuentas reales en producción y decidir si se activa Web Push/Firebase Messaging para notificaciones fuera de la app.
+
+[COMPLETADO] HOTFIX — Histórico RFEG en PDFs con columnas pegadas
+  Archivos modificados:
+    - api/get_handicap.js
+  Firestore actualizado:
+    - users/lQ79UhIbk2bfoVuA2MATKJTUQh32/handicap_history/*
+  Resumen:
+    - Julia Carrera tenía `current_handicap=15.3`, pero `handicap_history` estaba vacío.
+    - El PDF RFEG `299471.pdf` sí contiene 20 resultados, pero `pdf-parse` extrae las columnas pegadas, por ejemplo `Individuales1872.1/131/7115.9`.
+    - Añadido parser compatible con ese formato: detecta `18` hoyos + `Vc/Vs/PAR` + `SMH` sin espacios.
+    - Verificado endpoint producción: licencia `CB19299471` devuelve 20 puntos históricos, de `2025-11-01` HCP `24.5` a `2026-06-06` HCP `15.9`.
+    - Sincronizados esos 20 puntos en Firestore para Julia Carrera.
+  Verificación:
+    - npm run build
+    - npx vercel --prod --yes
+
+==========================================================================
+  PRÓXIMO PASO: HARDENING — Revisar nombres de torneo extraídos del PDF RFEG
+==========================================================================
+  Siguiente: Limpiar nombres de torneo/campo cuando RFEG devuelve texto pegado, sin afectar a la serie histórica ni al cálculo del gráfico.
+
+[COMPLETADO] OPERACIÓN ADMIN — Alta Valentina y red de amigas
+  Firestore/Auth actualizado:
+    - Usuario creado: valentina / Valentina Corretja de Miguel / CB01965090.
+    - Perfil completado con federación, club, handicap actual 1.3 y foto pública localizada.
+    - Histórico RFEG sincronizado desde `summaryhandicap/965090.pdf` con 20 puntos.
+    - Creadas las amistades completas entre Txell, Nicole, Itziar, Ona, Iona, Valentina y Maria Ros.
+    - Actualizados los perfiles embebidos de Valentina dentro de sus amistades para mostrar foto y nombre correcto.
+  Reglas:
+    - Desplegadas reglas Firestore para permitir mantenimiento admin de `friendships`.
+  Verificación:
+    - Login real en producción como `valentina`.
+    - Confirmado header con foto, handicap y pestaña Amigas con las 6 jugadoras esperadas.
+
+==========================================================================
+  PRÓXIMO PASO: COMUNIDAD FASE 2.3 — Prueba cruzada de chat y agenda entre amigas
+==========================================================================
+  Siguiente: Probar desde dos cuentas reales que Valentina puede abrir chat, ver agenda futura de sus amigas y que los nombres/fotos aparecen consistentes.
+
+[COMPLETADO] TEST PRODUCCIÓN — Chat Ona → Nicole
+  Prueba realizada:
+    - Login real como Ona Martinez Cucco.
+    - Apertura de conversación con Nicole LIkhomanova Garcia desde `Amigas > Chat`.
+    - Enviado mensaje real: `Mingui`.
+  Verificación:
+    - El mensaje aparece en la UI de Ona con hora de envío.
+    - Firestore confirma `last_message.text = Mingui`.
+    - Firestore confirma `unread_by` contiene el UID de Nicole, por tanto queda pendiente de lectura para Nicole.
+  Nota:
+    - No se siguió probando login de Nicole porque Firebase devolvió límite temporal por intentos de contraseña.
+
+==========================================================================
+  PRÓXIMO PASO: COMUNIDAD FASE 2.3 — Verificar recepción visual con Nicole
+==========================================================================
+  Siguiente: Entrar como Nicole cuando el límite temporal de Firebase desaparezca y comprobar que ve el aviso/no leído y puede responder.
+
+[COMPLETADO] COMUNIDAD FASE 2.4 — Borrado suave de mensajes
+  Archivos modificados:
+    - src/services/chat.service.js
+    - src/components/FriendsView.jsx
+    - firestore.rules
+  Resumen:
+    - Añadida acción para borrar mensajes propios desde el chat.
+    - El borrado es suave: el mensaje queda como `Mensaje eliminado` para mantener trazabilidad.
+    - Si se borra el último mensaje, la vista de conversaciones actualiza el preview.
+    - Reglas Firestore permiten actualizar solo mensajes propios y solo con los campos de borrado controlados.
+  Verificación:
+    - Build directo con Vite: correcto.
+    - Deploy FTP Hostinger `/GolfTeam/`: correcto.
+    - Redeploy Vercel production: correcto.
+    - Deploy FTP Hostinger `/GolfTeam/`: correcto.
+    - Redeploy Vercel production: correcto.
+    - Deploy FTP Hostinger `/GolfTeam/`: correcto.
+    - Redeploy Vercel production: correcto.
+    - `firebase-messaging-sw.js` responde 200 en Vercel y Hostinger.
+    - Deploy FTP Hostinger `/GolfTeam/`: correcto.
+    - Redeploy Vercel production: correcto.
+    - Resultado R1 de Adriana Montolio cargado en Firestore: 85 golpes, par 73, +12.
+
+[COMPLETADO] UX — Cambiar etiqueta Amigas por Amigos
+  Archivos modificados:
+    - src/components/NavTabs.jsx
+    - src/components/FriendsView.jsx
+    - src/services/friends.service.js
+  Resumen:
+    - Navegación, pestaña de comunidad, estados vacíos y mensajes visibles usan `Amigos`.
+    - La ruta interna `/friends` y la lógica de amistades no cambian.
+  Verificación:
+    - Build directo con Vite: correcto.
+
+==========================================================================
+  PRÓXIMO PASO: COMUNIDAD FASE 2.5 — Validación real de borrado
+==========================================================================
+  Siguiente: Probar en producción que Ona puede borrar su mensaje y Nicole ve `Mensaje eliminado`.
+
+[COMPLETADO] ADMIN — Contraseña Paula Albadalejo
+  Firestore/Auth actualizado:
+    - Usuario: `paulaalbadalejo`
+    - UID: `tdD3UbBr0WeR0ydBxJMJPqGQlMy2`
+    - Contraseña asignada: `albadalejo`
+  Verificación:
+    - Login Firebase verificado correctamente con `paulaalbadalejo@golfteam.app`.
+
+[COMPLETADO] COMUNIDAD FASE 2.5 — Cancelar solicitudes enviadas
+  Archivos modificados:
+    - src/services/friends.service.js
+    - src/components/FriendsView.jsx
+  Resumen:
+    - Añadida función `cancelFriendRequest` para borrar solicitudes pendientes enviadas por la propia usuaria.
+    - En `Solicitudes > Enviadas` aparece botón `Cancelar` junto a cada solicitud pendiente.
+    - Se reutilizan reglas existentes de Firestore: el emisor o receptor puede borrar la solicitud.
+  Verificación:
+    - Build directo con Vite: correcto.
+
+==========================================================================
+  PRÓXIMO PASO: COMUNIDAD FASE 2.6 — Validar cancelación en producción
+==========================================================================
+  Siguiente: Probar en producción que una solicitud enviada desaparece para la emisora y no llega a la receptora tras cancelar.
+
+[COMPLETADO] COMUNIDAD FASE 2.6 — Aviso global de mensajes nuevos
+  Archivos modificados:
+    - src/App.jsx
+  Resumen:
+    - La app se suscribe globalmente a los chats del usuario autenticado.
+    - Cuando llega un mensaje no leído de otra persona, aparece un aviso flotante con remitente, preview y botón `Ver chat`.
+    - El aviso no requiere permisos del navegador y funciona dentro de la PWA mientras está abierta.
+    - El botón abre la sección `Amigos`, donde ya está disponible la pestaña `Chat`.
+  Verificación:
+    - Build directo con Vite: correcto.
+
+==========================================================================
+  PRÓXIMO PASO: COMUNIDAD FASE 2.7 — Push notifications reales
+==========================================================================
+  Siguiente: Decidir si añadimos Firebase Messaging/Web Push para avisar incluso con la app cerrada.
+
+[COMPLETADO] COMUNIDAD FASE 2.7 — Base de Web Push y admin de comunidad
+  Archivos modificados:
+    - src/services/notifications.service.js
+    - public/firebase-messaging-sw.js
+    - api/send_chat_push.js
+    - src/services/chat.service.js
+    - src/components/FriendsView.jsx
+    - src/App.jsx
+    - firestore.rules
+    - src/components/admin/AdminDashboardView.jsx
+    - src/components/admin/CommunityAdminPanel.jsx
+  Datos actualizados:
+    - Paula Albadalejo sincronizada con RFEG: handicap actual 8.9, PDF 971024.pdf y 20 entradas historicas añadidas.
+  Resumen:
+    - Añadido registro de tokens Web Push por usuario en `users/{uid}/push_tokens`.
+    - Añadido service worker Firebase Messaging.
+    - Añadido endpoint `api/send_chat_push` para enviar FCM al receptor de un chat.
+    - `sendChatMessage` llama al endpoint de push sin bloquear el envio del mensaje.
+    - `Comunidad` muestra accion para activar notificaciones en el dispositivo.
+    - La app escucha mensajes foreground de FCM y los muestra con el aviso global existente.
+    - Añadido panel admin `Comunidad` para crear/reparar amistades, eliminar amistades y cancelar solicitudes.
+  Nota:
+    - Web Push queda preparado, pero requiere configurar `VITE_FIREBASE_VAPID_KEY` en el entorno de build para que el navegador emita tokens reales.
+  Verificacion:
+    - Build directo con Vite: correcto.
+
+[COMPLETADO] HARDENING — Leaderboard multi-ronda y variantes de campo
+  Archivos modificados:
+    - src/services/leaderboard.service.js
+    - src/components/TournamentLeaderboard.jsx
+    - src/components/CalendarView.jsx
+    - src/utils/courseScorecards.js
+    - src/data/course_variants.json
+    - api/get_handicap.js
+  Resumen:
+    - El leaderboard guarda `roundPars` y `totalPar` para calcular correctamente `vs Par` por ronda y total.
+    - La vista de clasificación por ronda usa el par real de esa ronda, no el par total del torneo.
+    - Añadido resolver centralizado de tarjetas de campo con variantes por fecha o variante explicita.
+    - Añadida variante Sant Cugat Rojas 2026 y tarjeta anterior para torneos antiguos.
+    - CalendarView usa el resolver de tarjetas para par por defecto, reinicio de ronda y tarjeta inicial.
+    - El parser RFEG limpia mejor nombres de torneos cuando el PDF devuelve columnas pegadas.
+  Verificacion:
+    - Build directo con Vite: correcto.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Validar Web Push con VAPID y prueba real cruzada
+==========================================================================
+  Siguiente: Configurar `VITE_FIREBASE_VAPID_KEY` en Vercel/entorno de build, activar notificaciones en dos dispositivos y validar recepcion con la app cerrada.
+
+[COMPLETADO] PRODUCCIÓN — VITE_FIREBASE_VAPID_KEY configurada
+  Configuración:
+    - Generado par de claves Web Push en Firebase Console para `golfscorings-e4338`.
+    - Añadida `VITE_FIREBASE_VAPID_KEY` a Vercel en entorno Production.
+  Despliegue:
+    - Redeploy Vercel production correcto.
+    - Build local con `VITE_FIREBASE_VAPID_KEY` correcto.
+    - Deploy FTP Hostinger `/GolfTeam/` correcto.
+  Verificación:
+    - Vercel lista `VITE_FIREBASE_VAPID_KEY` en Production.
+    - Bundle de Hostinger contiene la clave VAPID.
+    - Bundle de Vercel contiene la clave VAPID.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Prueba real de permisos y recepción push
+==========================================================================
+  Siguiente: Entrar en la app desde un dispositivo real, pulsar `Activar` en Comunidad, aceptar permisos del navegador y enviar un mensaje desde otra cuenta para confirmar recepción con la app cerrada.
+
+[COMPLETADO] HOTFIX — Modo móvil preserva Putts y GIR
+  Archivos modificados:
+    - src/components/CalendarView.jsx
+  Resumen:
+    - El autosave de resultados ahora guarda `track_putts`, `track_girs` y `tee_time`, igual que el guardado manual.
+    - Al abrir un torneo, la UI inicializa los toggles de Putts/GIR también desde el resultado existente, no solo desde la ficha del torneo.
+    - Al reconstruir scorecards desde Firestore se normalizan y preservan `strokes`, `putts` y `girs`.
+    - Las tarjetas nuevas ya nacen con array `girs` para evitar que el editor móvil pierda el campo.
+  Verificación:
+    - Build directo con Vite: correcto.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Probar modo móvil con Putts/GIR
+==========================================================================
+  Siguiente: En una cuenta real, activar `Track Putts` y `Track GIR`, entrar en `Modo Móvil`, esperar autosave y confirmar que ambos campos siguen visibles.
+
+==========================================================================
+  [COMPLETADO] IMPORTACIÓN — Primera fase de resultados compartidos
+  Archivos modificados:
+    - src/components/ResultImportModal.jsx
+    - src/components/CalendarView.jsx
+    - vite.config.js
+  Resumen:
+    - Añadido botón "Importar resultados" en el calendario.
+    - La usuaria debe seleccionar el torneo destino antes de guardar.
+    - Se pueden pegar enlaces o texto, cargar CSV/TSV y adjuntar foto/PDF para revisión manual.
+    - La tabla permite revisar y editar hoyo, golpes, putts, penalizaciones y GIR.
+    - La PWA queda registrada como destino de compartir Android mediante `share_target`.
+  Verificación:
+    - Build Vite: correcto.
+    - ESLint: correcto; permanece únicamente un warning preexistente de MobileScorecardEditor.jsx.
+    - Manifest generado: contiene `share_target` con acción `/GolfTeam/`.
+
+==========================================================================
+  PRÓXIMO PASO: IMPORTACIÓN — Probar con texto real exportado desde Golf GameBook
+  Siguiente: Abrir "Importar resultados", pegar un ejemplo real y adaptar el parser al formato recibido.
+
+[COMPLETADO] TRAINING — Historial, comparativas y exportación de tests de putting
+  Archivos modificados/creados:
+    - src/utils/trainingStats.js
+    - src/components/TrainingTestsView.jsx
+  Resumen:
+    - Se añadieron periodos derivados de la fecha: semana ISO, mes y temporada.
+    - El historial permite filtrar por periodo y tipo de test.
+    - Se muestran comparativas agregadas de tests, intentos, media de putts,
+      porcentaje de 1 putt, 3 putts y control de distancia hasta 1 metro.
+    - Se añadió exportación CSV y vista de impresión para guardar informes PDF.
+    - No se modifica el esquema existente de Firestore; los periodos se calculan
+      a partir de la fecha guardada.
+  Verificación:
+    - npm run lint
+    - npm run build
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Validar exportación y filtros con tests reales
+==========================================================================
+  Siguiente: Abrir Tests con una cuenta que tenga sesiones guardadas, probar
+  filtros semana/mes/temporada, descargar CSV y generar el PDF desde imprimir.
+
+[COMPLETADO] HOTFIX — Vista móvil de tests de putting
+  Archivos modificados:
+    - src/components/TrainingTestsView.jsx
+  Resumen:
+    - En pantallas pequeñas cada intento se muestra como una tarjeta vertical.
+    - Ahora quedan visibles distancia, pendiente, putts y distancia restante
+      sin desplazamiento horizontal.
+    - En escritorio se conserva la tabla completa.
+  Verificación:
+    - npm run lint
+    - npm run build
+    - Producción Vercel: READY
+    - Hostinger `/GolfTeam/`: despliegue completado
+
+[COMPLETADO] UX — Simplificación de configuración del torneo
+  Archivo modificado:
+    - src/components/CalendarView.jsx
+  Resumen:
+    - La configuración mantiene visibles nombre, fechas, par y organizador.
+    - Etiquetas, tipo/formato y grupos quedan dentro de «Más opciones»,
+      cerrado por defecto para reducir el desplazamiento en móvil.
+  Verificación:
+    - npm run lint
+    - npm run build
+    - Vercel producción: READY
+    - Hostinger `/GolfTeam/`: despliegue completado
+
+[COMPLETADO] UX — Ajuste de línea de fechas, par y organizador
+  Archivo modificado:
+    - src/components/CalendarView.jsx
+  Resumen:
+    - Fecha y control Multidía ya no se solapan en pantallas estrechas.
+    - Par y Organizador comparten fila, con un ancho proporcionado para cada uno.
+  Verificación:
+    - npm run lint
+    - npm run build
+    - Vercel producción: READY
+    - Hostinger `/GolfTeam/`: despliegue completado
+
+[COMPLETADO] HOTFIX — Evitar solapamiento definitivo del selector de fechas
+  Archivo modificado:
+    - src/components/CalendarView.jsx
+  Resumen:
+    - En móvil, la fecha ocupa toda su línea.
+    - El control Multidía aparece debajo, separado del selector nativo de iPhone.
+    - La segunda fecha también ocupa una línea completa cuando se activa.
+  Verificación:
+    - npm run lint
+    - npm run build
+    - Vercel producción: READY
+    - Hostinger `/GolfTeam/`: despliegue completado
+
+[COMPLETADO] UX — Separación del bloque de opciones y guardado
+  Archivo modificado:
+    - src/components/CalendarView.jsx
+  Resumen: Añadido espacio visual entre «Más opciones» y «Guardar Configuración».
+  Verificación: lint, build, Vercel READY y Hostinger completados.
+
+[COMPLETADO] UX — Registro incremental de putts en modo móvil
+  Archivo modificado:
+    - src/components/MobileScorecardEditor.jsx
+  Resumen:
+    - Ya no se introduce el número final de putts con el teclado.
+    - Se pulsa «Añadir primer putt» y después «+» por cada putt adicional.
+    - Cada putt añadido muestra inmediatamente su slider de distancia.
+  Verificación: lint, build, Vercel READY y Hostinger completados.
+
+[COMPLETADO] HOTFIX — Diálogo de confirmación centrado en móvil
+  Archivo modificado:
+    - src/components/FeedbackLayer.jsx
+  Resumen: Los diálogos de confirmación se renderizan en un portal sobre
+    document.body para permanecer centrados en la ventana visible.
+  Verificación: lint, build, Vercel READY y Hostinger completados.
+
+[COMPLETADO] UX — Retirada de posición final y hándicap inicial
+  Archivos modificados:
+    - src/components/CalendarView.jsx
+    - src/components/ResultsView.jsx
+  Resumen: Se eliminaron ambos campos de la interfaz de resultados sin borrar
+    los valores antiguos que puedan existir en Firestore.
+  Verificación: lint, build, Vercel READY y Hostinger completados.
+
+[COMPLETADO] PRODUCCIÓN — Tests de putting publicados
+  Verificación:
+    - Reglas Firestore desplegadas correctamente en `golfscorings-e4338`.
+    - Vercel producción Ready: `dpl_Gg8yYPwhPwDMihATZhBrTjUaEUvV`.
+    - Hostinger `/GolfTeam/` actualizado correctamente.
+    - Ruta pública `/GolfTeam/training` cargada con sesión real.
+    - Se verificaron formulario, cinco tests, distancias, pendientes y resumen sin error de renderizado.
+  Pendiente:
+    - Registrar el primer test real y confirmar lectura posterior desde Firestore.
+
+[COMPLETADO] FEATURE — Tests de putting basados en dossier de tecnificación
+  Archivos modificados:
+    - src/data/puttingTests.js
+    - src/services/trainingTests.service.js
+    - src/components/TrainingTestsView.jsx
+    - src/components/NavTabs.jsx
+    - src/App.jsx
+    - firestore.rules
+  Resumen:
+    - Nueva sección `/training` con los cinco tests de putting del dossier.
+    - Cada intento guarda distancia, pendiente, putts hasta embocar y distancia restante tras el primer putt.
+    - Persistencia privada por usuaria en `/users/{userId}/training_tests`.
+    - Resumen inmediato de intentos completados, media, 1 putt, 3 putts y control hasta 1 metro.
+  Verificación:
+    - ESLint correcto.
+    - Build Vite correcto.
+    - Ruta local carga y muestra login correctamente cuando no hay sesión.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Publicar y probar un test real
+==========================================================================
+  Siguiente: desplegar frontend y reglas Firestore; entrar con una cuenta, guardar un test de putting y confirmar la lectura posterior.
+
+[COMPLETADO] PRODUCCIÓN — Simulación integral Orden de Mérito 29/11/2026
+  Cuenta verificada:
+    - Nicole Likhomanova
+  Resultado guardado:
+    - 74 golpes (+2), 32 putts y 13/18 GIR.
+    - Tarjeta con birdies, pares y bogeys.
+    - GIR variados con valores G, +1 y +2.
+    - Hoyos con 1, 2 y 3 putts.
+    - Distancias variadas entre 0,25 m y 12 m.
+  Evidencia después de recargar desde Firestore:
+    - Hoyo 1: 5,00 m y 0,50 m.
+    - Hoyo 13: 2,50 m.
+    - Hoyo 18: 10,00 m, 2,00 m y 0,50 m.
+    - Informe: 74, +2, 32 putts y 13/18 GIR.
+    - Clasificación: Nicole en posición 1 con 74 (+2).
+    - Estadísticas: nueva ronda y putts contabilizados.
+    - Consola del navegador: sin errores.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Validar retorno desde segundo plano
+==========================================================================
+  Siguiente: Abrir el anotador móvil, mandar la PWA al segundo plano y volver para confirmar que conserva torneo, ronda y hoyo activos.
+
+[COMPLETADO] HOTFIX — Persistencia Firestore de distancias de putts
+  Archivos modificados:
+    - src/services/results.service.js
+    - src/utils/resultSerialization.js
+  Causa:
+    - La tarjeta mantenía `puttDistances` como un array de 18 arrays, pero Firestore no admite arrays anidados directamente.
+    - El autosave fallaba con `Nested arrays are not supported` al introducir distancias de putts.
+  Corrección:
+    - Antes de guardar, el array exterior se serializa como un mapa por número de hoyo.
+    - Al leer desde Firestore, el mapa vuelve a convertirse al modelo de 18 arrays que usa la interfaz.
+    - Se mantiene compatibilidad con resultados sin distancias y con el modelo interno existente.
+  Verificación:
+    - Recorrido autenticado en producción: Calendario, Estadísticas, Hándicap, Torneos, Amigos, Chat, detalle, clasificación e informe.
+    - Editor móvil a 390x844: Putts, GIR y dos sliders de distancia visibles y utilizables.
+    - Prueba de serialización y deserialización completa: correcta.
+    - ESLint y build Vite: correctos.
+    - Hostinger: bundle `index-BIAVrqNx.js`, carga autenticada correcta.
+    - Vercel producción: deployment `dpl_2vj9ccgEVJyMo4Mxu4HywSfircTg`, estado Ready.
+    - Consola de una sesión nueva: sin errores; solo aviso no bloqueante de Sentry sin DSN.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Verificar autosave real en una ronda de prueba
+==========================================================================
+  Siguiente: En una ronda que se pueda modificar, guardar putts con distancias, recargar y confirmar que los metros se restauran desde Firestore.
+
+==========================================================================
+  PUNTOS 5 Y 6 — BUILD Y CONFIGURACIÓN DE GIT (2026-10-17)
+==========================================================================
+  Completado:
+    - Vite separa Firebase, gráficos y exportación PDF mediante manualChunks.
+    - El chunk principal pasó de aproximadamente 693 KB a 313 KB.
+    - `npm run lint` termina con 0 errores; permanecen 49 avisos de hooks para revisión funcional.
+    - `npm run build -- --mode production` termina correctamente.
+    - Git inicializado en `C:\Users\miste\Documents\Codex\MyGolfLife`, rama `main`.
+    - Remoto `origin` configurado hacia `https://github.com/Reinaldomoon23/GolfCalendar.git`.
+    - `.gitignore` revisado para excluir secretos, datos privados y artefactos generados.
+  Pendiente:
+    - Configurar `user.name` y `user.email` de Git.
+    - Revisar el primer staging y crear commit/push cuando el usuario lo solicite.
+    - Revisar los avisos del build de Vite sobre imports dinámicos que también son estáticos.
+
+==========================================================================
+  ESLINT — AVISOS DE HOOKS CORREGIDOS (2026-10-17)
+==========================================================================
+  Completado:
+    - Corregidos los 49 avisos de ESLint relacionados con dependencias de hooks,
+      actualizaciones síncronas de estado y Fast Refresh.
+    - Se derivó `availableSeasons` con `useMemo` y se estabilizaron callbacks.
+    - Se separaron los hooks de los contextos para mantener Fast Refresh limpio.
+    - `npm run lint`: 0 errores, 0 avisos.
+    - `npm run build`: correcto.
+
+[COMPLETADO] SECURITY — Revisión y cierre de escrituras públicas de Firestore
+  Archivos modificados:
+    - firestore.rules
+    - DEPLOYMENT.md
+  Resumen:
+    - `handicap_history` ya no permite escrituras anónimas.
+    - Los documentos de participantes solo pueden escribirlos su propio usuario o un administrador.
+    - El alias `tournaments_leaderboard` queda reservado a administradores.
+    - `shared_tournaments` valida propietario/admin y limita la actualización pública al contador de suscriptores.
+  Verificación:
+    - Firebase CLI compiló las reglas correctamente.
+    - Reglas publicadas en `golfscorings-e4338` sin modificar datos ni índices.
+  Pendiente:
+    - Revisar si los campos de perfiles y resultados que se leen públicamente deben separarse en documentos públicos mínimos.
+
+[COMPLETADO] DEPLOY — Sincronización de hotfix de avatares en Hostinger
+  Archivos modificados:
+    - dist/*
+    - DEPLOYMENT.md
+  Resumen:
+    - Se publicó el build corregido en `/public_html/GolfTeam/` usando FTP Hostinger.
+    - Se subieron las protecciones `.htaccess` de API y datos y el kill switch de PWA.
+    - `profile.jpg` queda disponible para resolver el avatar legacy de Nicole.
+  Verificación:
+    - `https://reinaldomoon.top/GolfTeam/`: HTTP 200.
+    - `https://reinaldomoon.top/GolfTeam/profile.jpg`: HTTP 200.
+    - `api/users.json` y `data/debug_tournaments.log`: HTTP 403.
+  Seguridad:
+    - La contraseña usada no se guardó en el proyecto; debe rotarse porque fue compartida en el chat.
+
+[COMPLETADO] HOTFIX — Recuperar avatar legacy de Nicole
+  Archivos modificados:
+    - src/config/app.js
+    - src/components/ProfileImage.jsx
+  Resumen:
+    - La captura mostraba el fallback `CL` porque el perfil usaba `nicole.jpg` y ese archivo no existe en el despliegue actual.
+    - Se añadió compatibilidad con `profile.jpg`, que sí está disponible en `/GolfTeam/`.
+    - También se añadió fallback para referencias antiguas `profiles/nicole_*.jpg`.
+  Verificación:
+    - `npm run lint`: 0 errores.
+    - `npm run build -- --mode production`: correcto.
+    - Vercel publicado: `dpl_3Zs5c8np6satySgq7GuoNzZ6QQVj`, estado `READY`.
+    - `https://golf-calendar-v3.vercel.app/GolfTeam/profile.jpg`: responde correctamente.
+  Pendiente:
+    - Subir el mismo build a Hostinger para que `reinaldomoon.top` reciba este hotfix.
+
+[COMPLETADO] DOCUMENTACIÓN — Inventario de infraestructura y despliegues
+  Archivos modificados:
+    - DEPLOYMENT.md
+    - README.md
+  Resumen:
+    - Documentados Vercel, Hostinger, Firebase, Firestore, variables de entorno, comandos y comprobaciones.
+    - Se aclaró que `golfscorings-e4338` es el proyecto Firebase activo y `golfscoring-a9a6c` es histórico.
+    - Se eliminó del README la instrucción contradictoria que prohibía FTP; Hostinger queda documentado como legacy opcional.
+  Verificación:
+    - Documento creado en la raíz del proyecto.
+    - No se han incluido contraseñas, tokens ni claves privadas.
+
+==========================================================================
+  PRÓXIMO PASO: DOCUMENTACIÓN — Mantener DEPLOYMENT.md tras cada cambio de infraestructura
+==========================================================================
+  Siguiente: Actualizar el documento cuando cambien URLs, proyecto Firebase, destino FTP, variables o flujo de publicación.
+
+[COMPLETADO] AVATARES — Almacenamiento gratuito compatible con Firebase Spark
+  Archivos modificados:
+    - src/services/profile.service.js
+    - src/firebase.js
+    - src/components/ProfileImage.jsx
+  Resumen:
+    - Se elimina la dependencia de Firebase Storage, que requiere Blaze en este proyecto.
+    - Las imágenes se redimensionan a un máximo de 320 px y se comprimen antes de guardarse en `photo_url`.
+    - Se mantiene el límite de 700 KB para evitar documentos de Firestore excesivamente grandes.
+    - Se acepta la imagen `data:image/...` directamente en `ProfileImage`.
+  Verificación:
+    - `npm run lint`: 0 errores, 49 avisos existentes de hooks.
+    - `npm run build -- --mode production`: correcto.
+    - Vercel producción: `dpl_Bg8uvVxzsRp2th1R215EGE9XxD5a`, estado `READY`.
+    - `/GolfTeam/` carga correctamente y `/api/users.json` no expone el JSON legacy.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Probar subida de avatar con una cuenta real
+==========================================================================
+  Siguiente: iniciar sesión, seleccionar una imagen desde el botón de avatar y confirmar que se guarda y aparece después de recargar.
+
+[COMPLETADO] HARDENING — Publicación Vercel saneada y comprobación de exposición
+  Archivos modificados:
+    - vite.config.js
+    - .vercelignore
+    - public/api/.htaccess
+    - public/data/.htaccess
+    - public-app/*
+    - src/components/ProfileImage.jsx
+    - deploy_ftp_root.cjs
+    - src/services/profile.service.js
+    - storage.rules
+    - firebase.json
+  Resumen:
+    - Vercel deja de incluir `public/` legacy, datos JSON, PHP y logs en el bundle.
+    - La subida de avatar queda preparada para Firebase Storage con validación de tipo, tamaño y usuario autenticado.
+    - Se eliminó la credencial FTP embebida en el código; ahora se leen variables de entorno.
+    - Producción publicada en `dpl_2jgDuRLcmzN2ZybXmFwx1ZXvu1sZ` y alias `https://golf-calendar-v3.vercel.app`.
+  Verificación:
+    - `npm run lint`: 0 errores, 49 avisos de hooks.
+    - `npm run build -- --mode production`: correcto.
+    - Vercel: estado `READY`.
+    - `/api/users.json`, `/api/update_user.php`, `/data/debug_tournaments.log` y `/profiles/test.jpg`: sin contenido sensible.
+  Pendiente externo:
+    - Ejecutar `firebase login` y desplegar `storage.rules`.
+    - Rotar la antigua credencial FTP y configurar `ROUNDTRACKER_FTP_USER`, `ROUNDTRACKER_FTP_PASSWORD` y opcionalmente `ROUNDTRACKER_FTP_HOST` antes de proteger Hostinger.
+
+==========================================================================
+  PRÓXIMO PASO: AUTENTICACIÓN — Firebase CLI y credenciales FTP rotadas
+==========================================================================
+  Siguiente: completar esas autenticaciones localmente y repetir la protección de Hostinger y la prueba real de subida de avatar.
+
+[COMPLETADO] FACTORIZACIÓN 3.9 — Formulario de creación de torneo fuera de CalendarView
+  Archivos modificados:
+    - src/components/CalendarView.jsx
+    - src/components/TournamentCreateForm.jsx
+  Resumen:
+    - Extraído el modal `Nuevo Torneo` a `TournamentCreateForm`.
+    - El nuevo componente encapsula campos de nombre, fecha, multidía, duración,
+      campo, etiquetas Grand Prix/Valedera/SACE, publicación en comunidad,
+      organizador y acción de guardado.
+    - `CalendarView.jsx` conserva el estado `newTournament`, la validación, la
+      detección de conflictos, deduplicación contra torneos oficiales y
+      persistencia.
+  Verificación:
+    - Build validado fuera de Google Drive en `/Users/reinaldomoon/PlayersCalendar-push-6de558e`.
+
+[COMPLETADO] FACTORIZACIÓN 4.0 — Validación externa y lockfile sincronizado
+  Archivos modificados:
+    - .gitignore
+    - package-lock.json
+    - package.json
+    - LEADERBOARD_PROGRESS.log
+  Resumen:
+    - Añadidos ignores para `scratch/`, `.pnpm-store/`, `pnpm-lock.yaml`,
+      `*.bak` y `firestore_backups/`.
+    - Sincronizado `package-lock.json` con `package.json` para la dependencia
+      explícita `workbox-window@^7.4.1`.
+    - Añadidos scripts npm `backup:firestore` y `restore:firestore`.
+  Verificación:
+    - En el clon externo: `npm install --package-lock-only --ignore-scripts`.
+    - En el clon externo: `npm run build`.
+    - Resultado: build OK; solo warnings existentes de imports dinámicos/chunks
+      grandes, Browserslist y auditoría npm.
+
+SIGUIENTE PASO:
+  PRODUCCIÓN — Push ya integrado sobre `origin/main`; revisar Vercel/GitHub
+  Actions y probar creación de torneo + informe con meteorología.
+
+[COMPLETADO] PRODUCCIÓN — Validación post-push Vercel/GitHub
+  Archivos modificados:
+    - LEADERBOARD_PROGRESS.log
+  Resumen:
+    - Confirmado que el workspace principal está sincronizado con `origin/main`
+      en `9e41890`.
+    - Verificado que `https://golf-calendar-v3.vercel.app/` redirige a
+      `/GolfTeam/` y responde HTML 200.
+    - Verificado que `https://reinaldomoon.top/` encadena correctamente hacia
+      Vercel `/GolfTeam/`.
+    - GitHub Actions: `Collect tournament weather` aparece en verde; el workflow
+      FTP backend no se disparó porque el commit no tocó `public/api/**`.
+    - Endpoint público de meteorología `get_weather_samples` responde 200 con
+      JSON válido; `collect_weather` responde 401 sin autorización, esperado
+      fuera del cron/token.
+    - En navegador integrado con sesión real, la app carga calendario de Nicole
+      sin errores de consola.
+    - El modal `Nuevo Torneo` abre correctamente con los campos extraídos a
+      `TournamentCreateForm`; no se guardó ningún dato.
+    - El detalle de un torneo existente abre y muestra la pestaña `Informe PDF`.
+    - La pestaña `Informe PDF` renderiza `INFORME PREMIUM` y el botón
+      `Abrir informe PDF` sin errores de consola.
+  Verificación:
+    - `curl -I -L https://golf-calendar-v3.vercel.app/`.
+    - `curl -I -L https://reinaldomoon.top/`.
+    - `gh run list --branch main --limit 10`.
+    - Browser integrado: carga calendario, modal nuevo torneo, detalle de torneo
+      y pestaña informe.
+  Nota:
+    - El torneo probado era futuro y sin muestras meteorológicas, por eso el
+      bloque de clima no aparecía en el informe aunque el endpoint sí respondió.
+    - Warnings esperados en consola: R2/Sentry no configurados.
+
+SIGUIENTE PASO:
+  PRODUCCIÓN — Pruebas reales con interacción: crear torneo de prueba si se
+  autoriza, abrir informe PDF en ventana nueva, validar push entre dos cuentas
+  y probar modo móvil con Putts/GIR.
+
+[COMPLETADO] PRODUCCIÓN — Crear y borrar torneo temporal
+  Archivos modificados:
+    - src/components/TournamentCreateForm.jsx
+    - LEADERBOARD_PROGRESS.log
+  Resumen:
+    - En producción, con sesión real de Nicole, se creó el torneo temporal
+      `TEST CODEX BORRAR 2026-07-22` sin publicarlo en comunidad.
+    - El torneo apareció en el calendario y se pudo abrir su detalle.
+    - Se borró desde el botón de borrado del torneo personalizado y el toast
+      `Torneo borrado.` confirmó la eliminación.
+    - La prueba descubrió un bug: al rellenar varios campos rápido desde el
+      formulario extraído, el valor de fecha podía perderse y el torneo se
+      creaba con la fecha por defecto del día actual.
+    - Corregido `TournamentCreateForm` para usar actualización funcional de
+      estado: `onChange((current) => ({ ...current, [field]: value }))`.
+    - Tras desplegar el primer fix se repitió la prueba y la fecha seguía
+      guardándose como el día actual cuando el input `date` cambiaba desde el
+      navegador integrado. Se añadió también `onInput` al campo de fecha para
+      capturar el valor visible antes de guardar.
+    - Desplegado segundo fix en Vercel y probado en producción con
+      `TEST CODEX FECHA BORRAR 2026-08-01`: el calendario mostró `01/08/2026`.
+    - El torneo temporal se abrió en detalle y se borró correctamente con el
+      diálogo interno de confirmación; el toast `Torneo borrado.` confirmó la
+      eliminación.
+  Verificación:
+    - Browser integrado: creación temporal, aparición en calendario, apertura
+      de detalle y borrado real.
+    - Build validado fuera de Google Drive en
+      `/Users/reinaldomoon/PlayersCalendar-push-6de558e`.
+    - Producción Vercel con cache-bust `?codexBust=a2594dc`: correcto.
+  Nota:
+    - El build local en Google Drive falló por esbuild (`The service was
+      stopped`); se usó el clon externo para validación.
+
+SIGUIENTE PASO:
+  PRODUCCIÓN — Queda validar en navegador real el informe PDF en ventana nueva
+  y el retorno a modo móvil con Putts/GIR, si se quiere cerrar también esos
+  flujos manuales.
+
+[COMPLETADO] REFACTORIZACIÓN — Accesibilidad acciones de torneo
+  Archivos modificados:
+    - src/components/CalendarView.jsx
+    - LEADERBOARD_PROGRESS.log
+  Resumen:
+    - El botón de editar/cancelar edición del detalle ahora tiene `aria-label`
+      y `title` dinámicos.
+    - El botón de borrar torneo personalizado ahora tiene `aria-label` y
+      `title` como `Borrar torneo`.
+    - Esto mantiene el comportamiento existente, pero permite localizar la
+      acción por nombre accesible en pruebas y mejora el uso con tecnologías
+      asistivas.
+  Verificación:
+    - Build validado fuera de Google Drive en
+      `/Users/reinaldomoon/PlayersCalendar-push-6de558e`.
+    - Producción Vercel con cache-bust `?codexBust=769b523`: creado torneo
+      temporal `TEST CODEX A11Y BORRAR 2026-08-02`, confirmado que el detalle
+      expone los botones `Editar torneo` y `Borrar torneo` por nombre
+      accesible, y borrado confirmado con toast `Torneo borrado.`.
+  Nota:
+    - El build local en Google Drive volvió a fallar por esbuild (`The service
+      was stopped`); se usó el clon externo para validación.
+
+SIGUIENTE PASO:
+  REFACTORIZACIÓN — Continuar extrayendo piezas pequeñas de `CalendarView.jsx`
+  cuando haya un bloque con bajo riesgo y validación clara.
+
+[COMPLETADO] REFACTORIZACIÓN — Feedback layer compartido en Calendar
+  Archivos modificados:
+    - src/components/CalendarView.jsx
+    - LEADERBOARD_PROGRESS.log
+  Resumen:
+    - `CalendarView.jsx` deja de mantener estado propio duplicado para
+      notificaciones y diálogos de confirmación.
+    - Se reutiliza `useFeedbackLayer` de `src/components/FeedbackLayer.jsx`,
+      ya usado por vistas de admin y resultados.
+    - Se elimina el render duplicado `renderFeedbackUi`, reduciendo el tamaño
+      de `CalendarView.jsx` sin cambiar los flujos de `notify` ni `askConfirm`.
+  Verificación:
+    - Build validado fuera de Google Drive en
+      `/Users/reinaldomoon/PlayersCalendar-push-6de558e`.
+    - Producción Vercel con cache-bust `?codexBust=8f643e1`: creado torneo
+      temporal `TEST CODEX FEEDBACK BORRAR 2026-08-03`, confirmado toast
+      `Torneo creado.`, diálogo de borrado y toast `Torneo borrado.`.
+  Nota:
+    - `CalendarView` baja de `241.53 kB` a `239.27 kB` en el build de Vite.
+
+SIGUIENTE PASO:
+  REFACTORIZACIÓN — Extraer el menú contextual de torneo o el header del
+  detalle cuando se pueda validar con creación/borrado temporal.
+
+[COMPLETADO] REFACTORIZACIÓN — Menú contextual de torneos extraído
+  Archivos modificados/creados:
+    - src/components/TournamentContextMenu.jsx
+    - src/components/CalendarView.jsx
+    - LEADERBOARD_PROGRESS.log
+  Resumen:
+    - El JSX y posicionamiento del menú contextual salen de `CalendarView.jsx`
+      a `TournamentContextMenu`.
+    - `CalendarView.jsx` conserva las acciones de negocio y pasa callbacks:
+      editar, duplicar, abrir informe, copiar/pegar color, color rápido y borrar.
+    - El menú ahora expone `role="menu"`/`role="menuitem"` y los swatches son
+      botones con `aria-label`, manteniendo la misma UI.
+  Verificación:
+    - Build validado fuera de Google Drive en
+      `/Users/reinaldomoon/PlayersCalendar-push-6de558e`.
+    - Producción Vercel con cache-bust `?codexBust=25e42ae`: menú contextual
+      abierto sobre una tarjeta real; confirmado `role="menu"` y acciones
+      `Editar`, `Duplicar`, `Abrir informe`, `Copiar Color`, `Pegar Color`,
+      `Borrar`.
+  Nota:
+    - `CalendarView` baja de `239.27 kB` a `238.83 kB` en el build de Vite.
+
+SIGUIENTE PASO:
+  REFACTORIZACIÓN — Extraer el header del detalle o normalizar helpers de
+  fechas repetidos dentro de `CalendarView.jsx`.
+
+[COMPLETADO] REFACTORIZACIÓN — Badges del detalle extraídos
+  Archivos modificados/creados:
+    - src/components/TournamentDetailBadges.jsx
+    - src/components/CalendarView.jsx
+    - LEADERBOARD_PROGRESS.log
+  Resumen:
+    - La fila de badges del detalle de torneo sale de `CalendarView.jsx`.
+    - `TournamentDetailBadges` concentra color de organizador, etiquetas
+      `GRAND PRIX`, `VALEDERA`, `SACE`, `ORDEN MÉRITO`, `WAGR`, estado
+      `FINALIZADO`/`EN JUEGO` y conflicto de fechas.
+    - `CalendarView.jsx` conserva el flujo de edición/resultados y sólo pasa
+      `tournament` e `isPast`.
+  Verificación:
+    - Build validado fuera de Google Drive en
+      `/Users/reinaldomoon/PlayersCalendar-push-6de558e`.
+    - Producción Vercel con cache-bust `?codexBust=664cee4`: abierto
+      `Barcelona Junior Golf Open by IMG Academy`; confirmadas badges
+      `CLUB`, `GRAND PRIX` y `VALEDERA` en el detalle.
+  Nota:
+    - En esta medición Vite agrupa el nuevo módulo dentro del chunk de Calendar;
+      el objetivo conseguido es reducir responsabilidad y longitud de
+      `CalendarView.jsx`, no cambiar el payload.
+
+SIGUIENTE PASO:
+  REFACTORIZACIÓN — Extraer acciones superiores del detalle o helpers de fecha
+  compartidos si no se requiere tocar lógica de guardado.
+
+[COMPLETADO] REFACTORIZACIÓN — Acciones superiores del detalle extraídas
+  Archivos modificados/creados:
+    - src/components/TournamentDetailActions.jsx
+    - src/components/CalendarView.jsx
+    - LEADERBOARD_PROGRESS.log
+  Resumen:
+    - Los botones `Volver`, `Editar torneo`/`Cancelar edición` y `Borrar torneo`
+      salen de `CalendarView.jsx`.
+    - `TournamentDetailActions` conserva los estilos inline, nombres accesibles
+      y visibilidad condicional del borrado para torneos custom.
+    - `CalendarView.jsx` mantiene los handlers y sólo pasa callbacks.
+  Verificación:
+    - Build validado fuera de Google Drive en
+      `/Users/reinaldomoon/PlayersCalendar-push-6de558e`.
+    - Producción Vercel con cache-bust `?codexBust=30d0659`: abierto detalle
+      real, confirmados `Volver`, `Editar torneo` y cambio a `Cancelar edición`.
+
+SIGUIENTE PASO:
+  REFACTORIZACIÓN — Normalizar helpers de fecha repetidos o extraer secciones
+  de edición del detalle en pasos pequeños.
+
+[COMPLETADO] HOTFIX — Informe no abre impresión automáticamente
+  Fecha: 2026-06-27
+  Archivos modificados:
+    - src/utils/tournamentReport.js
+    - src/components/TournamentReport.jsx
+    - src/components/CalendarView.jsx
+  Resumen:
+    - Eliminado el `window.print()` automático del informe premium.
+    - El informe se abre en una pestaña/ventana para revisar, sin mostrar el diálogo de impresión.
+    - Botones renombrados a `Abrir informe PDF` / `Abrir informe`.
+  Verificación:
+    - Build directo con Vite: correcto.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Validar apertura de informe sin impresión
+==========================================================================
+  Siguiente: Abrir un informe desde pestaña o menú de tres puntos y confirmar que no aparece el diálogo de imprimir.
+
+[COMPLETADO] FEATURE — Notificaciones push reales para chat
+  Fecha: 2026-06-26
+  Archivos modificados:
+    - .env
+    - src/services/notifications.service.js
+    - src/services/chat.service.js
+    - public/firebase-messaging-sw.js
+  Resumen:
+    - Configurada la VAPID pública para builds locales/Hostinger.
+    - El service worker de Firebase Messaging usa un scope propio y ya no pisa el service worker principal de la PWA.
+    - Al activar notificaciones se guarda el token FCM con scope y metadatos del dispositivo en `users/{uid}/push_tokens/{token}`.
+    - El envío de chat detecta errores reales de la API `/api/send_chat_push` en vez de ignorar respuestas no OK.
+    - Al pulsar una notificación se enfoca la ventana abierta si existe; si no, abre `Amigos`.
+  Verificación:
+    - Build directo con Vite: correcto.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Prueba real de push entre dos cuentas
+==========================================================================
+  Siguiente: En el móvil receptor, entrar en `Amigos`, pulsar `Activar` avisos y aceptar permisos. Desde otra cuenta enviar un chat y confirmar que llega push con la app en segundo plano/cerrada.
+
+[COMPLETADO] HOTFIX — R2 no aparece antes de su fecha
+  Fecha: 2026-06-26
+  Archivos modificados:
+    - src/services/leaderboard.service.js
+  Resumen:
+    - El progreso público del leaderboard calcula la ronda jugable a partir de `tournamentDates`.
+    - Las tarjetas o resultados de rondas futuras se ignoran hasta que llegue el día correspondiente.
+    - Si un participante solo tiene `rounds[0]` sin tarjeta hoyo a hoyo, R1 se considera finalizada correctamente.
+    - Recalculado Firestore del Campeonato de España: Nicole y Ona quedan como `Finalizada` en R1, no `R2 · Hoyo 1`.
+  Verificación:
+    - Build directo con Vite: correcto.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Validar inicio de R2 el 27/06/2026
+==========================================================================
+  Siguiente: El 27/06/2026, introducir un resultado de R2 y confirmar que la clasificación pasa a exigir R2. Quien siga solo con R1 debe aparecer pendiente hasta completar R2.
+
+[COMPLETADO] FEATURE — Panel admin de carga rápida de resultados
+  Fecha: 2026-06-26
+  Archivos modificados:
+    - src/components/admin/AdminDashboardView.jsx
+    - src/components/admin/QuickResultsAdminPanel.jsx
+  Resumen:
+    - Nueva pestaña `Resultados` en el panel admin.
+    - Permite buscar jugadora, buscar torneo, elegir ronda y pegar texto con golpes.
+    - Extrae 18 hoyos desde texto simple o filas copiadas con encabezados/`Rnd`.
+    - Muestra edición manual de los 18 hoyos, ida, vuelta, total, par y completitud.
+    - Guarda en `users/{uid}/results/{tournamentId}` y sincroniza `tournaments/{id}/participants/{username}`.
+    - Si ya existe una ronda, pide confirmación UI antes de sobrescribir.
+  Verificación:
+    - Build directo con Vite: correcto.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Probar carga admin con R2
+==========================================================================
+  Siguiente: Desde Admin > Resultados, elegir una jugadora, Campeonato de España, Ronda 2, pegar 18 golpes y confirmar que el leaderboard actualiza correctamente.
+
+[COMPLETADO] HOTFIX — Explorar no deja la app en blanco
+  Fecha: 2026-06-26 18:06 CEST
+  Archivos modificados:
+    - src/components/CommunityExplorerModal.jsx
+  Resumen:
+    - Corregido el orden de hooks del modal de exploración: ya no retorna antes de `useEffect`/`useMemo`.
+    - Normalizadas las listas de torneos suscritos, unidos y compartidos para tolerar valores vacíos.
+    - Blindada la búsqueda para evitar `.toLowerCase()` sobre nombres/campos ausentes.
+  Verificación:
+    - Build directo con Vite: correcto.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Validar botón Explorar desplegado
+==========================================================================
+  Siguiente: Desplegar el hotfix y abrir `Explorar` en producción. Si un móvil sigue blanco, forzar recarga/limpieza de caché PWA.
+
+[COMPLETADO] HOTFIX — Stableford opcional en resúmenes y roster Campeonato España
+  Archivos modificados:
+    - src/components/CalendarView.jsx
+    - src/components/TournamentReport.jsx
+    - src/utils/tournamentReport.js
+  Datos actualizados en Firestore:
+    - `mariaros` ahora aparece como `Maria Ros` en perfil y leaderboard.
+    - `adriana` / `Adriana Montolio` añadida al Campeonato de España de La Manga Campo Sur.
+    - R1 cargada en Campeonato de España:
+      - `itziardeormaechea`: 78 (+5)
+      - `valentina`: 76 (+3)
+      - `txell`: 78 (+5)
+      - `paulaalbadalejo`: 90 (+17)
+      - `iona`: 81 (+8)
+      - `mariaros`: 79 (+6)
+  Resumen:
+    - La tarjeta compartida solo muestra el bloque `Stableford` cuando la ronda tiene un valor real.
+    - El informe premium incluye `Stableford` en KPIs y comparativa por rondas solo si hay datos stableford.
+  Verificación:
+    - Build directo con Vite: correcto.
+    - Firestore verificado: `mariaros` y `adriana` aparecen como participantes pendientes del torneo.
+
+==========================================================================
+  PRÓXIMO PASO: DATOS — Cargar resultados R1 de jugadoras
+==========================================================================
+  Siguiente: Recibir resultados de primera vuelta por jugadora y cargarlos en Firestore preservando scorecards y leaderboard.
+
+[COMPLETADO] HOTFIX — No adelantar R2 Hoyo 1 antes de la fecha
+  Archivos modificados:
+    - src/services/leaderboard.service.js
+  Datos actualizados en Firestore:
+    - `nicole`: `R2 · Hoyo 1` corregido a `Finalizada`.
+    - `ona`: `R2 · Hoyo 1` corregido a `Finalizada`.
+  Resumen:
+    - `getResultProgress()` ya no interpreta una ronda posterior vacía como ronda en progreso.
+    - Solo se muestra `Hoyo N` cuando la ronda tiene golpes parciales reales.
+    - Una ronda completa mantiene estado `Finalizada` hasta que se introduzca un golpe de la siguiente ronda.
+  Verificación:
+    - Build directo con Vite: correcto.
+    - Deploy FTP Hostinger `/GolfTeam/`: correcto.
+    - Redeploy Vercel production: correcto.
+    - Firestore verificado: Nicole y Ona quedan `finished / Finalizada`, sin `currentHole`.
+
+==========================================================================
+  PRÓXIMO PASO: DATOS — Seguir cargando resultados R1
+==========================================================================
+  Siguiente: Recibir nuevas tarjetas de primera vuelta y cargarlas preservando scorecards y leaderboard.
+
+[COMPLETADO] HOTFIX — Avatar de clasificación móvil con tamaño estable
+  Archivos modificados:
+    - src/components/TournamentLeaderboard.jsx
+  Resumen:
+    - `ProfileImage` recibe ahora `photoPath`, `displayName` y `alt` correctos en la clasificación.
+    - El avatar queda fijado a 28x28 px para evitar que el fallback de iniciales ocupe toda la fila.
+    - Las columnas de la tabla se compactan ligeramente para móvil sin romper el nombre de la jugadora.
+  Verificación:
+    - Build directo con Vite: correcto.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Validar clasificación en móvil
+==========================================================================
+  Siguiente: Abrir la pestaña `Clasificación` en móvil y confirmar que las fotos/iniciales se ven como avatares pequeños.
+
+[COMPLETADO] HOTFIX — Evitar cortes raros en PDF premium
+  Archivos modificados:
+    - src/utils/tournamentReport.js
+  Resumen:
+    - La tabla hoyo a hoyo del PDF usa filas con `break-inside: avoid`.
+    - El layout de impresión reserva más margen inferior para evitar solaparse con el pie automático del navegador.
+    - La tabla se compacta en modo print para reducir saltos de página y filas huérfanas.
+  Verificación:
+    - Build directo con Vite: correcto.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Validar PDF premium
+==========================================================================
+  Siguiente: Generar el PDF desde la pestaña `Informe` y comprobar que la tabla no queda partida por el pie de página.
+
+[COMPLETADO] UX — Hacer visible el acceso a Informe
+  Archivos modificados:
+    - src/components/CalendarView.jsx
+  Resumen:
+    - La navegación del detalle del torneo pasa de tabs horizontales con overflow a botones en grid responsive.
+    - `Informe` ahora aparece como `Informe PDF` con tratamiento visual destacado.
+    - En móvil ya no debería quedar oculto fuera de la pantalla.
+  Verificación:
+    - Build directo con Vite: correcto.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Revisar navegación de detalle en móvil
+==========================================================================
+  Siguiente: Abrir un torneo en móvil y confirmar que `Informe PDF` es visible junto a resultados y clasificación.
+
+[COMPLETADO] UX — Informe desde menú y media por hoyo
+  Archivos modificados:
+    - src/components/CalendarView.jsx
+    - src/components/TournamentReport.jsx
+    - src/utils/tournamentReport.js
+  Resumen:
+    - El menú de tres puntos de cada torneo incluye `Generar informe`.
+    - Si el torneo no tiene resultados guardados, se muestra aviso y no abre informe vacío.
+    - El informe premium añade columna `Media` en el análisis hoyo a hoyo.
+    - La media se calcula por hoyo usando todas las rondas registradas del torneo para esa jugadora.
+  Verificación:
+    - Build directo con Vite: correcto.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Validar informe desde lista
+==========================================================================
+  Siguiente: Abrir los tres puntos de un torneo con resultados y confirmar que `Generar informe` abre el PDF sin entrar en el torneo.
+
+[COMPLETADO] REGLA — Clasificación exige la ronda del día
+  Archivos modificados:
+    - src/components/TournamentLeaderboard.jsx
+  Resumen:
+    - En torneos de varios días, la vista `Total` calcula la ronda requerida según la fecha del torneo.
+    - Si hoy corresponde R2/R3, solo contabilizan las jugadoras que ya tengan esa ronda introducida.
+    - Las jugadoras con rondas anteriores pero sin la ronda del día bajan al bloque de pendientes como `Pendiente R2` o `Pendiente R3`.
+    - Se muestra una etiqueta `Cuenta Rn` para dejar claro qué ronda está contando.
+  Verificación:
+    - Build directo con Vite: correcto.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Validar cambio de día R2/R3
+==========================================================================
+  Siguiente: En el día de R2, confirmar que las jugadoras con solo R1 no contabilizan en `Total` hasta introducir R2.
+
+[COMPLETADO] FEATURE — Informe premium de torneo exportable a PDF
+  Archivos modificados:
+    - src/components/CalendarView.jsx
+    - src/components/TournamentReport.jsx
+    - src/utils/tournamentReport.js
+  Resumen:
+    - Añadida pestaña `Informe` dentro del detalle del torneo.
+    - El informe muestra foto de la jugadora, resumen premium, total, vs par, media, putts, GIR y comparativa por rondas.
+    - Añadida tabla de analisis hoyo a hoyo con colores por resultado respecto al par.
+    - Boton `Generar PDF` abre una version imprimible premium para guardar como PDF desde el navegador.
+  Verificacion:
+    - Build directo con Vite: correcto.
+    - Deploy FTP Hostinger `/GolfTeam/`: correcto.
+    - Redeploy Vercel production: correcto.
+    - Bundle de produccion contiene `Informe`, `Generar PDF` y plantilla imprimible premium.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Validar informe premium en torneo real
+==========================================================================
+  Siguiente: Abrir un torneo con varias rondas, revisar la pestana `Informe`, generar PDF y confirmar que la foto y tablas se renderizan correctamente.
+
+[COMPLETADO] HOTFIX — Defensa contra pantalla blanca en raíz cacheada
+  Archivos modificados:
+    - src/App.jsx
+  Resumen:
+    - Si la app arranca en `/`, redirige desde cliente a `/GolfTeam/` antes de montar React Router.
+    - Evita que una entrada cacheada o PWA antigua quede en blanco por no coincidir con el basename.
+  Verificación:
+    - Build directo con Vite: correcto.
+    - Deploy FTP Hostinger `/GolfTeam/`: correcto.
+    - Redeploy Vercel production: correcto.
+    - `https://reinaldomoon.top/` encadena a Vercel `/GolfTeam/`.
+    - Navegador renderiza login en `https://golf-calendar-v3.vercel.app/GolfTeam/`.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Confirmar carga tras limpiar cache/PWA
+==========================================================================
+  Siguiente: Abrir `https://reinaldomoon.top/` y `https://golf-calendar-v3.vercel.app/` en navegador real; si alguna PWA instalada sigue blanca, borrar la PWA y reinstalar desde `/GolfTeam/`.
+
+[COMPLETADO] UI COPY — Botones de login más claros
+  Archivos modificados:
+    - src/components/LoginViewFirebase.jsx
+    - src/components/LoginView.jsx
+    - src/components/CalendarView.jsx
+  Resumen:
+    - `Ingresar` pasa a `Iniciar sesión`.
+    - `Registrarse` pasa a `Crear cuenta`.
+    - El cambio de modo usa `Crear cuenta nueva` y `Ya tengo cuenta`.
+    - `Modo Móvil` pasa a `Introducir resultado`.
+    - `Compartir` pasa a `Compartir tarjeta`.
+    - `En Vivo` pasa a `Resultados en Vivo`.
+  Verificación:
+    - Build directo con Vite: correcto.
+    - Deploy FTP Hostinger `/GolfTeam/`: correcto.
+    - Redeploy Vercel production: correcto.
+
+==========================================================================
+  PRÓXIMO PASO: UI — Revisar botones internos con sesión iniciada
+==========================================================================
+  Siguiente: Revisar con usuario autenticado los botones de calendario, tarjeta, modo móvil, compartir y comunidad para ajustar nomenclatura si hace falta.
+
+[COMPLETADO] HOTFIX — Putts/GIR desactivados por defecto
+  Archivos modificados:
+    - src/components/CalendarView.jsx
+  Resumen:
+    - `track_putts` y `track_girs` ya no se activan por defecto desde la configuración del torneo.
+    - Se conservan solo cuando el resultado existente de la usuaria los tenía guardados o cuando la usuaria los marca manualmente.
+    - El editor móvil recibe la misma configuración explícita para evitar que aparezcan campos no seleccionados.
+  Verificación:
+    - Build directo con Vite: correcto.
+    - Deploy FTP Hostinger `/GolfTeam/`: correcto.
+    - Redeploy Vercel production: correcto.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Validar tarjeta con Putts/GIR apagados
+==========================================================================
+  Siguiente: Abrir torneo real nuevo o sin configuración previa y confirmar que `Track Putts` y `Track GIR` aparecen desmarcados por defecto.
+
+[COMPLETADO] HOTFIX — Mantener modo móvil vivo al volver a la app
+  Archivos modificados:
+    - src/App.jsx
+    - src/components/CalendarView.jsx
+  Resumen:
+    - La sesión de modo móvil se guarda como activa con torneo, ronda y hoyo.
+    - Al volver a la app desde una ruta no pública, se restaura automáticamente el torneo activo.
+    - CalendarView reabre el editor móvil si la sesión sigue activa y solo la limpia al cerrar el modo móvil.
+  Verificación:
+    - Build directo con Vite: correcto.
+    - Deploy FTP Hostinger `/GolfTeam/`: correcto.
+    - Redeploy Vercel production: correcto.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Validar retorno a modo móvil
+==========================================================================
+  Siguiente: Entrar en `Introducir resultado`, mandar la app a segundo plano, volver y confirmar que sigue abierta la misma ventana hasta cerrar.
+
+[COMPLETADO] HOTFIX — Login bloqueado por ciclo de suscripción Auth
+  Archivos modificados:
+    - src/App.jsx
+  Causa:
+    - AppContent creaba dos callbacks vacíos nuevos en cada render y los pasaba a useAuth.
+    - Esos callbacks cambiaban las dependencias de resetSessionState, reiniciaban onAuthStateChanged y provocaban un ciclo de estado/render.
+  Corrección:
+    - Los callbacks de compatibilidad para handicap y PDF ahora tienen una referencia estable fuera del componente.
+  Verificación integral en producción:
+    - Formulario cargado en https://reinaldomoon.top/GolfTeam/.
+    - Usuario y contraseña introducidos correctamente.
+    - Clic real en `Iniciar sesión` ejecutado correctamente.
+    - Calendario principal de Nicole visible con avatar, hándicap 2.9 y torneos.
+    - Recarga completa realizada; la sesión se restauró y volvió a mostrar el calendario.
+    - ESLint y build Vite: correctos.
+    - Hostinger: bundle `index-Cfl8ZnGD.js`, HTTP 200.
+    - Vercel producción: deployment `dpl_C9Mxk4FhheJVS7QcggPwoAbq1CJV`, estado Ready.
+
+==========================================================================
+  PRÓXIMO PASO: UI — Continuar revisión interna con sesión iniciada
+==========================================================================
+  Siguiente: Revisar botones internos de calendario, tarjeta, modo móvil, compartir y comunidad.
+
+[COMPLETADO] HOTFIX — Redirección raíz Vercel a /GolfTeam/
+  Archivos modificados:
+    - vercel.json
+  Resumen:
+    - Añadida redirección temporal de `/` a `/GolfTeam/` en Vercel.
+    - Evita la pantalla en blanco causada por React Router con `basename="/GolfTeam"` cuando se abre la raíz del dominio Vercel.
+  Verificación:
+    - Build directo con Vite: correcto.
+    - Redeploy Vercel production correcto.
+    - `https://golf-calendar-v3.vercel.app/` devuelve 307 a `/GolfTeam/`.
+    - Navegador renderiza login en `https://golf-calendar-v3.vercel.app/GolfTeam/`.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Probar modo móvil con Putts/GIR
+==========================================================================
+  Siguiente: En una cuenta real, activar `Track Putts` y `Track GIR`, entrar en `Modo Móvil`, esperar autosave y confirmar que ambos campos siguen visibles.
