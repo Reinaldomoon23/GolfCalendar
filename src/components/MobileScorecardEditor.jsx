@@ -503,7 +503,7 @@ const MobileScorecardEditor = ({
                                     return (
                                         <div key={index} style={{ marginBottom: '0.65rem' }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', color: '#e2e8f0', fontSize: '0.8rem', fontWeight: '700' }}>
-                                                <span>Putt {index + 1}</span><span style={{ color: '#c4b5fd' }}>{formatPuttDistance(distance)}</span>
+                                                <span style={{ color: '#cbd5e1', fontSize: '0.78rem' }}>Putt {index + 1}</span><span style={{ color: '#ddd6fe', fontSize: '1.15rem', fontWeight: '900', lineHeight: 1 }}>{formatPuttDistance(distance)}</span>
                                             </div>
                                             <input type="range" min="0" max="100" step="0.25" value={distanceToSlider(distance)} onChange={(event) => handlePuttDistance(index, sliderToDistance(event.target.value))} style={{ width: '100%', accentColor: '#8b5cf6', cursor: 'pointer' }} aria-label={`Distancia del putt ${index + 1}`} />
                                         </div>
