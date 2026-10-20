@@ -251,6 +251,14 @@ const MobileScorecardEditor = ({
             );
         }
 
+        if (activeField === 'putts') {
+            return (
+                <div style={{ color: '#cbd5e1', textAlign: 'center', fontSize: '0.85rem', padding: '0.35rem 0' }}>
+                    Añade un putt cada vez que no embocas. La distancia se registra después de cada putt.
+                </div>
+            );
+        }
+
         const keys = [1, 2, 3, 4, 5, 6, 7, 8, 9, '-', 0, 'del'];
         return (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
@@ -478,26 +486,32 @@ const MobileScorecardEditor = ({
                         {scoreLabel.toUpperCase()}
                     </div>
                 )}
-                {activeField === 'putts' && Number(putts) > 0 && (
+                {activeField === 'putts' && (
                     <div style={{ width: '100%', maxWidth: '420px', marginTop: '1rem', padding: '0 1.5rem', boxSizing: 'border-box' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', marginBottom: '0.8rem' }}>
-                            <button onClick={() => changePuttCount(-1)} aria-label="Eliminar un putt" style={{ width: '42px', height: '42px', borderRadius: '12px', border: 'none', background: '#334155', color: 'white', fontSize: '1.5rem', fontWeight: '800', cursor: 'pointer' }}>−</button>
-                            <span style={{ minWidth: '70px', textAlign: 'center', color: '#f8fafc', fontWeight: '800' }}>{putts} putt{Number(putts) === 1 ? '' : 's'}</span>
-                            <button onClick={() => changePuttCount(1)} aria-label="Añadir un putt" style={{ width: '42px', height: '42px', borderRadius: '12px', border: 'none', background: '#8b5cf6', color: 'white', fontSize: '1.5rem', fontWeight: '800', cursor: 'pointer' }}>+</button>
-                        </div>
-                        <div style={{ color: '#c4b5fd', fontSize: '0.75rem', fontWeight: '800', textAlign: 'center', marginBottom: '0.6rem' }}>DISTANCIA DE CADA PUTT</div>
-                        {Array.from({ length: Number(putts) }).map((_, index) => {
-                            const distance = puttDistances[index] ?? 0;
-                            return (
-                                <div key={index} style={{ marginBottom: '0.65rem' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#e2e8f0', fontSize: '0.8rem', fontWeight: '700' }}>
-                                        <span>Putt {index + 1}</span><span style={{ color: '#c4b5fd' }}>{formatPuttDistance(distance)}</span>
-                                    </div>
-                                    <input type="range" min="0" max="100" step="0.25" value={distanceToSlider(distance)} onChange={(event) => handlePuttDistance(index, sliderToDistance(event.target.value))} style={{ width: '100%', accentColor: '#8b5cf6', cursor: 'pointer' }} aria-label={`Distancia del putt ${index + 1}`} />
+                        {Number(putts) === 0 ? (
+                            <button onClick={() => changePuttCount(1)} aria-label="Añadir primer putt" style={{ width: '100%', padding: '0.85rem', borderRadius: '14px', border: 'none', background: '#8b5cf6', color: 'white', fontSize: '1rem', fontWeight: '800', cursor: 'pointer' }}>+ Añadir primer putt</button>
+                        ) : (
+                            <>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', marginBottom: '0.8rem' }}>
+                                    <button onClick={() => changePuttCount(-1)} aria-label="Eliminar un putt" style={{ width: '42px', height: '42px', borderRadius: '12px', border: 'none', background: '#334155', color: 'white', fontSize: '1.5rem', fontWeight: '800', cursor: 'pointer' }}>−</button>
+                                    <span style={{ minWidth: '70px', textAlign: 'center', color: '#f8fafc', fontWeight: '800' }}>{putts} putt{Number(putts) === 1 ? '' : 's'}</span>
+                                    <button onClick={() => changePuttCount(1)} aria-label="Añadir un putt" style={{ width: '42px', height: '42px', borderRadius: '12px', border: 'none', background: '#8b5cf6', color: 'white', fontSize: '1.5rem', fontWeight: '800', cursor: 'pointer' }}>+</button>
                                 </div>
-                            );
-                        })}
-                        <div style={{ color: '#94a3b8', fontSize: '0.65rem', textAlign: 'center' }}>0–1 m: 0,25 · 1–3 m: 0,50 · desde 3 m: 1 m</div>
+                                <div style={{ color: '#c4b5fd', fontSize: '0.75rem', fontWeight: '800', textAlign: 'center', marginBottom: '0.6rem' }}>DISTANCIA DE CADA PUTT</div>
+                                {Array.from({ length: Number(putts) }).map((_, index) => {
+                                    const distance = puttDistances[index] ?? 0;
+                                    return (
+                                        <div key={index} style={{ marginBottom: '0.65rem' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#e2e8f0', fontSize: '0.8rem', fontWeight: '700' }}>
+                                                <span>Putt {index + 1}</span><span style={{ color: '#c4b5fd' }}>{formatPuttDistance(distance)}</span>
+                                            </div>
+                                            <input type="range" min="0" max="100" step="0.25" value={distanceToSlider(distance)} onChange={(event) => handlePuttDistance(index, sliderToDistance(event.target.value))} style={{ width: '100%', accentColor: '#8b5cf6', cursor: 'pointer' }} aria-label={`Distancia del putt ${index + 1}`} />
+                                        </div>
+                                    );
+                                })}
+                                <div style={{ color: '#94a3b8', fontSize: '0.65rem', textAlign: 'center' }}>0–1 m: 0,25 · 1–3 m: 0,50 · desde 3 m: 1 m</div>
+                            </>
+                        )}
                     </div>
                 )}
             </div>
