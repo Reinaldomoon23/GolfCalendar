@@ -506,6 +506,7 @@ export default function CalendarView({
                         pars: mergedPars,
                         strokes: normalizeHoleArray(card.strokes),
                         putts: normalizeHoleArray(card.putts),
+                        penalties: normalizeHoleArray(card.penalties),
                         puttDistances: Array.from({ length: 18 }, (_, holeIndex) => Array.isArray(card.puttDistances?.[holeIndex]) ? card.puttDistances[holeIndex] : []),
                         girs: normalizeHoleArray(card.girs)
                     };
@@ -516,6 +517,7 @@ export default function CalendarView({
                     pars: defaultPars.map(p => p || ''),
                     strokes: Array(18).fill(''),
                     putts: Array(18).fill(''),
+                    penalties: Array(18).fill(''),
                     puttDistances: Array.from({ length: 18 }, () => []),
                     girs: Array(18).fill('')
                 };
@@ -770,6 +772,7 @@ export default function CalendarView({
                 pars: defaultPars.map(p => p || ''),
                 strokes: Array(18).fill(''),
                 putts: Array(18).fill(''),
+                penalties: Array(18).fill(''),
                 puttDistances: Array.from({ length: 18 }, () => []),
                 girs: Array(18).fill('')
             };

@@ -16,7 +16,7 @@ const MobileScorecardEditor = ({
     currentRoundIdx = 0, // index of the active round
     targetScore = null  // new prop for Objective relative to par
 }) => {
-    const [activeField, setActiveField] = useState('strokes');
+    const [activeField, setActiveField] = useState(config.track_girs ? 'girs' : (config.track_putts ? 'putts' : 'strokes'));
 
     const puttDistances = (card.puttDistances || [])[holeIdx] || [];
     const snapPuttDistance = (rawValue) => {
@@ -118,7 +118,7 @@ const MobileScorecardEditor = ({
 
     // Reset active field and key state when hole changes
     useEffect(() => {
-        setActiveField('strokes');
+        setActiveField(config.track_girs ? 'girs' : (config.track_putts ? 'putts' : 'strokes'));
         setIsFirstKey(true);
         setShowHoleSelector(false);
     }, [holeIdx]);
@@ -164,12 +164,13 @@ const MobileScorecardEditor = ({
 
     const strokes = (card.strokes || [])[holeIdx] || '';
     const putts = (card.putts || [])[holeIdx] || '';
+    const penalties = (card.penalties || [])[holeIdx] || '';
     const gir = (card.girs || [])[holeIdx] || '';
 
     const getNum = (val) => (val === '' || val === '-') ? 0 : parseInt(val);
 
     const handleNumpad = (num) => {
-        const currentStr = String(activeField === 'strokes' ? strokes : putts);
+        const currentStr = String(activeField === 'strokes' ? strokes : activeField === 'putts' ? putts : penalties);
         let val;
 
         if (isFirstKey || currentStr === '-') {
@@ -189,7 +190,7 @@ const MobileScorecardEditor = ({
     };
 
     const handleDelete = () => {
-        const currentStr = String(activeField === 'strokes' ? strokes : putts);
+        const currentStr = String(activeField === 'strokes' ? strokes : activeField === 'putts' ? putts : penalties);
         if (currentStr.length <= 1 || currentStr === '-') {
             onUpdate(holeIdx, activeField, '');
         } else {
@@ -200,6 +201,11 @@ const MobileScorecardEditor = ({
     const handleGir = (val) => {
         onUpdate(holeIdx, 'girs', val === gir ? '' : val);
     };
+
+    const isScoreReady = (!config.track_girs || Boolean(gir)) && (!config.track_putts || putts !== '');
+    const suggestedScore = gir && putts !== ''
+        ? Math.max(1, (parseInt(par, 10) || 0) + ({ G: -2, '+1': -1, '+2': 0, '+': 1 }[gir] ?? 0) + (parseInt(putts, 10) || 0) + (parseInt(penalties, 10) || 0))
+        : null;
 
     const scoreDiff = getNum(strokes) - par;
     let scoreLabel = 'Añadir Score';
@@ -222,7 +228,8 @@ const MobileScorecardEditor = ({
 
     const valStr = activeField === 'strokes' ? String(strokes || '-') :
         activeField === 'putts' ? String(putts !== '' ? putts : '-') :
-            String(gir || '-');
+            activeField === 'penalties' ? String(penalties !== '' ? penalties : '-') :
+                String(gir || '-');
     const isMultiDigit = valStr.length > 1 && valStr !== '-';
 
     const renderNumpad = () => {
@@ -423,15 +430,19 @@ const MobileScorecardEditor = ({
             {/* Field Selector / Mini Dashboard */}
             <div style={{ padding: '0 1.5rem', display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
                 <button
-                    onClick={() => setActiveField('strokes')}
+                    onClick={() => isScoreReady && setActiveField('strokes')}
+                    aria-disabled={!isScoreReady}
                     style={{
                         flex: 1, padding: '0.5rem', borderRadius: '16px', border: 'none',
+                        order: 4,
+                        opacity: isScoreReady ? 1 : 0.45,
+                        cursor: isScoreReady ? 'pointer' : 'not-allowed',
                         backgroundColor: activeField === 'strokes' ? '#3b82f6' : '#1e293b',
                         color: activeField === 'strokes' ? 'white' : '#94a3b8', fontWeight: '700',
-                        cursor: 'pointer', transition: 'all 0.2s ease'
+                        transition: 'all 0.2s ease'
                     }}
                 >
-                    <span style={{ fontSize: '0.65rem', letterSpacing: '0.05em' }}>GOLPES</span><br />
+                    <span style={{ fontSize: '0.65rem', letterSpacing: '0.05em' }}>SCORE</span><br />
                     <span style={{ fontSize: '1.25rem', color: activeField === 'strokes' ? 'white' : '#e2e8f0' }}>{strokes || '-'}</span>
                 </button>
                 {config.track_putts && (
@@ -439,6 +450,7 @@ const MobileScorecardEditor = ({
                         onClick={() => setActiveField('putts')}
                         style={{
                             flex: 1, padding: '0.5rem', borderRadius: '16px', border: 'none',
+                            order: 2,
                             backgroundColor: activeField === 'putts' ? '#8b5cf6' : '#1e293b',
                             color: activeField === 'putts' ? 'white' : '#94a3b8', fontWeight: '700',
                             cursor: 'pointer', transition: 'all 0.2s ease'
@@ -453,6 +465,7 @@ const MobileScorecardEditor = ({
                         onClick={() => setActiveField('girs')}
                         style={{
                             flex: 1, padding: '0.5rem', borderRadius: '16px', border: 'none',
+                            order: 1,
                             backgroundColor: activeField === 'girs' ? '#10b981' : '#1e293b',
                             color: activeField === 'girs' ? 'white' : '#94a3b8', fontWeight: '700',
                             cursor: 'pointer', transition: 'all 0.2s ease'
@@ -462,6 +475,19 @@ const MobileScorecardEditor = ({
                         <span style={{ fontSize: '1.25rem', color: activeField === 'girs' ? 'white' : '#e2e8f0' }}>{gir || '-'}</span>
                     </button>
                 )}
+                <button
+                    onClick={() => setActiveField('penalties')}
+                    style={{
+                        flex: 1, padding: '0.5rem', borderRadius: '16px', border: 'none',
+                        order: 3,
+                        backgroundColor: activeField === 'penalties' ? '#f97316' : '#1e293b',
+                        color: activeField === 'penalties' ? 'white' : '#94a3b8', fontWeight: '700',
+                        cursor: 'pointer', transition: 'all 0.2s ease'
+                    }}
+                >
+                    <span style={{ fontSize: '0.65rem', letterSpacing: '0.05em' }}>PENAL.</span><br />
+                    <span style={{ fontSize: '1.25rem', color: activeField === 'penalties' ? 'white' : '#e2e8f0' }}>{penalties || '-'}</span>
+                </button>
             </div>
             {/* Main Value Display */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '120px' }}>
@@ -474,7 +500,8 @@ const MobileScorecardEditor = ({
                 }}>
                     {activeField === 'strokes' ? (strokes || '-') :
                         activeField === 'putts' ? (putts !== '' ? putts : '-') :
-                            (gir || '-')}
+                            activeField === 'penalties' ? (penalties !== '' ? penalties : '-') :
+                                (gir || '-')}
                 </div>
                 {activeField === 'strokes' && (
                     <div style={{
@@ -484,6 +511,11 @@ const MobileScorecardEditor = ({
                         border: `1px solid ${scoreColor}40`
                     }}>
                         {scoreLabel.toUpperCase()}
+                    </div>
+                )}
+                {activeField !== 'strokes' && suggestedScore !== null && (
+                    <div style={{ marginTop: '0.7rem', color: '#94a3b8', fontSize: '0.8rem', fontWeight: '700' }}>
+                        SCORE SUGERIDO: <span style={{ color: '#f8fafc', fontSize: '1rem' }}>{suggestedScore}</span>
                     </div>
                 )}
                 {activeField === 'putts' && (
