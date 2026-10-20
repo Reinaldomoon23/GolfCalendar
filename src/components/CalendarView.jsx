@@ -1984,7 +1984,7 @@ export default function CalendarView({
                                     </div>
                                 </div>
 
-                                <details style={{ marginTop: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '0.9rem' }}>
+                                <details style={{ marginTop: '1rem', marginBottom: '1.25rem', borderTop: '1px solid #e2e8f0', paddingTop: '0.9rem' }}>
                                     <summary style={{ cursor: 'pointer', color: 'var(--color-primary)', fontWeight: '700', fontSize: '0.9rem' }}>Más opciones</summary>
 
                                 {/* Tags / Properties */}
