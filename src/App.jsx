@@ -5,6 +5,7 @@ import { MessageCircle, X } from 'lucide-react';
 // Views
 const CalendarView = lazy(() => import('./components/CalendarView'));
 const StatsView = lazy(() => import('./components/StatsView'));
+const ReportsView = lazy(() => import('./components/ReportsView'));
 const TrainingTestsView = lazy(() => import('./components/TrainingTestsView'));
 const HandicapView = lazy(() => import('./components/HandicapView'));
 const LoginViewFirebase = lazy(() => import('./components/LoginViewFirebase'));
@@ -847,6 +848,7 @@ function AppContent() {
             />
           } />
           <Route path="/stats" element={<StatsView user={user} linkedUsers={linkedUsers} results={mappedResults} tournaments={tournaments} />} />
+          <Route path="/reports" element={<ReportsView user={user} results={mappedResults} tournaments={tournaments} />} />
           <Route path="/training" element={<TrainingTestsView user={user} />} />
           <Route path="/handicap" element={<HandicapView user={user} currentHandicap={handicap} history={history} results={mappedResults} tournaments={tournaments} />} />
           <Route path="/tournaments" element={

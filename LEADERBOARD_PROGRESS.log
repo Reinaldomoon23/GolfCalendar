@@ -1380,6 +1380,30 @@ SESIÓN: 2026-10-20 | Codex
   PRÓXIMO PASO: Reabrir la importación cuando el flujo de captura/compartición esté listo.
 
 ==========================================================================
+SESIÓN: 2026-10-28 | Codex
+==========================================================================
+
+[COMPLETADO] FEATURE — Apartado de informes y vueltas libres
+  Archivos modificados/creados:
+    - src/components/ReportsView.jsx
+    - src/components/NavTabs.jsx
+    - src/App.jsx
+    - src/utils/reportAnalytics.js
+  Resumen:
+    - Nueva sección `Informes` con filtros por meses, fechas exactas, número de eventos y origen.
+    - Se separan torneos, entrenamientos y vueltas libres.
+    - Se resumen golpes, vs par, putts, distancia media de putt, GIR y penalizaciones.
+    - Se añaden conclusiones automáticas y detalle exportable a CSV o imprimible.
+    - Se pueden guardar vueltas fuera de torneo con fecha, campo, par, golpes, putts y penalizaciones.
+    - Las vueltas libres usan IDs sin guión bajo para no entrar accidentalmente en el leaderboard compartido.
+  Verificación:
+    - `npm.cmd run lint`: 0 errores; 1 aviso preexistente en `MobileScorecardEditor.jsx`.
+    - `npm.cmd run build`: correcto.
+    - Prueba sintética de cálculo: 85 golpes con par 72 devuelve +13.
+
+  PRÓXIMO PASO: Probar la sección `Informes` con datos reales de Nicole y ajustar las conclusiones que deban ser más específicas.
+
+==========================================================================
   [COMPLETADO] IMPORTACIÓN — Primera fase de resultados compartidos
   Archivos modificados:
     - src/components/ResultImportModal.jsx
