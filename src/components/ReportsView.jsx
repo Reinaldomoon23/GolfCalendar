@@ -88,7 +88,7 @@ function FreeRoundForm({ user, onSaved, onCancel }) {
 
 export default function ReportsView({ user, results = {}, tournaments = [] }) {
   const [trainingSessions, setTrainingSessions] = useState([]);
-  const [sourceType, setSourceType] = useState('all');
+  const [sourceType, setSourceType] = useState('golf');
   const [periodType, setPeriodType] = useState('all');
   const [periodValue, setPeriodValue] = useState('6');
   const [eventCount, setEventCount] = useState('all');
@@ -117,7 +117,7 @@ export default function ReportsView({ user, results = {}, tournaments = [] }) {
 
     <div style={{ ...cardStyle, marginBottom: '1rem' }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(155px, 1fr))', gap: '0.7rem' }}>
-        <label>Origen<select value={sourceType} onChange={(event) => setSourceType(event.target.value)} style={inputStyle}><option value="all">Todo</option><option value="tournament">Solo torneos</option><option value="training">Solo entrenamientos</option><option value="free">Solo vueltas libres</option></select></label>
+        <label>Origen<select value={sourceType} onChange={(event) => setSourceType(event.target.value)} style={inputStyle}><option value="golf">Torneos y vueltas libres</option><option value="tournament">Solo torneos</option><option value="free">Solo vueltas libres</option></select></label>
         <label>Periodo<select value={periodType} onChange={(event) => setPeriodType(event.target.value)} style={inputStyle}><option value="all">Todo el historial</option><option value="months">Últimos meses</option><option value="dates">Entre fechas</option></select></label>
         {periodType === 'months' && <label>Meses<select value={periodValue} onChange={(event) => setPeriodValue(event.target.value)} style={inputStyle}><option value="1">1 mes</option><option value="3">3 meses</option><option value="6">6 meses</option><option value="12">12 meses</option><option value="24">24 meses</option></select></label>}
         {periodType === 'dates' && <><label>Desde<input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} style={inputStyle} /></label><label>Hasta<input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} style={inputStyle} /></label></>}

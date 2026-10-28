@@ -1403,6 +1403,16 @@ SESIÓN: 2026-10-28 | Codex
 
   PRÓXIMO PASO: Probar la sección `Informes` con datos reales de Nicole y ajustar las conclusiones que deban ser más específicas.
 
+[COMPLETADO] UX — Separar informes de golf de los tests de entrenamiento
+  Archivos modificados:
+    - src/components/ReportsView.jsx
+    - src/utils/reportAnalytics.js
+  Resumen:
+    - El selector de Informes solo ofrece `Torneos y vueltas libres`, `Solo torneos` y `Solo vueltas libres`.
+    - Los tests de entrenamiento permanecen en su apartado independiente.
+  Verificación:
+    - Lint y build correctos; permanece únicamente el aviso preexistente de hooks.
+
 ==========================================================================
   [COMPLETADO] IMPORTACIÓN — Primera fase de resultados compartidos
   Archivos modificados:

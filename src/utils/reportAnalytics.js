@@ -120,7 +120,10 @@ export function buildActivityRows(results = {}, tournaments = [], trainingSessio
 
 export function filterActivityRows(rows = [], filters = {}) {
   const { sourceType = 'all', periodType = 'all', periodValue = '', startDate = '', endDate = '', eventCount = 'all' } = filters;
-  let filtered = rows.filter((row) => sourceType === 'all' || row.sourceType === sourceType);
+  let filtered = rows.filter((row) => {
+    if (sourceType === 'golf') return row.sourceType === 'tournament' || row.sourceType === 'free';
+    return sourceType === 'all' || row.sourceType === sourceType;
+  });
 
   if (periodType === 'months' && periodValue) {
     const cutoff = new Date();
