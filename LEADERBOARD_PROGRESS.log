@@ -1413,6 +1413,15 @@ SESIÓN: 2026-10-28 | Codex
   Verificación:
     - Lint y build correctos; permanece únicamente el aviso preexistente de hooks.
 
+[COMPLETADO] UX — Filtro explícito para entrenamientos
+  Archivos modificados:
+    - src/components/ReportsView.jsx
+  Resumen:
+    - Informes mantiene por defecto solo torneos y vueltas libres.
+    - Se añade `Solo entrenamientos` como selección independiente, sin mezclar sus métricas con las rondas de campo.
+  Verificación:
+    - `npm.cmd run lint` y `npm.cmd run build`: correctos.
+
 ==========================================================================
   [COMPLETADO] IMPORTACIÓN — Primera fase de resultados compartidos
   Archivos modificados:
