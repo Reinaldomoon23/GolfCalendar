@@ -5,6 +5,8 @@ import { saveResult } from '../services/results.service';
 import {
   buildActivityConclusions,
   buildActivityRows,
+  buildPuttingAnalysis,
+  buildPuttingConclusions,
   filterActivityRows,
   formatReportNumber,
   summarizeActivityRows,
@@ -102,6 +104,8 @@ export default function ReportsView({ user, results = {}, tournaments = [] }) {
   const rows = useMemo(() => filterActivityRows(allRows, { sourceType, periodType, periodValue, startDate, endDate, eventCount }), [allRows, sourceType, periodType, periodValue, startDate, endDate, eventCount]);
   const summary = useMemo(() => summarizeActivityRows(rows), [rows]);
   const conclusions = useMemo(() => buildActivityConclusions(rows), [rows]);
+  const putting = useMemo(() => buildPuttingAnalysis(rows), [rows]);
+  const puttingConclusions = useMemo(() => buildPuttingConclusions(putting), [putting]);
 
   if (!user) return <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '1rem' }}><div style={cardStyle}>Inicia sesión para consultar tus informes.</div></div>;
 
@@ -130,6 +134,31 @@ export default function ReportsView({ user, results = {}, tournaments = [] }) {
     </div>
 
     <div style={{ ...cardStyle, marginBottom: '1rem' }}><h2 style={{ margin: '0 0 0.8rem', fontSize: '1.1rem' }}><BarChart3 size={18} style={{ verticalAlign: 'middle', marginRight: '0.35rem' }} />Conclusiones</h2>{conclusions.length ? <ul style={{ margin: 0, paddingLeft: '1.2rem', display: 'grid', gap: '0.55rem' }}>{conclusions.map((conclusion) => <li key={conclusion}>{conclusion}</li>)}</ul> : <p style={{ margin: 0, color: 'var(--color-text-muted)' }}>No hay suficientes datos para extraer conclusiones todavía.</p>}</div>
+
+    <div style={{ ...cardStyle, marginBottom: '1rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'baseline', flexWrap: 'wrap' }}>
+        <h2 style={{ margin: 0, fontSize: '1.1rem' }}><BarChart3 size={18} style={{ verticalAlign: 'middle', marginRight: '0.35rem' }} />Análisis de putting</h2>
+        <span style={{ color: 'var(--color-text-muted)', fontSize: '0.82rem' }}>{putting.holesWithData ? `${putting.holesWithData} hoyos con datos de putts` : 'Sin datos por hoyo'}</span>
+      </div>
+      {putting.holesWithData ? <>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(145px, 1fr))', gap: '0.7rem', margin: '1rem 0' }}>
+          {[
+            ['Putts / hoyo', formatReportNumber(putting.averagePuttsPerHole, 2)],
+            ['Primer putt medio', putting.firstPuttDistanceAverage === null ? '-' : `${putting.firstPuttDistanceAverage.toFixed(2)} m`],
+            ['Tripateos', putting.tripletCount],
+            ['% tripateos', putting.tripletRate === null ? '-' : `${(putting.tripletRate * 100).toFixed(1)}%`],
+            ['2.º putt medio', putting.secondPuttDistanceAverage === null ? '-' : `${putting.secondPuttDistanceAverage.toFixed(2)} m`],
+          ].map(([label, value]) => <div key={label} style={{ ...cardStyle, padding: '0.75rem', background: 'var(--color-bg)' }}><div style={{ color: 'var(--color-text-muted)', fontSize: '0.72rem', textTransform: 'uppercase' }}>{label}</div><strong style={{ display: 'block', fontSize: '1.3rem', marginTop: '0.25rem' }}>{value}</strong></div>)}
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem' }}>
+          <div style={{ overflowX: 'auto' }}><h3 style={{ fontSize: '0.95rem', margin: '0 0 0.5rem' }}>Resultado por hoyo</h3><table style={{ width: '100%', borderCollapse: 'collapse' }}><thead><tr style={{ textAlign: 'left', borderBottom: '2px solid var(--color-border)' }}>{['Resultado', 'Hoyo', '%'].map((header) => <th key={header} style={{ padding: '0.45rem' }}>{header}</th>)}</tr></thead><tbody>{[['1 putt', putting.onePuttCount], ['2 putts', putting.twoPuttCount], ['3 putts', putting.threePuttCount], ['4+ putts', putting.fourPlusPuttCount]].map(([label, count]) => <tr key={label} style={{ borderBottom: '1px solid var(--color-border)' }}><td style={{ padding: '0.45rem' }}>{label}</td><td style={{ padding: '0.45rem' }}>{count}</td><td style={{ padding: '0.45rem' }}>{((count / putting.holesWithData) * 100).toFixed(1)}%</td></tr>)}</tbody></table></div>
+          <div style={{ overflowX: 'auto' }}><h3 style={{ fontSize: '0.95rem', margin: '0 0 0.5rem' }}>Tripateos según primer putt</h3><table style={{ width: '100%', borderCollapse: 'collapse' }}><thead><tr style={{ textAlign: 'left', borderBottom: '2px solid var(--color-border)' }}>{['Distancia', 'Tripateos', '%'].map((header) => <th key={header} style={{ padding: '0.45rem' }}>{header}</th>)}</tr></thead><tbody>{putting.tripletDistanceBuckets.map((bucket) => <tr key={bucket.label} style={{ borderBottom: '1px solid var(--color-border)' }}><td style={{ padding: '0.45rem' }}>{bucket.label}</td><td style={{ padding: '0.45rem' }}>{bucket.count}</td><td style={{ padding: '0.45rem' }}>{bucket.rate === null ? '-' : `${(bucket.rate * 100).toFixed(1)}%`}</td></tr>)}</tbody></table></div>
+          <div style={{ overflowX: 'auto' }}><h3 style={{ fontSize: '0.95rem', margin: '0 0 0.5rem' }}>GIR frente a no GIR</h3><table style={{ width: '100%', borderCollapse: 'collapse' }}><thead><tr style={{ textAlign: 'left', borderBottom: '2px solid var(--color-border)' }}>{['Situación', 'Hoyos', 'Putts/hoyo', 'Tripateos'].map((header) => <th key={header} style={{ padding: '0.45rem' }}>{header}</th>)}</tr></thead><tbody>{putting.byGir.map((group) => <tr key={group.label} style={{ borderBottom: '1px solid var(--color-border)' }}><td style={{ padding: '0.45rem' }}>{group.label}</td><td style={{ padding: '0.45rem' }}>{group.holes}</td><td style={{ padding: '0.45rem' }}>{formatReportNumber(group.averagePutts, 2)}</td><td style={{ padding: '0.45rem' }}>{group.triplets}</td></tr>)}</tbody></table></div>
+        </div>
+        <ul style={{ margin: '1rem 0 0', paddingLeft: '1.2rem', display: 'grid', gap: '0.4rem' }}>{puttingConclusions.map((conclusion) => <li key={conclusion}>{conclusion}</li>)}</ul>
+        <p style={{ margin: '0.8rem 0 0', color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>Las medias de distancia solo usan putts con distancia guardada; no se estiman datos que no estén en la tarjeta.</p>
+      </> : <p style={{ margin: '1rem 0 0', color: 'var(--color-text-muted)' }}>Para mostrar este análisis hay que guardar los putts por hoyo. Las vueltas libres antiguas con solo putts totales no permiten calcular primer putt ni tripateos.</p>}
+    </div>
 
     <div style={{ ...cardStyle, overflowX: 'auto' }}><h2 style={{ margin: '0 0 0.8rem', fontSize: '1.1rem' }}><FileText size={18} style={{ verticalAlign: 'middle', marginRight: '0.35rem' }} />Detalle de actividades</h2>{rows.length ? <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '760px' }}><thead><tr style={{ textAlign: 'left', borderBottom: '2px solid var(--color-border)' }}>{['Fecha', 'Tipo', 'Actividad', 'Golpes', 'Vs par', 'Putts', 'Dist. putt', 'GIR', 'Penal.'].map((header) => <th key={header} style={{ padding: '0.6rem', whiteSpace: 'nowrap' }}>{header}</th>)}</tr></thead><tbody>{rows.map((row) => <tr key={row.id} style={{ borderBottom: '1px solid var(--color-border)' }}><td style={{ padding: '0.6rem', whiteSpace: 'nowrap' }}>{formatDate(row.date)}</td><td style={{ padding: '0.6rem' }}>{row.sourceLabel}</td><td style={{ padding: '0.6rem' }}><strong>{row.eventName}</strong><div style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>{row.course} · {row.roundLabel}</div></td><td style={{ padding: '0.6rem' }}>{row.score ?? '-'}</td><td style={{ padding: '0.6rem' }}>{formatVsPar(row.vsPar)}</td><td style={{ padding: '0.6rem' }}>{row.putts ?? '-'}</td><td style={{ padding: '0.6rem' }}>{row.puttDistanceAverage === null ? '-' : `${row.puttDistanceAverage.toFixed(2)} m`}</td><td style={{ padding: '0.6rem' }}>{row.girAttempts ? `${row.girs}/${row.girAttempts}` : '-'}</td><td style={{ padding: '0.6rem' }}>{row.penalties || 0}</td></tr>)}</tbody></table> : <p style={{ margin: 0, color: 'var(--color-text-muted)' }}>No hay actividades para estos filtros.</p>}</div>
   </div>;

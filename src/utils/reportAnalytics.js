@@ -10,6 +10,13 @@ const average = (values = []) => {
   return clean.length ? clean.reduce((total, value) => total + value, 0) / clean.length : null;
 };
 
+const median = (values = []) => {
+  const clean = values.map(toNumber).filter((value) => value !== null).sort((a, b) => a - b);
+  if (!clean.length) return null;
+  const middle = Math.floor(clean.length / 2);
+  return clean.length % 2 ? clean[middle] : (clean[middle - 1] + clean[middle]) / 2;
+};
+
 const firstDate = (value) => {
   const raw = String(value || '').split(' - ')[0].trim();
   if (!raw) return null;
@@ -72,6 +79,13 @@ const getRoundRows = (id, entry = {}, tournament = {}) => {
       puttDistanceAverage: average(distances),
       puttDistanceTotal: sum(distances),
       puttDistanceCount: distances.length,
+      puttsByHole,
+      girsByHole,
+      puttDistancesByHole: Array.from({ length: 18 }, (_, holeIndex) => (
+        Array.isArray(card.puttDistances?.[holeIndex])
+          ? card.puttDistances[holeIndex].map(toNumber).filter((value) => value !== null && value >= 0)
+          : []
+      )),
       holesPlayed: strokes.filter((value) => (toNumber(value) || 0) > 0).length,
     };
   }).filter(Boolean);
@@ -209,6 +223,104 @@ export function buildActivityConclusions(rows = []) {
       const delta = recentAverage - olderAverage;
       conclusions.push(`La distancia media reciente es ${Math.abs(delta).toFixed(2)} m ${delta <= 0 ? 'menor' : 'mayor'} que en la parte anterior del periodo.`);
     }
+  }
+  return conclusions;
+}
+
+const PUTT_DISTANCE_BUCKETS = [
+  { label: '0–1 m', min: 0, max: 1 },
+  { label: '1–2 m', min: 1, max: 2 },
+  { label: '2–3 m', min: 2, max: 3 },
+  { label: '3–5 m', min: 3, max: 5 },
+  { label: '5–10 m', min: 5, max: 10 },
+  { label: 'Más de 10 m', min: 10, max: Infinity },
+];
+
+const getPuttOutcome = (putts) => putts >= 4 ? 'fourPlus' : `${putts}putt`;
+
+export function buildPuttingAnalysis(rows = []) {
+  const holes = rows.flatMap((row) => {
+    const puttsByHole = Array.isArray(row.puttsByHole) ? row.puttsByHole : [];
+    const girsByHole = Array.isArray(row.girsByHole) ? row.girsByHole : [];
+    const distancesByHole = Array.isArray(row.puttDistancesByHole) ? row.puttDistancesByHole : [];
+    return Array.from({ length: Math.max(puttsByHole.length, distancesByHole.length) }, (_, holeIndex) => {
+      const distances = Array.isArray(distancesByHole[holeIndex]) ? distancesByHole[holeIndex] : [];
+      const putts = toNumber(puttsByHole[holeIndex]) || distances.length || null;
+      if (!putts || putts <= 0) return null;
+      return {
+        putts,
+        distances,
+        firstPuttDistance: distances[0] ?? null,
+        secondPuttDistance: distances[1] ?? null,
+        isGir: String(girsByHole[holeIndex] || '').toUpperCase() === 'G',
+      };
+    }).filter(Boolean);
+  });
+
+  const count = (predicate) => holes.filter(predicate).length;
+  const totalPutts = sum(holes.map((hole) => hole.putts));
+  const firstPuttDistances = holes.map((hole) => hole.firstPuttDistance).filter((value) => value !== null);
+  const secondPuttDistances = holes.map((hole) => hole.secondPuttDistance).filter((value) => value !== null);
+  const tripletHoles = holes.filter((hole) => hole.putts >= 3);
+  const byOutcome = ['1putt', '2putt', '3putt', 'fourPlus'].reduce((result, key) => {
+    const outcomeHoles = holes.filter((hole) => getPuttOutcome(hole.putts) === key);
+    const distances = outcomeHoles.map((hole) => hole.firstPuttDistance).filter((value) => value !== null);
+    result[key] = { count: outcomeHoles.length, distanceAverage: average(distances) };
+    return result;
+  }, {});
+  const byGir = ['GIR', 'Sin GIR'].map((label) => {
+    const girHoles = holes.filter((hole) => (label === 'GIR') === hole.isGir);
+    return {
+      label,
+      holes: girHoles.length,
+      averagePutts: average(girHoles.map((hole) => hole.putts)),
+      triplets: count((hole) => ((label === 'GIR') === hole.isGir) && hole.putts >= 3),
+    };
+  });
+  const buckets = PUTT_DISTANCE_BUCKETS.map((bucket) => {
+    const bucketTriplets = tripletHoles.filter((hole) => hole.firstPuttDistance !== null && hole.firstPuttDistance >= bucket.min && hole.firstPuttDistance < bucket.max);
+    return { ...bucket, count: bucketTriplets.length, rate: tripletHoles.length ? bucketTriplets.length / tripletHoles.length : null };
+  });
+
+  return {
+    holesWithData: holes.length,
+    totalPutts,
+    averagePuttsPerHole: average(holes.map((hole) => hole.putts)),
+    onePuttCount: count((hole) => hole.putts === 1),
+    twoPuttCount: count((hole) => hole.putts === 2),
+    threePuttCount: count((hole) => hole.putts === 3),
+    fourPlusPuttCount: count((hole) => hole.putts >= 4),
+    tripletCount: tripletHoles.length,
+    tripletRate: holes.length ? tripletHoles.length / holes.length : null,
+    firstPuttDistanceCount: firstPuttDistances.length,
+    firstPuttDistanceAverage: average(firstPuttDistances),
+    firstPuttDistanceMedian: median(firstPuttDistances),
+    secondPuttDistanceAverage: average(secondPuttDistances),
+    secondPuttDistanceCount: secondPuttDistances.length,
+    byOutcome,
+    byGir,
+    tripletDistanceAverage: average(tripletHoles.map((hole) => hole.firstPuttDistance)),
+    tripletDistanceCount: tripletHoles.filter((hole) => hole.firstPuttDistance !== null).length,
+    tripletDistanceBuckets: buckets,
+  };
+}
+
+export function buildPuttingConclusions(analysis) {
+  if (!analysis?.holesWithData) return [];
+  const conclusions = [];
+  if (analysis.averagePuttsPerHole !== null) {
+    conclusions.push(`La media es de ${analysis.averagePuttsPerHole.toFixed(2)} putts por hoyo (${analysis.holesWithData} hoyos con datos).`);
+  }
+  if (analysis.firstPuttDistanceAverage !== null) {
+    conclusions.push(`La distancia media del primer putt es ${analysis.firstPuttDistanceAverage.toFixed(2)} m; hay ${analysis.firstPuttDistanceCount} primeros putts medidos.`);
+  }
+  if (analysis.tripletCount) {
+    const distanceText = analysis.tripletDistanceAverage === null ? 'sin distancia inicial registrada' : `desde ${analysis.tripletDistanceAverage.toFixed(2)} m de media`;
+    conclusions.push(`Hay ${analysis.tripletCount} tripateo${analysis.tripletCount === 1 ? '' : 's'} (${(analysis.tripletRate * 100).toFixed(1)}% de los hoyos), normalmente ${distanceText}.`);
+    const mostCommonBucket = [...analysis.tripletDistanceBuckets].sort((a, b) => b.count - a.count)[0];
+    if (mostCommonBucket?.count) conclusions.push(`El tramo con más tripateos es ${mostCommonBucket.label} (${mostCommonBucket.count}).`);
+  } else {
+    conclusions.push('No hay tripateos en los hoyos analizados.');
   }
   return conclusions;
 }
