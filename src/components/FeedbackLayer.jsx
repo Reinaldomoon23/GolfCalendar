@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 export function useFeedbackLayer() {
   const [notification, setNotification] = useState(null);
@@ -51,7 +52,7 @@ export function useFeedbackLayer() {
           {notification.message}
         </div>
       )}
-      {confirmDialog && (
+      {confirmDialog && createPortal(
         <div
           role="dialog"
           aria-modal="true"
@@ -97,7 +98,8 @@ export function useFeedbackLayer() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

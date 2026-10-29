@@ -50,22 +50,12 @@ export default function ResultsView({ initialTournamentId, results = {}, tournam
         comments: ''
     });
 
-    useEffect(() => {
-        // If initial ID provided, use it
-        if (initialTournamentId) {
-            const t = tournaments.find(x => x.id === initialTournamentId);
-            if (t) {
-                handleOpenDetailInternal(t, results);
-            }
-        }
-    }, [initialTournamentId]);
-
     // -------------------------------------------------------------------------
     // HANDLERS
     // -------------------------------------------------------------------------
 
 
-    const handleOpenDetailInternal = (t, currentResults) => {
+    function handleOpenDetailInternal(t, currentResults) {
         const existing = currentResults[t.id] || {};
         const roundDates = getRoundDates(t.dates);
 
@@ -81,13 +71,25 @@ export default function ResultsView({ initialTournamentId, results = {}, tournam
             position: existing.position || '',
             rounds: initializedRounds,
             stableford: initializedStableford,
-            stableford: initializedStableford,
             points: existing.points || '',
             comments: existing.comments || '',
             handicap: existing.handicap || ''
         });
         setSelectedTournament(t);
-    };
+    }
+
+    useEffect(() => {
+        let cancelled = false;
+        if (initialTournamentId) {
+            const tournament = tournaments.find((item) => item.id === initialTournamentId);
+            if (tournament) {
+                queueMicrotask(() => {
+                    if (!cancelled) handleOpenDetailInternal(tournament, results);
+                });
+            }
+        }
+        return () => { cancelled = true; };
+    }, [initialTournamentId, tournaments, results]);
 
     const handleOpenDetail = (t) => {
         handleOpenDetailInternal(t, results);
@@ -226,31 +228,6 @@ export default function ResultsView({ initialTournamentId, results = {}, tournam
                                 </div>
                             </div>
                         ))}
-                    </div>
-
-                    {/* Meta Inputs */}
-                    <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '1rem' }}>
-                        <div style={{ flex: 1 }}>
-                            <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600', fontSize: '0.9rem' }}>Posición Final</label>
-                            <input
-                                type="text"
-                                placeholder="Ej: T5"
-                                value={formData.position}
-                                onChange={(e) => setFormData(prev => ({ ...prev, position: e.target.value }))}
-                                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
-                            />
-                        </div>
-                        <div style={{ flex: 1 }}>
-                            <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600', fontSize: '0.9rem' }}>Handicap Inicio Torneo</label>
-                            <input
-                                type="number"
-                                step="0.1"
-                                placeholder="Ej: 14.5"
-                                value={formData.handicap || ''}
-                                onChange={(e) => setFormData(prev => ({ ...prev, handicap: e.target.value }))}
-                                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
-                            />
-                        </div>
                     </div>
 
                     <div style={{ display: 'flex', gap: '1rem' }}>

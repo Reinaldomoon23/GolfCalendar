@@ -16,7 +16,7 @@ function isBlockedTournament(tournament) {
   );
 }
 
-export default function TournamentsCentralView({ user, allTournaments = [], activeCalendarTournaments = [], subscribedTournaments = [], subscribedIds = [], onJoinTournament, onLeaveTournament }) {
+export default function TournamentsCentralView({ user, allTournaments = [], subscribedIds = [], onJoinTournament }) {
   const [search, setSearch] = useState('');
   const [filterCountry, setFilterCountry] = useState('Todos');
   const [filterCircuit, setFilterCircuit] = useState('Todos');
@@ -121,12 +121,6 @@ export default function TournamentsCentralView({ user, allTournaments = [], acti
     }
   };
 
-  const handleLeave = (t) => {
-    if (onLeaveTournament) {
-      onLeaveTournament(t.id);
-    }
-  };
-
   return (
     <div className="view-container tournaments-view">
       <header className="view-header">
@@ -210,7 +204,17 @@ export default function TournamentsCentralView({ user, allTournaments = [], acti
               {monthTournaments.map(t => {
                 const isJoined = (subscribedIds || []).some(id => String(id) === String(t.id));
                 const isOfficial = !t.isShared && !t.custom;
-                const roster = participantMeta[String(t.id)] || { count: 0, names: [] };
+                const rawRoster = participantMeta[String(t.id)] || { count: 0, names: [] };
+                const normalizedCurrentUser = [user?.username, user?.full_name]
+                  .filter(Boolean)
+                  .map((value) => String(value).trim().toLowerCase());
+                const visibleRosterNames = !isJoined
+                  ? rawRoster.names.filter((name) => !normalizedCurrentUser.includes(String(name).trim().toLowerCase()))
+                  : rawRoster.names;
+                const roster = {
+                  names: visibleRosterNames,
+                  count: Math.max(0, rawRoster.count - (rawRoster.names.length - visibleRosterNames.length)),
+                };
                 const isRosterOpen = expandedRosterId === String(t.id);
                 
                 return (

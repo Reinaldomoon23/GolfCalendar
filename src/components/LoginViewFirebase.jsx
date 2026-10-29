@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { User, Lock, ArrowRight, Loader2, Eye, EyeOff } from 'lucide-react';
 import { auth, db } from '../firebase';
 import {
@@ -7,8 +7,7 @@ import {
     updateProfile
 } from 'firebase/auth';
 import {
-    ensureUserProfileDocument,
-    fetchUserProfileByUid
+    ensureUserProfileDocument
 } from '../utils/userProfiles';
 
 export default function LoginViewFirebase({ onLogin }) {
@@ -21,25 +20,51 @@ export default function LoginViewFirebase({ onLogin }) {
     const [isRegister, setIsRegister] = useState(false);
     const [fullName, setFullName] = useState('');
     const [federationId, setFederationId] = useState('');
+    const submitInFlight = useRef(false);
 
     const normalizeLoginName = (value) => String(value || '')
         .trim()
         .toLowerCase()
         .replace(/\s+/g, '');
 
+    const resolveLoginEmail = (value) => {
+        const normalizedValue = String(value || '').trim().toLowerCase();
+        return normalizedValue.includes('@')
+            ? normalizedValue
+            : `${normalizeLoginName(normalizedValue)}@golfteam.app`;
+    };
+
+    const withTimeout = (promise, message, timeoutMs = 20000) => Promise.race([
+        promise,
+        new Promise((_, reject) => {
+            window.setTimeout(() => reject(new Error(message)), timeoutMs);
+        })
+    ]);
+
     const handleSubmit = async (e) => {
-        e.preventDefault();
+        e?.preventDefault?.();
+        if (submitInFlight.current) return;
         setError('');
+
+        if (!username.trim() || !password) {
+            setError('Introduce el usuario y la contraseña');
+            return;
+        }
+
+        submitInFlight.current = true;
         setLoading(true);
 
         try {
             // Generar email a partir del username
             const normalizedUsernameInput = normalizeLoginName(username);
-            const email = `${normalizedUsernameInput}@golfteam.app`;
+            const email = resolveLoginEmail(username);
 
             if (isRegister) {
                 // REGISTRO: Crear usuario en Firebase Auth
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const userCredential = await withTimeout(
+                    createUserWithEmailAndPassword(auth, email, password),
+                    'Firebase está tardando demasiado. Comprueba la conexión e inténtalo de nuevo.'
+                );
                 const user = userCredential.user;
 
                 // Actualizar displayName
@@ -77,20 +102,22 @@ export default function LoginViewFirebase({ onLogin }) {
 
             } else {
                 // LOGIN: Autenticar con Firebase
-                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const userCredential = await withTimeout(
+                    signInWithEmailAndPassword(auth, email, password),
+                    'Firebase está tardando demasiado. Comprueba la conexión e inténtalo de nuevo.',
+                    8000
+                );
                 const user = userCredential.user;
 
-                const profile = await fetchUserProfileByUid(db, user.uid, user.email);
-                const normalizedProfile = await ensureUserProfileDocument(db, {
-                    ...profile,
+                // Do not wait for Firestore here. Firebase Auth has already
+                // validated the credentials; the profile is synced by the
+                // authenticated app after the first render.
+                const normalizedProfile = {
                     uid: user.uid,
-                    username: profile?.username || normalizedUsernameInput,
-                    email: profile?.email || user.email || email
-                }, normalizedUsernameInput);
-
-                if (!normalizedProfile) {
-                    throw new Error('Perfil de usuario no encontrado');
-                }
+                    username: normalizedUsernameInput,
+                    email: user.email || email,
+                    docId: user.uid,
+                };
 
                 const userData = {
                     uid: user.uid,
@@ -116,12 +143,15 @@ export default function LoginViewFirebase({ onLogin }) {
                 errorMessage = 'La contraseña debe tener al menos 6 caracteres';
             } else if (err.code === 'auth/invalid-email') {
                 errorMessage = 'Usuario inválido';
+            } else if (err.code === 'auth/network-request-failed') {
+                errorMessage = 'No se puede conectar con Firebase. Comprueba la conexión del móvil.';
             } else if (err.message) {
                 errorMessage = err.message;
             }
 
             setError(errorMessage);
         } finally {
+            submitInFlight.current = false;
             setLoading(false);
         }
     };
@@ -170,7 +200,7 @@ export default function LoginViewFirebase({ onLogin }) {
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <form onSubmit={handleSubmit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     {isRegister && (
                         <>
                             <div>
@@ -282,11 +312,27 @@ export default function LoginViewFirebase({ onLogin }) {
 
                     <button
                         type="submit"
+                        onClick={(event) => { void handleSubmit(event); }}
+                        onTouchEnd={(event) => {
+                            event.preventDefault();
+                            void handleSubmit(event);
+                        }}
                         className="btn btn-primary"
-                        style={{ marginTop: '1rem', width: '100%' }}
-                        disabled={loading}
+                        style={{
+                            marginTop: '1rem',
+                            width: '100%',
+                            minHeight: '48px',
+                            pointerEvents: 'auto',
+                            touchAction: 'manipulation',
+                        }}
+                        // Keep the control interactive even if a previous
+                        // network attempt is still settling. submitInFlight
+                        // prevents duplicate authentication requests without
+                        // leaving the mobile UI with a permanently disabled
+                        // button.
+                        aria-busy={loading}
                     >
-                        {loading ? <Loader2 className="animate-spin" size={20} /> : (
+                        {loading ? <><Loader2 className="animate-spin" size={20} /><span>Conectando...</span></> : (
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                                 <span>{isRegister ? 'Crear cuenta' : 'Iniciar sesión'}</span>
                                 <ArrowRight size={20} />

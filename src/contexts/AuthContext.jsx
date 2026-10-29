@@ -9,11 +9,10 @@
  * - User switching functionality
  */
 
-import { createContext, useContext, useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { IS_MULTI, DEFAULT_PREFERENCES } from '../config/app';
-
-const AuthContext = createContext(null);
+import { AuthContext } from './auth-context';
 
 export function AuthProvider({ children }) {
   // State that will be reset when switching users
@@ -79,10 +78,3 @@ export function AuthProvider({ children }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-export function useAuthContext() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuthContext must be used within AuthProvider');
-  }
-  return context;
-}

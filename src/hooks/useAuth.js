@@ -5,7 +5,7 @@
  * linked user switching, and single/multi mode handling.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { db } from '../firebase';
 import { fetchUserProfileByUsername } from '../utils/userProfiles';
@@ -37,7 +37,7 @@ export function useAuth({ setResults, setCustomTournaments, setPreferences, setH
   const [linkedUsers, setLinkedUsers] = useState([]);
 
   // ─── Reset all session-dependent state ───────────────────────────────────────
-  const resetSessionState = () => {
+  const resetSessionState = useCallback(() => {
     setUser(null);
     setSessionOwner(null);
     setLinkedUsers([]);
@@ -48,14 +48,23 @@ export function useAuth({ setResults, setCustomTournaments, setPreferences, setH
     setHandicap(null);
     setPdfUrl(null);
     setSentryUser(null);
-  };
+  }, [setResults, setCustomTournaments, setPreferences, setHandicap, setPdfUrl]);
 
   // ─── Firebase Auth subscription (multi mode only) ─────────────────────────
   useEffect(() => {
     if (!IS_MULTI) return undefined;
 
     let cancelled = false;
-    setAuthReady(false);
+    const authReadyFallback = window.setTimeout(() => {
+      if (!cancelled) {
+        console.warn('[auth] Firebase tardó demasiado en resolver la sesión; mostrando el login');
+        setAuthReady(true);
+      }
+    }, 3000);
+
+    queueMicrotask(() => {
+      if (!cancelled) setAuthReady(false);
+    });
 
     const unsubscribe = subscribeToAuthState({
       onLogin: ({ ownerProfile, activeUser, managedProfiles }) => {
@@ -79,16 +88,10 @@ export function useAuth({ setResults, setCustomTournaments, setPreferences, setH
 
     return () => {
       cancelled = true;
+      window.clearTimeout(authReadyFallback);
       unsubscribe();
     };
-  }, []);
-
-  // ─── Auto-login for single mode ───────────────────────────────────────────
-  useEffect(() => {
-    if (!IS_MULTI && !user) {
-      setUser(DEFAULT_USER);
-    }
-  }, [user]);
+  }, [resetSessionState]);
 
   // ─── Admin "view_as" URL param handling ──────────────────────────────────
   useEffect(() => {

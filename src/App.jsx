@@ -1,11 +1,12 @@
 import { Suspense, lazy, useState, useEffect, useRef, useMemo } from 'react';
-import { useRegisterSW } from 'virtual:pwa-register/react';
 import { BrowserRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { MessageCircle, X } from 'lucide-react';
 
 // Views
 const CalendarView = lazy(() => import('./components/CalendarView'));
 const StatsView = lazy(() => import('./components/StatsView'));
+const ReportsView = lazy(() => import('./components/ReportsView'));
+const TrainingTestsView = lazy(() => import('./components/TrainingTestsView'));
 const HandicapView = lazy(() => import('./components/HandicapView'));
 const LoginViewFirebase = lazy(() => import('./components/LoginViewFirebase'));
 const PublicScorecardView = lazy(() => import('./components/PublicScorecardView'));
@@ -13,6 +14,7 @@ const PublicLeaderboardView = lazy(() => import('./components/PublicLeaderboardV
 const TeamLiveScorecard = lazy(() => import('./components/TeamLiveScorecard'));
 const TournamentsCentralView = lazy(() => import('./components/TournamentsCentralView'));
 const FriendsView = lazy(() => import('./components/FriendsView'));
+const FreeRoundsView = lazy(() => import('./components/FreeRoundsView'));
 const AdminDashboardView = lazy(() => import('./components/admin/AdminDashboardView'));
 const AdminRoute = lazy(() => import('./components/admin/AdminRoute'));
 
@@ -23,9 +25,10 @@ import ProfileModal from './components/ProfileModal';
 
 // Firebase
 import { db } from './firebase';
-import { onSnapshot, setDoc, doc } from 'firebase/firestore';
-import { getUserDocId, getUserProfileRef, fetchUserProfileByUsername } from './utils/userProfiles';
-import { writeLinkedUsers, writeSavedUser } from './utils/cache';
+import { onSnapshot } from 'firebase/firestore';
+import { getUserDocId, getUserProfileRef, fetchUserProfileByUsername, getUserSubcollectionRef } from './utils/userProfiles';
+import { selfHealPhoto } from './services/profile.service';
+import { writeSavedUser } from './utils/cache';
 
 // Hooks
 import { useAuth } from './hooks/useAuth';
@@ -33,10 +36,9 @@ import { useHandicap } from './hooks/useHandicap';
 import { useTournaments } from './hooks/useTournaments';
 
 // Services
-import { invalidateProfilePhotoCache, uploadProfilePhoto, updateUserProfile, recoverLegacyProfile } from './services/profile.service';
+import { uploadProfilePhoto, updateUserProfile, recoverLegacyProfile } from './services/profile.service';
 import { subscribeToPreferences, subscribeToResults, saveResult, saveAllResults, deleteResult, savePreferences } from './services/results.service';
 import { subscribeToChats } from './services/chat.service';
-import { subscribeToForegroundPushMessages } from './services/notifications.service';
 
 // Config
 import { IS_MULTI, DEFAULT_PREFERENCES } from './config/app';
@@ -80,6 +82,10 @@ function AppRouterShell() {
   return isPublicRoute ? <PublicRoutes /> : <AppContent />;
 }
 
+// Stable callbacks: changing these on every render restarts useAuth's
+// subscription and creates a session-reset/render loop while signed out.
+const ignoreAuthReset = () => {};
+
 function AppContent() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -98,40 +104,11 @@ function AppContent() {
           navigate(`/event/${parsed.tournamentId}`, { replace: true });
         }
       }
-    } catch(e) {}
+    } catch (error) {
+      console.warn('[mobile-mode] No se pudo restaurar la sesión:', error);
+    }
   }, [location.pathname, navigate]);
 
-
-  const { updateServiceWorker } = useRegisterSW({
-    onRegistered(r) {
-      if (!r) return;
-      // Check for updates every 10 minutes
-      setInterval(() => { r.update().catch(() => {}); }, 10 * 60 * 1000);
-      // Also check when the user comes back to the tab
-      document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') r.update().catch(() => {});
-      });
-    },
-    onNeedRefresh() {
-      // Auto-apply silently on non-live pages
-      const isLivePage = window.location.pathname.includes('/live');
-      if (!isLivePage) {
-        updateServiceWorker(true);
-      }
-    },
-    onRegisterError(error) { console.log('SW registration error', error); },
-  });
-
-  useEffect(() => {
-    const handleControllerChange = () => {
-      // Don't auto-reload on live scorecard pages - it disrupts watchers mid-game
-      const isLivePage = window.location.pathname.includes('/live');
-      if (isLivePage) return;
-      window.location.reload();
-    };
-    navigator.serviceWorker?.addEventListener('controllerchange', handleControllerChange);
-    return () => navigator.serviceWorker?.removeEventListener('controllerchange', handleControllerChange);
-  }, []);
 
   const handleAppUpdate = async () => {
     // 1. Unregister all service workers
@@ -148,15 +125,13 @@ function AppContent() {
         await caches.delete(key);
       }
     }
-    // 3. Clear local storage partially or just force reload
-    updateServiceWorker(true);
-    // 4. Force hard reload
-    window.location.reload(true);
+    // 3. This is an explicit user action, so a single reload is intentional.
+    window.location.reload();
   };
 
   // ── Core state ───────────────────────────────────────────────────────────
   const [results, setResults] = useState({});
-  const [customTournaments, setCustomTournaments] = useState([]);
+  const [, setCustomTournaments] = useState([]);
   const [preferences, setPreferences] = useState({ ...DEFAULT_PREFERENCES });
 
   // ── Auth hook ────────────────────────────────────────────────────────────
@@ -167,22 +142,20 @@ function AppContent() {
     authReady,
     handleLogin, handleLogout,
     handleSwitchUser, handleReturnToOwner,
-    resetSessionState,
   } = useAuth({
     setResults,
     setCustomTournaments,
     setPreferences,
-    setHandicap: () => {},    // patched below after handicap hook
-    setPdfUrl: () => {},      // patched below after handicap hook
+    setHandicap: ignoreAuthReset,
+    setPdfUrl: ignoreAuthReset,
   });
 
   // ── Handicap hook ────────────────────────────────────────────────────────
   const {
     handicap, setHandicap,
-    pdfUrl, setPdfUrl,
+    pdfUrl,
     isUpdatingHandicap,
     history,
-    refreshHandicap,
     handleHandicapButtonClick,
     handleOpenHandicapPdf,
   } = useHandicap(user, setUser);
@@ -190,7 +163,7 @@ function AppContent() {
   const activeUserDocId = getUserDocId(user);
 
   // ── Photo upload state ───────────────────────────────────────────────────
-  const [photoVersion, setPhotoVersion] = useState(Date.now());
+  const [photoVersion, setPhotoVersion] = useState(() => Date.now());
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [appNotification, setAppNotification] = useState(null);
   const appNotificationTimer = useRef(null);
@@ -234,7 +207,7 @@ function AppContent() {
 
     if (!user || !activeUserDocId) return undefined;
     return subscribeToChats(user, setGlobalChats);
-  }, [user?.uid, user?.docId, user?.username, activeUserDocId]);
+  }, [user, activeUserDocId]);
 
   useEffect(() => {
     if (!activeUserDocId) return;
@@ -265,21 +238,26 @@ function AppContent() {
   }, [chatNotice]);
 
   useEffect(() => {
+    if (!user?.uid && !user?.username) return undefined;
+
     let unsubscribe = () => {};
     let cancelled = false;
 
-    subscribeToForegroundPushMessages((payload) => {
-      setChatNotice({
-        chatId: payload.data?.chatId || null,
-        friendName: payload.notification?.title || 'Nuevo mensaje',
-        text: payload.notification?.body || payload.data?.body || 'Tienes una notificación nueva.',
+    import('./services/notifications.service').then(({ subscribeToForegroundPushMessages }) => {
+      if (cancelled) return;
+      return subscribeToForegroundPushMessages((payload) => {
+        setChatNotice({
+          chatId: payload.data?.chatId || null,
+          friendName: payload.notification?.title || 'Nuevo mensaje',
+          text: payload.notification?.body || payload.data?.body || 'Tienes una notificación nueva.',
+        });
+      }).then((unsub) => {
+        if (cancelled) {
+          unsub();
+          return;
+        }
+        unsubscribe = unsub;
       });
-    }).then((unsub) => {
-      if (cancelled) {
-        unsub();
-        return;
-      }
-      unsubscribe = unsub;
     }).catch((error) => {
       console.warn('[notifications] Foreground listener unavailable:', error);
     });
@@ -288,7 +266,7 @@ function AppContent() {
       cancelled = true;
       unsubscribe();
     };
-  }, []);
+  }, [user?.uid, user?.username]);
 
   const openChatNotice = () => {
     setChatNotice(null);
@@ -456,10 +434,10 @@ function AppContent() {
       setUser(updatedUser);
       writeSavedUser(updatedUser);
       setPhotoVersion(Date.now());
-      notifyApp('Foto actualizada en Cloudflare R2.', 'success');
+      notifyApp('Foto actualizada correctamente.', 'success');
     } catch (err) {
-      console.error('R2 Upload error:', err);
-      notifyApp(`Error al subir a Cloudflare R2: ${err.message || 'Error desconocido'}`, 'error');
+      console.error('Photo upload error:', err);
+      notifyApp(`Error al subir la foto: ${err.message || 'Error desconocido'}`, 'error');
     } finally {
       setIsUploadingPhoto(false);
     }
@@ -605,7 +583,7 @@ function AppContent() {
     const unsubResults = subscribeToResults(user, setResults);
 
     return () => { unsubPrefs(); unsubResults(); };
-  }, [activeUserDocId, user?.username]);
+  }, [activeUserDocId, user]);
 
   // ── Profile real-time sync (photo, name, linked users) ────────────────────
   useEffect(() => {
@@ -617,23 +595,18 @@ function AppContent() {
       const freshData = snapshot.data();
       const managedUsernames = Array.isArray(freshData.managed_users) ? freshData.managed_users : [];
       const incomingPhoto = freshData.photo_url;
-      const incomingPhotoUpdatedAt = freshData.photo_updated_at || '';
       const incomingName = freshData.full_name;
       const currentManaged = JSON.stringify(user.managed_users || []);
       const incomingManaged = JSON.stringify(managedUsernames);
 
       setUser(prev => {
         if (!prev || prev.username !== user.username) return prev;
-        const photoToUse = incomingPhoto && String(incomingPhoto).trim() !== '' ? incomingPhoto : '';
-        const photoChanged = prev.photo_url !== photoToUse
-          || String(prev.photo_updated_at || '') !== String(incomingPhotoUpdatedAt);
-        if (photoChanged || prev.full_name !== incomingName || currentManaged !== incomingManaged) {
+        const photoToUse = (incomingPhoto && String(incomingPhoto).trim() !== '') ? incomingPhoto : prev.photo_url;
+        void selfHealPhoto(prev, incomingPhoto);
+        if (prev.photo_url !== photoToUse || prev.full_name !== incomingName || currentManaged !== incomingManaged) {
           const updated = { ...prev, ...freshData, photo_url: photoToUse, manager_id: prev.manager_id };
           writeSavedUser(updated);
-          if (photoChanged) {
-            void invalidateProfilePhotoCache(photoToUse, incomingPhotoUpdatedAt)
-              .finally(() => setPhotoVersion(Date.now()));
-          }
+          setPhotoVersion(Date.now());
           return updated;
         }
         return prev;
@@ -660,101 +633,7 @@ function AppContent() {
     });
 
     return () => unsubProfile();
-  }, [activeUserDocId, user?.username]);
-
-  // Keep every linked profile fresh across devices. The active profile already
-  // has its own listener above; this also covers the other manager/child avatars.
-  const linkedProfileKey = linkedUsers
-    .map((profile) => `${getUserDocId(profile)}:${profile.username || ''}`)
-    .filter(Boolean)
-    .sort()
-    .join('|');
-  const linkedProfilesRef = useRef(linkedUsers);
-
-  useEffect(() => {
-    linkedProfilesRef.current = linkedUsers;
-  }, [linkedUsers]);
-
-  useEffect(() => {
-    if (!IS_MULTI || !linkedProfileKey) return undefined;
-
-    const unsubscribers = linkedProfilesRef.current
-      .filter((profile) => getUserDocId(profile))
-      .map((profile) => onSnapshot(getUserProfileRef(db, profile), (snapshot) => {
-        if (!snapshot.exists()) return;
-
-        const freshData = snapshot.data();
-        const profileDocId = snapshot.id;
-        const profileUsername = freshData.username || profile.username;
-        const freshPhoto = freshData.photo_url && String(freshData.photo_url).trim() !== ''
-          ? freshData.photo_url
-          : '';
-        const freshPhotoUpdatedAt = freshData.photo_updated_at || '';
-
-        void invalidateProfilePhotoCache(freshPhoto, freshPhotoUpdatedAt).then((invalidated) => {
-          if (invalidated) setPhotoVersion(Date.now());
-        });
-
-        setLinkedUsers((previousProfiles) => {
-          let changed = false;
-          const updatedProfiles = previousProfiles.map((previousProfile) => {
-            const sameProfile = getUserDocId(previousProfile) === profileDocId
-              || previousProfile.username === profileUsername;
-            if (!sameProfile) return previousProfile;
-
-            const updatedProfile = {
-              ...previousProfile,
-              ...freshData,
-              username: profileUsername,
-              docId: profileDocId,
-              photo_url: freshPhoto,
-            };
-
-            if (
-              previousProfile.photo_url !== updatedProfile.photo_url
-              || String(previousProfile.photo_updated_at || '') !== String(updatedProfile.photo_updated_at || '')
-              || previousProfile.full_name !== updatedProfile.full_name
-            ) {
-              changed = true;
-            }
-            return updatedProfile;
-          });
-
-          if (!changed) return previousProfiles;
-          writeLinkedUsers(updatedProfiles);
-          return updatedProfiles;
-        });
-
-        setUser((previousUser) => {
-          if (!previousUser || previousUser.username !== profileUsername) return previousUser;
-          if (
-            previousUser.photo_url === freshPhoto
-            && String(previousUser.photo_updated_at || '') === String(freshPhotoUpdatedAt)
-            && previousUser.full_name === freshData.full_name
-          ) {
-            return previousUser;
-          }
-
-          const updatedUser = {
-            ...previousUser,
-            ...freshData,
-            username: profileUsername,
-            docId: profileDocId,
-            photo_url: freshPhoto,
-            photo_updated_at: freshPhotoUpdatedAt,
-            manager_id: previousUser.manager_id,
-          };
-          writeSavedUser(updatedUser);
-          return updatedUser;
-        });
-      }, (error) => {
-        console.warn('[profile] Linked profile sync failed:', error.code || error.message);
-      }));
-
-    return () => {
-      unsubscribers.forEach((unsubscribe) => unsubscribe());
-    };
-  }, [linkedProfileKey, setLinkedUsers, setUser]);
+  }, [activeUserDocId, user, setLinkedUsers, setUser]);
 
   // ── Nuke helper (dev console) ─────────────────────────────────────────────
   useEffect(() => {
@@ -771,7 +650,6 @@ function AppContent() {
       console.log('🔥 Starting Nuke Process for', user.username);
       try {
         const { getDocs, writeBatch } = await import('firebase/firestore');
-        const { getUserSubcollectionRef } = await import('./utils/userProfiles');
         const batch = writeBatch(db);
         let count = 0;
         const resultsSnap = await getDocs(getUserSubcollectionRef(db, user, 'results'));
@@ -820,6 +698,26 @@ function AppContent() {
     return copy;
   }, [results]);
 
+  const normalizeFreeRoundDate = (value) => {
+    const raw = String(value || '');
+    const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    return iso ? `${iso[3]}/${iso[2]}/${iso[1]}` : raw;
+  };
+
+  const freeRounds = useMemo(() => Object.entries(mappedResults)
+    .filter(([, entry]) => entry?.recordType === 'free_round')
+    .map(([id, entry]) => ({
+      id,
+      name: entry.tournamentName || 'Vuelta libre',
+      dates: normalizeFreeRoundDate(entry.tournamentDates),
+      course: entry.tournamentCourse || 'Campo de golf',
+      par: Number(entry.tournamentPar) || 72,
+      type: 'free_round',
+      custom: true,
+      freeRound: true,
+      pars: entry.scorecards?.[0]?.pars || Array(18).fill('4'),
+    })), [mappedResults]);
+
   const tournamentsState = useTournaments(user, preferences, handleUpdatePreferences, mappedResults, {
     disabled: false,
   });
@@ -864,11 +762,52 @@ function AppContent() {
     }
   };
 
+  const handleCreateFreeRound = async (round) => {
+    const pars = Array.isArray(round.pars) && round.pars.length === 18
+      ? round.pars.map((value) => String(value))
+      : round.par === 72 ? Array(18).fill('4') : Array(18).fill(String(Math.max(1, Math.round(round.par / 18))));
+    const entry = {
+      recordType: 'free_round',
+      tournamentName: round.name,
+      tournamentCourse: round.course,
+      tournamentDates: round.dates,
+      tournamentPar: round.par,
+      rounds: [''],
+      totalPutts: [''],
+      track_putts: true,
+      track_girs: true,
+      scorecards: {
+        0: {
+          pars,
+          strokes: Array(18).fill(''),
+          putts: Array(18).fill(''),
+          penalties: Array(18).fill(''),
+          puttDistances: Array.from({ length: 18 }, () => []),
+          girs: Array(18).fill(''),
+        },
+      },
+      updatedAt: new Date().toISOString(),
+    };
+    await handleSaveSpecificResult(round.id, entry);
+    navigate(`/free-round/${round.id}`, { state: { edit: true } });
+  };
+
+  const handleUpdateFreeRound = async (updatedTournament) => {
+    const existing = mappedResults[updatedTournament.id] || {};
+    await handleSaveSpecificResult(updatedTournament.id, {
+      ...existing,
+      tournamentName: updatedTournament.name,
+      tournamentCourse: updatedTournament.course,
+      tournamentDates: updatedTournament.dates,
+      tournamentPar: Number(updatedTournament.par) || existing.tournamentPar || 72,
+    });
+  };
+
   if (IS_MULTI && !authReady && !user) {
     return (
       <div className="app-container fade-in" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div className="card" style={{ padding: '1.5rem 2rem', textAlign: 'center' }}>
-          <span style={{ fontSize: '0.8em', opacity: 0.7, color: 'var(--color-text-muted)' }}>(v3.0.2)</span>
+          <span style={{ fontSize: '0.8em', opacity: 0.7, color: 'var(--color-text-muted)' }}>(v3.0.1)</span>
           Conectando con Firebase...
         </div>
       </div>
@@ -971,6 +910,27 @@ function AppContent() {
             />
           } />
           <Route path="/stats" element={<StatsView user={user} linkedUsers={linkedUsers} results={mappedResults} tournaments={tournaments} />} />
+          <Route path="/reports" element={<ReportsView user={user} results={mappedResults} tournaments={tournaments} />} />
+          <Route path="/free-rounds" element={<FreeRoundsView freeRounds={freeRounds} onCreateFreeRound={handleCreateFreeRound} />} />
+          <Route path="/free-round/:id" element={
+            <CalendarView
+              viewMode="calendar"
+              tournaments={freeRounds}
+              results={mappedResults}
+              activeGroups={[]}
+              hiddenGroups={[]}
+              customThemes={preferences.themes}
+              user={user}
+              onUpdateResults={handleUpdateResults}
+              onSaveSpecificResult={handleSaveSpecificResult}
+              onDeleteResult={async (id) => { await handleDeleteResult(id); navigate('/free-rounds'); }}
+              onDeleteTournament={async (id) => { await handleDeleteResult(id); navigate('/free-rounds'); }}
+              onUpdateTournament={handleUpdateFreeRound}
+              managedUsers={linkedUsers.map(u => u.username)}
+              allAvailableTournaments={freeRounds}
+            />
+          } />
+          <Route path="/training" element={<TrainingTestsView user={user} />} />
           <Route path="/handicap" element={<HandicapView user={user} currentHandicap={handicap} history={history} results={mappedResults} tournaments={tournaments} />} />
           <Route path="/tournaments" element={
             <TournamentsCentralView 

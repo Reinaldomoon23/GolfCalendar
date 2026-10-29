@@ -22,9 +22,6 @@ export function initSentry() {
         dsn,
         environment: import.meta.env.MODE,
 
-        // Set sample rate (1.0 = 100% of errors)
-        tracesSampleRate: 1.0,
-
         // Capture unhandled promise rejections
         integrations: [
             Sentry.browserTracingIntegration(),
@@ -55,7 +52,7 @@ export function initSentry() {
         ],
 
         // Filter out PII (Personally Identifiable Information)
-        beforeSend(event, hint) {
+        beforeSend(event) {
             // Remove email addresses from error messages
             if (event.message) {
                 event.message = event.message.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[EMAIL_REDACTED]');

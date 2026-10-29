@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
-import { getKnownProfilePhotoUrl, R2_PUBLIC_URL } from '../utils/profilePhotos';
 
 const BASE_URL = import.meta.env.BASE_URL.replace(/\/$/, '');
+const R2_PUBLIC_URL = 'https://pub-23c281cf1ae04def9102341cf7d87837.r2.dev';
+const LEGACY_PROFILE_BASE_URL = 'https://reinaldomoon.top/GolfTeam';
+const NICOLE_LEGACY_PHOTO_URL = `${LEGACY_PROFILE_BASE_URL}/profile.jpg`;
 
 function getAvatarUrl(displayName) {
   const safeName = encodeURIComponent(displayName || 'Golf');
@@ -9,9 +11,7 @@ function getAvatarUrl(displayName) {
 }
 
 function appendVersion(url, version) {
-  // R2 uploads use a unique filename, so query-string cache busting only
-  // creates duplicate requests without improving freshness.
-  if (!version || !url || url.startsWith('blob:') || url.includes('.r2.dev/')) return url;
+  if (!version || !url || url.startsWith('blob:')) return url;
   return `${url}${url.includes('?') ? '&' : '?'}v=${version}`;
 }
 
@@ -44,7 +44,9 @@ function toLegacyUrl(photoPath, version) {
   }
 
   const normalizedPath = value.replace(/^\/+/, '');
-  return appendVersion(`${BASE_URL}/${normalizedPath}`, version);
+  // Relative legacy paths (for example profiles/nicole.jpg) live on the
+  // Hostinger PHP deployment, not in the Vercel static bundle.
+  return appendVersion(`${LEGACY_PROFILE_BASE_URL}/${normalizedPath}`, version);
 }
 
 function toCloudflareUrl(fileName, version) {
@@ -59,12 +61,19 @@ function getCandidateSources(photoPath, version) {
   const fileName = extractFileName(value);
   const candidates = [];
 
-  // Firestore is the source of truth: try its exact absolute URL first.
-  if (value.startsWith('http')) {
-    candidates.push(appendVersion(value, version));
+  if (value.startsWith('data:image/')) {
+    candidates.push(value);
+    return candidates;
   }
 
-  // R2 remains a fallback for legacy/relative paths and migrated photos.
+  // A Firebase Storage URL is already the authoritative source. Do not
+  // transform it into a guessed R2 URL first; that only adds a failed request
+  // and delays the avatar rendering.
+  if (value.startsWith('http')) {
+    candidates.push(appendVersion(value, version));
+    return candidates;
+  }
+
   if (fileName) {
     candidates.push(toCloudflareUrl(fileName, version));
   }
@@ -74,6 +83,12 @@ function getCandidateSources(photoPath, version) {
     candidates.push(legacyUrl);
   }
 
+  // Older Nicole profiles referenced nicole.jpg or a timestamped file that
+  // no longer exists. The original image remains available as profile.jpg.
+  if (/^profiles\/nicole(?:[_-].*)?\.jpe?g$/i.test(value) || /^nicole\.jpe?g$/i.test(value)) {
+    candidates.push(appendVersion(NICOLE_LEGACY_PHOTO_URL, version));
+  }
+
   return candidates.filter((candidate, index, array) => (
     Boolean(candidate) && array.indexOf(candidate) === index
   ));
@@ -81,7 +96,6 @@ function getCandidateSources(photoPath, version) {
 
 export default function ProfileImage({
   photoPath,
-  username,
   displayName,
   alt,
   version,
@@ -90,20 +104,11 @@ export default function ProfileImage({
   title,
 }) {
   const avatarUrl = getAvatarUrl(displayName);
-  const knownPhotoUrl = getKnownProfilePhotoUrl({ username, displayName });
-  const stateKey = `${String(photoPath || '')}::${String(knownPhotoUrl)}::${String(version || '')}`;
+  const stateKey = `${String(photoPath || '')}::${String(version || '')}`;
   const candidates = useMemo(() => {
-    const storedSources = getCandidateSources(photoPath, version);
-    const knownSources = getCandidateSources(knownPhotoUrl, version);
-    const storedIsR2 = String(photoPath || '').includes('.r2.dev/');
-    const orderedSources = storedIsR2
-      ? [...storedSources, ...knownSources]
-      : [...knownSources, ...storedSources];
-    const uniqueSources = orderedSources.filter((source, index, array) => (
-      Boolean(source) && array.indexOf(source) === index
-    ));
-    return [...uniqueSources, avatarUrl];
-  }, [avatarUrl, knownPhotoUrl, photoPath, version]);
+    const resolved = getCandidateSources(photoPath, version);
+    return [...resolved, avatarUrl];
+  }, [avatarUrl, photoPath, version]);
   const [candidateIndexes, setCandidateIndexes] = useState({});
   const candidateIndex = candidateIndexes[stateKey] || 0;
 
@@ -111,7 +116,6 @@ export default function ProfileImage({
 
   return (
     <img
-      key={stateKey}
       src={src}
       alt={alt || displayName || 'Perfil'}
       className={className}

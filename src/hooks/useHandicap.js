@@ -5,13 +5,12 @@
  * manual refresh, and the 08:00 AM auto-refresh timer.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   refreshHandicap as svcRefreshHandicap,
   getHandicapFromCache,
   hasHandicapFreshCache,
   subscribeToHandicapHistory,
-  appendHandicapHistoryEntry,
 } from '../services/handicap.service';
 import { writeSavedUser } from '../utils/cache';
 import { IS_MULTI } from '../config/app';
@@ -47,7 +46,7 @@ export function useHandicap(user, setUser) {
 
   // ─── Main refresh function ────────────────────────────────────────────────
 
-  const refreshHandicap = async ({ force = false, background = false } = {}) => {
+  const refreshHandicap = useCallback(async ({ force = false, background = false } = {}) => {
     if (!user) return;
 
     if (!force && hasHandicapFreshCache(user)) {
@@ -70,7 +69,7 @@ export function useHandicap(user, setUser) {
     } finally {
       if (!background) setIsUpdatingHandicap(false);
     }
-  };
+  }, [user, setUser]);
 
   // ─── Subscribe to handicap history ────────────────────────────────────────
 
@@ -85,7 +84,7 @@ export function useHandicap(user, setUser) {
     });
 
     return () => unsubscribe();
-  }, [user?.username]);
+  }, [user]);
 
   // ─── Load from cache when user changes, then refresh if needed ──────────
 
@@ -103,7 +102,7 @@ export function useHandicap(user, setUser) {
       }, 400);
       return () => window.clearTimeout(timeoutId);
     }
-  }, [user?.username, user?.federation_id]);
+  }, [user, refreshHandicap]);
 
   // ─── Auto-update at 08:00 AM ──────────────────────────────────────────────
 
@@ -116,7 +115,7 @@ export function useHandicap(user, setUser) {
     };
     const intervalId = setInterval(checkTime, 60000);
     return () => clearInterval(intervalId);
-  }, [user]);
+  }, [refreshHandicap]);
 
   // ─── Exposed handlers ─────────────────────────────────────────────────────
 

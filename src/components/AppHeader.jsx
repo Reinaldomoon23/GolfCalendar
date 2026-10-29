@@ -30,7 +30,6 @@ import { IS_MULTI } from '../config/app';
  *   onSwitchUser: Function,
  *   onReturnToOwner: Function,
  *   onHandicapClick: Function,
- *   onOpenPdf: Function,
  *   onAppUpdate: Function,
  *   onLogout: Function,
  * }} props
@@ -52,7 +51,6 @@ export default function AppHeader({
   onSwitchUser,
   onReturnToOwner,
   onHandicapClick,
-  onOpenPdf,
   onAppUpdate,
   onLogout,
 }) {
@@ -99,9 +97,8 @@ export default function AppHeader({
               <ProfileImage
                 key={`photo-${photoVersion}`}
                 photoPath={user.photo_url}
-                username={user.username}
                 displayName={user.full_name || user.username}
-                version={user.photo_updated_at || photoVersion}
+                version={photoVersion}
                 alt={user.full_name}
                 style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--color-primary)' }}
               />
@@ -116,9 +113,8 @@ export default function AppHeader({
                 <ProfileImage
                   key={`nav-photo-${u.username}-${photoVersion}`}
                   photoPath={u.photo_url}
-                  username={u.username}
                   displayName={u.full_name || u.username}
-                  version={u.photo_updated_at || photoVersion}
+                  version={photoVersion}
                   alt={u.full_name}
                   style={{ width: '50px', height: '50px', borderRadius: '50%', objectFit: 'cover', border: '2px solid transparent' }}
                 />
@@ -154,9 +150,8 @@ export default function AppHeader({
             <ProfileImage
               key={`edit-photo-${photoVersion}`}
               photoPath={user.photo_url}
-              username={user.username}
               displayName={user.full_name || user.username}
-              version={user.photo_updated_at || photoVersion}
+              version={photoVersion}
               alt={user.full_name}
               style={{ width: '120px', height: '120px', borderRadius: '50%', objectFit: 'cover', border: '4px solid white', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
             />

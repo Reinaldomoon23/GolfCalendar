@@ -54,6 +54,12 @@ service cloud.firestore {
               isManagerOf(getUserProfile(targetUid).username));
     }
 
+    function isCurrentUserNamed(username) {
+      return isAuthenticated() &&
+             userDocExists(request.auth.uid) &&
+             getUserProfile(request.auth.uid).username == username;
+    }
+
     // Self-registration is limited to a safe subset of fields and always starts as player
     function isOwnerCreatingProfile(userId) {
       return isOwner(userId) &&
@@ -78,7 +84,6 @@ service cloud.firestore {
                'federation_id',
                'email',
                'photo_url',
-               'photo_updated_at',
                'handicap_url',
                'current_handicap',
                'handicap_pdf_url',
@@ -129,8 +134,8 @@ service cloud.firestore {
         // Read: Public (to allow unauthenticated single-app modes to read history)
         allow read: if true;
 
-        // Write: Public (to allow ANY single-app user to automatically save their fetched RFEG data without needing to log in)
-        allow write: if true;
+        // Write: Only the profile owner, a manager, or an admin.
+        allow write: if isAdmin() || canAccessUser(userId);
       }
 
       match /settings/{settingId} {
@@ -150,6 +155,10 @@ service cloud.firestore {
       }
 
       match /push_tokens/{tokenId} {
+        allow read, write: if isAdmin() || canAccessUser(userId);
+      }
+
+      match /training_tests/{testId} {
         allow read, write: if isAdmin() || canAccessUser(userId);
       }
     }
@@ -297,25 +306,47 @@ service cloud.firestore {
         // Read: Anyone (public leaderboard)
         allow read: if true;
 
-        // Write: Any authenticated user can write their own participant data
-        // (Usually username is the document ID)
-        allow write: if isAuthenticated() && (request.auth.uid != null);
+        // Write: Only the participant itself or an admin. The document ID and
+        // payload username must both identify the authenticated profile.
+        allow write: if isAdmin() || (
+          isCurrentUserNamed(username) &&
+          request.resource.data.username == username
+        );
       }
     }
 
     // Keep tournaments_leaderboard as an alias for future migration if needed
     match /tournaments_leaderboard/{tournamentId} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if isAdmin();
       match /participants/{username} {
         allow read: if true;
-        allow write: if isAuthenticated();
+        allow write: if isAdmin();
       }
     }
 
     match /shared_tournaments/{tournamentId} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow create: if isAdmin() || (
+        isAuthenticated() &&
+        userDocExists(request.auth.uid) &&
+        request.resource.data.sharedBy == getUserProfile(request.auth.uid).username
+      );
+      allow update: if isAdmin() || (
+        isAuthenticated() &&
+        userDocExists(request.auth.uid) &&
+        resource.data.sharedBy == getUserProfile(request.auth.uid).username &&
+        request.resource.data.sharedBy == resource.data.sharedBy
+      ) || (
+        isAuthenticated() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['subscriberCount']) &&
+        request.resource.data.subscriberCount == resource.data.subscriberCount + 1
+      );
+      allow delete: if isAdmin() || (
+        isAuthenticated() &&
+        userDocExists(request.auth.uid) &&
+        resource.data.sharedBy == getUserProfile(request.auth.uid).username
+      );
     }
 
     // System config (feature flags, settings)

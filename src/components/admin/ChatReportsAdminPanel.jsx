@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { Ban, CheckCircle2, Flag, RefreshCw } from 'lucide-react';
 import {
   arrayUnion,
@@ -37,7 +37,7 @@ function ChatReportsAdminPanel({ user }) {
   const [statusFilter, setStatusFilter] = useState('open');
   const { notify, confirm, FeedbackLayer } = useFeedbackLayer();
 
-  const loadReports = async () => {
+  const loadReports = useCallback(async () => {
     setLoading(true);
     try {
       const reportsQuery = query(collection(db, 'chat_reports'), orderBy('created_at', 'desc'));
@@ -52,11 +52,11 @@ function ChatReportsAdminPanel({ user }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [notify]);
 
   useEffect(() => {
     loadReports();
-  }, []);
+  }, [loadReports]);
 
   const filteredReports = useMemo(() => (
     reports.filter((report) => {

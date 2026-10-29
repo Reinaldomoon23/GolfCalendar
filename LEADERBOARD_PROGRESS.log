@@ -1,176 +1,76 @@
 # LEADERBOARD_PROGRESS.log
+
+==========================================================================
+SESIÓN: 2026-10-14 | Codex
+==========================================================================
+
+[COMPLETADO] FEATURE — Distancia individual de putts en modo móvil
+  Archivos modificados:
+    - src/components/MobileScorecardEditor.jsx
+    - src/components/CalendarView.jsx
+  Resumen:
+    - Se añadió `puttDistances`, un array de distancias por putt y por hoyo.
+    - Slider por putt con intervalos de 0,25 m hasta 1 m, 0,50 m hasta 3 m,
+      y 1 m desde 3 m, limitado a 20 m.
+    - Compatible con tarjetas antiguas y guardado mediante el autosave existente.
+  Verificación:
+    - Build directo con Vite: correcto.
+
+  PRÓXIMO PASO: Probar el slider en dispositivo real y confirmar persistencia.
+
+[COMPLETADO] UX — Añadir putts individualmente en modo móvil
+  Archivo modificado:
+    - src/components/MobileScorecardEditor.jsx
+  Resumen:
+    - Añadidos controles directos `−` y `+` para eliminar o añadir putts.
+    - Cada putt añadido muestra su propio slider de distancia hasta 20 m.
+    - Se mantienen los campos existentes de golpes, GIR y valores relativos.
+  Verificación:
+    - Build directo con Vite: correcto.
+
+[COMPLETADO] UX — Escala visual no lineal para distancia de putts
+  Archivo modificado:
+    - src/components/MobileScorecardEditor.jsx
+  Resumen:
+    - Los primeros 5 m ocupan el 50% del slider.
+    - Los 15 m restantes ocupan el otro 50%, manteniendo el máximo de 20 m.
+  Verificación:
+    - Build directo con Vite: correcto.
+
+[COMPLETADO] HARDENING — Saneamiento de despliegue y subida segura de avatares
+  Fecha: 2026-10-17
+  Archivos modificados/creados:
+    - vite.config.js
+    - public-app/*
+    - .vercelignore
+    - public/api/.htaccess
+    - public/data/.htaccess
+    - deploy_ftp_root.cjs
+    - src/firebase.js
+    - src/services/profile.service.js
+    - src/components/ProfileImage.jsx
+    - src/config/app.js
+    - storage.rules
+    - firebase.json
+    - eslint.config.js
+    - package.json / package-lock.json / pnpm-lock.yaml
+  Resumen:
+    - El build de Vercel ya no copia PHP, JSON de usuarios, logs, PDFs ni datos legacy.
+    - Las fotos nuevas usan Firebase Storage autenticado y límite de 5 MB; no se usan secretos R2 en el navegador.
+    - El modo multi queda como valor por defecto para que actualizar, cerrar sesión y editar perfil no dependan de una variable ausente.
+    - El FTP ya no contiene credenciales en código y prepara protección de API/data legacy mediante .htaccess.
+    - Se corrigieron errores de ESLint, mutación de resultados y dependencias no utilizadas.
+  Verificación:
+    - npm run build:production: correcto; sin PHP, users.json, logs ni public/public en dist.
+    - npm run lint: 0 errores, 49 avisos de dependencias de hooks.
+    - npm audit --omit=dev: 0 críticas, 0 moderadas, 4 altas transitorias de Firebase/Firestore sin reparación compatible disponible.
+    - Vercel production dpl_uwnmJ9TRFs9UnFe27kHzUaxApENg: READY.
+    - Vercel ya no entrega los archivos privados; devuelve únicamente el shell HTML de la SPA.
+    - Pendiente externo: desplegar storage.rules tras `firebase login` y subir los .htaccess a Hostinger tras configurar las variables FTP.
+
+  PRÓXIMO PASO: AUTENTICACIÓN — Iniciar sesión en Firebase CLI y configurar las credenciales FTP rotadas; después repetir la protección de Hostinger y probar subida de avatar con una cuenta real.
 # Players Calendar — Sistema de Clasificación General
 # Actualizar este archivo cada vez que se complete un paso del roadmap
-
-==========================================================================
-SESIÓN: 2026-08-27 | Codex
-==========================================================================
-
-[COMPLETADO] HARDENING — Fotos estables por username y subida segura
-  Archivos modificados/creados:
-    - api/_firebase_admin.js
-    - api/upload_profile_photo.js
-    - src/services/profile.service.js
-    - src/config/cloudflare.js
-    - src/App.jsx
-    - src/contexts/ProfileContext.jsx
-    - src/components/AppHeader.jsx
-    - src/components/ProfileImage.jsx
-    - src/utils/profilePhotos.js
-    - vite.config.js
-    - firestore.rules
-    - scripts/audit-r2-profile-photos.mjs
-    - .env.example
-    - package.json
-    - LEADERBOARD_ROADMAP.md
-  Resumen:
-    - Las nuevas fotos se convierten a JPEG y se guardan como `{username}.jpg`.
-    - La subida pasa por API autenticada; las credenciales R2 ya no forman
-      parte del cliente ni del bundle público.
-    - La API autoriza propietario, manager o admin, actualiza `photo_updated_at`
-      y elimina la clave anterior solo después de guardar Firestore.
-    - Los dispositivos invalidan únicamente la foto cuya versión cambió.
-    - Añadido script dry-run para inventariar huérfanos con antigüedad mínima
-      de siete días y borrado explícito mediante `--apply --yes`.
-    - Roadmap histórico actualizado al estado real de las fases 1, 2 y 3.
-  Verificación:
-    - Build directo con Vite: correcto.
-    - Lint de API, servicio, configuración, auditor y resolvedor: correcto.
-    - API rechaza métodos y tipos de imagen no permitidos.
-    - El auditor se detiene sin credenciales y no puede borrar por defecto.
-    - Bundle cliente sin AWS SDK, secretos R2 ni nombres de foto con timestamp.
-  Publicación:
-    - Commit 5d25d0e enviado a `origin/main`.
-    - El despliegue manual de Vercel queda pendiente: la CLI local no tiene
-      credenciales y el dominio aún sirve la versión anterior de la SPA.
-    - La limpieza real de R2 queda pendiente de credenciales; no se ha borrado
-      ningún objeto sin poder revisar antes el inventario dry-run.
-
-==========================================================================
-  PRÓXIMO PASO: INFRAESTRUCTURA — Configurar R2 y ejecutar dry-run
-==========================================================================
-  Siguiente: Configurar `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`,
-  `R2_ENDPOINT`, `R2_BUCKET_NAME` y `R2_PUBLIC_URL` en Vercel; ejecutar
-  `npm run audit:profile-photos`, revisar candidatos y después aplicar limpieza.
-
-==========================================================================
-SESIÓN: 2026-08-24 | Codex
-==========================================================================
-
-[COMPLETADO] DATOS — Fotos canónicas de Maria Boixader y Maria Ros
-  Archivos modificados:
-    - src/utils/profilePhotos.js
-  Resumen:
-    - Añadido `maria_1770065115.jpg` para el identificador `mariaboixader`.
-    - Añadida resolución alternativa por nombre completo `Maria Boixader`.
-    - Añadido `mariaros_1778965873.png` para el identificador `mariaros`.
-    - Añadida resolución alternativa por nombre completo `Maria Ros`.
-    - Actualizada Nicole de `nicole_1770126902.jpg` a la foto más reciente
-      `nicole_1782719459.jpg`.
-  Verificación:
-    - Resolución por username y nombre completo comprobada para ambas Marias.
-    - Resolución de Nicole comprobada contra el enlace actualizado.
-
-==========================================================================
-  PRÓXIMO PASO: DATOS — Incorporar siguientes fotos confirmadas
-==========================================================================
-  Siguiente: Añadir las URLs públicas que facilite el usuario y validar cada
-  resolución por username y nombre completo.
-
-==========================================================================
-SESIÓN: 2026-08-23 | Codex
-==========================================================================
-
-[COMPLETADO] HARDENING — Enlaces canónicos de fotos de perfil
-  Archivos modificados/creados:
-    - src/utils/profilePhotos.js
-    - src/components/ProfileImage.jsx
-    - src/components/AppHeader.jsx
-    - src/components/PublicScorecardView.jsx
-    - src/components/TournamentLeaderboard.jsx
-    - src/components/TournamentReport.jsx
-  Resumen:
-    - Centralizados los enlaces conocidos de Nicole, Ona y Txell en una única
-      fuente compartida por cabecera, informes y clasificaciones.
-    - Ona usa su URL pública confirmada de R2 aunque photo_url esté vacío o
-      conserve una ruta legacy en Firestore.
-    - Una foto R2 nueva y explícita en Firestore mantiene prioridad para no
-      bloquear futuros cambios de imagen.
-    - Todas las vistas pasan username a ProfileImage y conservan avatar como
-      último fallback si ninguna imagen responde.
-  Verificación:
-    - Build directo con Vite: correcto.
-    - Lint de profilePhotos.js y ProfileImage.jsx: correcto.
-    - Resolución comprobada por username y nombre completo para Ona.
-    - Resolución comprobada por username para Nicole y Txell.
-
-==========================================================================
-  PRÓXIMO PASO: PRODUCCIÓN — Confirmar fotos conocidas
-==========================================================================
-  Siguiente: Abrir los perfiles de Ona, Nicole y Txell en móvil y escritorio
-  y confirmar que muestran la misma fotografía.
-
-==========================================================================
-SESIÓN: 2026-08-23 | Codex
-==========================================================================
-
-[COMPLETADO] PERFORMANCE — Reducir peticiones de fotos a Cloudflare R2
-  Archivos modificados:
-    - src/App.jsx
-    - src/components/ProfileImage.jsx
-    - vite.config.js
-  Resumen:
-    - Las fotos de R2 dejan de recibir un timestamp distinto en cada sesión.
-    - R2 usa CacheFirst durante 30 días; cada nueva foto mantiene frescura
-      porque las subidas generan un nombre de archivo único.
-    - Las fotos legacy conservan NetworkFirst para detectar reemplazos antiguos.
-    - Los listeners de perfiles vinculados permanecen estables cuando solo
-      cambia el contenido visual de linkedUsers.
-  Verificación:
-    - Build directo con Vite: correcto.
-    - Lint específico de ProfileImage.jsx: correcto.
-    - Service worker generado contiene CacheFirst para R2 y NetworkFirst solo
-      para rutas legacy /profiles/.
-
-==========================================================================
-  PRÓXIMO PASO: PRODUCCIÓN — Medir solicitudes R2 tras optimización
-==========================================================================
-  Siguiente: Comparar el gráfico de solicitudes durante 24 horas y confirmar
-  que desaparecen los picos sin perder la actualización entre dispositivos.
-
-==========================================================================
-SESIÓN: 2026-08-23 | Codex
-==========================================================================
-
-[COMPLETADO] HARDENING — Sincronización de fotos entre dispositivos
-  Archivos modificados:
-    - src/App.jsx
-    - src/components/ProfileImage.jsx
-    - src/contexts/ProfileContext.jsx
-    - src/services/profile.service.js
-    - vite.config.js
-  Resumen:
-    - Los perfiles vinculados de cuentas manager se escuchan ahora en tiempo
-      real y actualizan la sesión y la caché local en todos los dispositivos.
-    - Firestore queda como fuente de verdad; una foto antigua guardada en el
-      dispositivo ya no puede volver a escribirse automáticamente en el perfil.
-    - Las imágenes respetan primero la URL exacta guardada en Firestore y usan
-      Cloudflare R2 o la ruta legacy únicamente como fallback.
-    - La caché PWA de fotos usa NetworkFirst también para R2 y conserva una
-      copia offline después de intentar obtener la versión actual de la red.
-    - Corregida a v3.0.2 la etiqueta mostrada durante la conexión con Firebase.
-  Verificación:
-    - Build directo con Vite: correcto.
-    - Bundle de producción contiene la sincronización de perfiles y v3.0.2.
-    - Service worker de producción contiene NetworkFirst para Cloudflare R2.
-    - Vercel y reinaldomoon.top sirven el mismo bundle actualizado.
-
-==========================================================================
-  PRÓXIMO PASO: PRODUCCIÓN — Validar foto en dos dispositivos
-==========================================================================
-  Siguiente: Cambiar una foto desde un dispositivo y confirmar que el segundo
-  la actualiza sin cerrar sesión; verificar también una cuenta manager con
-  varios perfiles vinculados.
 
 ==========================================================================
 SESIÓN: 2026-06-27 | Codex
@@ -1462,6 +1362,588 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
 ==========================================================================
   Siguiente: En una cuenta real, activar `Track Putts` y `Track GIR`, entrar en `Modo Móvil`, esperar autosave y confirmar que ambos campos siguen visibles.
 
+[COMPLETADO] INFORMES — Aclarar la muestra de distancia inicial en tripateos
+  Archivos modificados:
+    - src/utils/reportAnalytics.js
+    - src/components/ReportsView.jsx
+  Resumen:
+    - La media de distancia inicial en tripateos ahora indica cuántos tripateos tienen distancia registrada.
+    - Los porcentajes por tramo usan como denominador los tripateos medidos, no todos los tripateos.
+  Siguiente: Ejecutar validaciones y publicar.
+
+[COMPLETADO] VUELTAS LIBRES — Abrir directamente la tarjeta de anotación
+  Archivos modificados:
+    - src/App.jsx
+  Resumen:
+    - Al crear una vuelta libre se abre automáticamente en modo edición.
+    - Se reutiliza la misma tarjeta hoyo a hoyo que los torneos: golpes, GIR, putts, distancia previa y penalizaciones.
+  Siguiente: Ejecutar validaciones y publicar.
+
+[COMPLETADO] INFORMES — Evitar duplicados de resultados antiguos
+  Archivos modificados:
+    - src/utils/reportAnalytics.js
+  Resumen:
+    - Cuando existe resultado canónico y copia legacy del mismo torneo, el informe usa solo el canónico.
+    - Evita que una ronda antigua o ficticia aparezca como mejor vuelta.
+  Siguiente: Ejecutar validaciones y publicar.
+
+[COMPLETADO] INFORMES — Usar únicamente la distancia previa al primer putt
+  Archivos modificados:
+    - src/utils/reportAnalytics.js
+    - src/components/ReportsView.jsx
+  Resumen:
+    - Las estadísticas de distancia solo usan tarjetas con referencia `before_putt`.
+    - En los tripateos, la métrica usa exclusivamente `puttDistances[0]`, antes del primer putt.
+    - Se excluyen registros antiguos cuya semántica de distancia no está confirmada.
+  Siguiente: Ejecutar validaciones y publicar.
+
+==========================================================================
+SESIÓN: 2026-10-28 | Codex
+==========================================================================
+
+[COMPLETADO] INFORMES — Análisis detallado de putting por hoyo
+  Archivos modificados:
+    - src/utils/reportAnalytics.js
+    - src/components/ReportsView.jsx
+  Resumen:
+    - Añadida media de putts por hoyo y distancia media/mediana del primer putt.
+    - Añadida distribución de hoyos con 1, 2, 3 y 4+ putts.
+    - Añadido recuento y porcentaje de tripateos.
+    - Añadidos tramos de distancia inicial de los tripateos (0-1, 1-2, 2-3,
+      3-5, 5-10 y más de 10 metros).
+    - Añadida comparación de putts y tripateos en hoyos con GIR y sin GIR.
+    - Las métricas solo usan datos por hoyo realmente guardados; las vueltas
+      antiguas con únicamente putts totales se muestran como datos insuficientes.
+  Verificación:
+    - npm run lint: 0 errores; permanece 1 aviso previo de hooks.
+    - npm run build: correcto.
+
+  PRÓXIMO PASO: PRODUCCIÓN — Abrir Informes con una vuelta que tenga putts y distancias por hoyo.
+
+==========================================================================
+SESIÓN: 2026-10-29 | Codex
+==========================================================================
+
+[COMPLETADO] INFORMES — Separación visual de torneos y vueltas libres
+  Archivos modificados:
+    - src/components/ReportsView.jsx
+  Resumen:
+    - Añadidas vistas independientes: Resumen, Torneos, Vueltas libres y Comparativa.
+    - La comparativa muestra golpes, vs par, putts, GIR, distancia de putt y penalizaciones.
+    - La comparativa respeta los filtros de periodo y número de eventos.
+    - Se mantiene la compatibilidad con resultados existentes y entrenamientos.
+  Verificación:
+    - npm run lint: 0 errores; permanece 1 aviso previo de hooks.
+    - npm run build: correcto.
+
+  PRÓXIMO PASO: PRODUCCIÓN — Publicar y revisar en móvil las cuatro vistas de Informes.
+
+[COMPLETADO] INFORMES — Aclarar distancia media en tripateos
+  Archivos modificados:
+    - src/components/ReportsView.jsx
+    - src/utils/reportAnalytics.js
+  Resumen:
+    - La métrica distingue la media general del primer putt de la media del
+      primer putt exclusivamente en hoyos terminados con tripateo.
+    - La conclusión y la tarjeta ahora muestran explícitamente “Primer putt
+      en tripateos”.
+  Verificación:
+    - npm run lint: 0 errores; permanece 1 aviso previo de hooks.
+    - npm run build: correcto.
+
+[COMPLETADO] PUTTING — Distancia antes de cada putt
+  Archivos modificados:
+    - src/components/MobileScorecardEditor.jsx
+    - src/components/CalendarView.jsx
+    - src/components/ReportsView.jsx
+    - src/utils/reportAnalytics.js
+  Resumen:
+    - El slider se interpreta como distancia antes de golpear.
+    - Los putts posteriores no pueden registrarse con una distancia mayor que
+      la del putt anterior.
+    - La métrica de tripateos se muestra como distancia inicial.
+    - Las nuevas tarjetas guardan la referencia `before_putt`.
+  Verificación:
+    - npm run lint: 0 errores; permanece 1 aviso previo de hooks.
+    - npm run build: correcto.
+
+[COMPLETADO] ARQUITECTURA — Apartado independiente de vueltas libres
+  Archivos modificados/creados:
+    - src/components/FreeRoundsView.jsx
+    - src/components/NavTabs.jsx
+    - src/components/ReportsView.jsx
+    - src/components/CalendarView.jsx
+    - src/App.jsx
+  Resumen:
+    - Se añadió el menú principal “Vueltas libres”.
+    - Las vueltas libres se crean desde su propio apartado, no desde Informes.
+    - Cada vuelta libre crea una tarjeta de 18 hoyos editable con el mismo flujo
+      de golpes, GIR, putts, distancias y penalizaciones que un torneo.
+    - Informes queda dedicado exclusivamente al análisis y comparativa.
+    - Se mantiene compatibilidad con vueltas libres antiguas.
+  Verificación:
+    - npm run lint: 0 errores; permanece 1 aviso previo de hooks.
+    - npm run build: correcto.
+
+[COMPLETADO] TORNEOS — Desapuntarse elimina también el roster público
+  Archivos modificados:
+    - src/services/tournaments.service.js
+    - src/components/NavTabs.jsx
+  Resumen:
+    - Al abandonar un torneo se eliminan los documentos de participante del
+      ID canónico y de sus posibles IDs legados.
+    - La pestaña “Vueltas libres” queda junto a “Calendario”.
+  Verificación:
+    - npm run lint: 0 errores; permanece 1 aviso previo de hooks.
+    - npm run build: correcto.
+
+  Ajuste adicional:
+    - TournamentsCentralView no muestra a la usuaria actual como inscrita si
+      ya no figura en sus suscripciones, aunque exista un documento antiguo
+      pendiente de propagación.
+
+  PRÓXIMO PASO: PRODUCCIÓN — Crear una vuelta libre de prueba y completar varios hoyos.
+
+==========================================================================
+SESIÓN: 2026-10-20 | Codex
+==========================================================================
+
+[COMPLETADO] UX — Ocultar temporalmente la importación de tarjetas
+  Archivos modificados:
+    - src/components/CalendarView.jsx
+  Resumen:
+    - Ocultado el botón `Importar resultados` del calendario.
+    - Desactivada la apertura automática del modal al recibir enlaces `?share=1`.
+    - Conservado `ResultImportModal.jsx` y el código de importación para reactivarlo cuando el flujo esté terminado.
+  Verificación:
+    - `npm.cmd run lint`: correcto, 0 errores y 1 aviso preexistente de dependencias de hooks.
+    - `npm.cmd run build`: correcto.
+
+  PRÓXIMO PASO: Reabrir la importación cuando el flujo de captura/compartición esté listo.
+
+==========================================================================
+SESIÓN: 2026-10-28 | Codex
+==========================================================================
+
+[COMPLETADO] FEATURE — Apartado de informes y vueltas libres
+  Archivos modificados/creados:
+    - src/components/ReportsView.jsx
+    - src/components/NavTabs.jsx
+    - src/App.jsx
+    - src/utils/reportAnalytics.js
+  Resumen:
+    - Nueva sección `Informes` con filtros por meses, fechas exactas, número de eventos y origen.
+    - Se separan torneos, entrenamientos y vueltas libres.
+    - Se resumen golpes, vs par, putts, distancia media de putt, GIR y penalizaciones.
+    - Se añaden conclusiones automáticas y detalle exportable a CSV o imprimible.
+    - Se pueden guardar vueltas fuera de torneo con fecha, campo, par, golpes, putts y penalizaciones.
+    - Las vueltas libres usan IDs sin guión bajo para no entrar accidentalmente en el leaderboard compartido.
+  Verificación:
+    - `npm.cmd run lint`: 0 errores; 1 aviso preexistente en `MobileScorecardEditor.jsx`.
+    - `npm.cmd run build`: correcto.
+    - Prueba sintética de cálculo: 85 golpes con par 72 devuelve +13.
+
+  PRÓXIMO PASO: Probar la sección `Informes` con datos reales de Nicole y ajustar las conclusiones que deban ser más específicas.
+
+[COMPLETADO] UX — Separar informes de golf de los tests de entrenamiento
+  Archivos modificados:
+    - src/components/ReportsView.jsx
+    - src/utils/reportAnalytics.js
+  Resumen:
+    - El selector de Informes solo ofrece `Torneos y vueltas libres`, `Solo torneos` y `Solo vueltas libres`.
+    - Los tests de entrenamiento permanecen en su apartado independiente.
+  Verificación:
+    - Lint y build correctos; permanece únicamente el aviso preexistente de hooks.
+
+[COMPLETADO] UX — Filtro explícito para entrenamientos
+  Archivos modificados:
+    - src/components/ReportsView.jsx
+  Resumen:
+    - Informes mantiene por defecto solo torneos y vueltas libres.
+    - Se añade `Solo entrenamientos` como selección independiente, sin mezclar sus métricas con las rondas de campo.
+  Verificación:
+    - `npm.cmd run lint` y `npm.cmd run build`: correctos.
+
+==========================================================================
+  [COMPLETADO] IMPORTACIÓN — Primera fase de resultados compartidos
+  Archivos modificados:
+    - src/components/ResultImportModal.jsx
+    - src/components/CalendarView.jsx
+    - vite.config.js
+  Resumen:
+    - Añadido botón "Importar resultados" en el calendario.
+    - La usuaria debe seleccionar el torneo destino antes de guardar.
+    - Se pueden pegar enlaces o texto, cargar CSV/TSV y adjuntar foto/PDF para revisión manual.
+    - La tabla permite revisar y editar hoyo, golpes, putts, penalizaciones y GIR.
+    - La PWA queda registrada como destino de compartir Android mediante `share_target`.
+  Verificación:
+    - Build Vite: correcto.
+    - ESLint: correcto; permanece únicamente un warning preexistente de MobileScorecardEditor.jsx.
+
+==========================================================================
+  [COMPLETADO] IMPORTACIÓN — OCR para tarjetas Golf GameBook
+  Archivos modificados:
+    - src/components/ResultImportModal.jsx
+    - package.json
+    - package-lock.json
+  Resumen:
+    - Añadido OCR bajo demanda para imágenes de tarjetas.
+    - Reconoce bloques de Par y Resultado de ida/vuelta.
+    - Conserva Putts totales, GIR, fecha, campo, CR, slope y hándicap como resumen.
+    - No inventa putts individuales ni penalizaciones que la imagen no desglosa.
+    - Todo queda editable y requiere revisión antes de guardar.
+  Verificación:
+    - Build Vite: correcto.
+    - ESLint: correcto; permanece únicamente un warning preexistente de MobileScorecardEditor.jsx.
+
+==========================================================================
+  PRÓXIMO PASO: IMPORTACIÓN — Validar OCR con una captura real de Golf GameBook
+  Siguiente: Subir la tarjeta de Jordi y corregir cualquier lectura que no coincida.
+    - Manifest generado: contiene `share_target` con acción `/GolfTeam/`.
+
+==========================================================================
+  PRÓXIMO PASO: IMPORTACIÓN — Probar con texto real exportado desde Golf GameBook
+  Siguiente: Abrir "Importar resultados", pegar un ejemplo real y adaptar el parser al formato recibido.
+
+==========================================================================
+  [COMPLETADO] IMPORTACIÓN — Buscador de torneo destino
+  Archivos modificados:
+    - src/components/ResultImportModal.jsx
+  Resumen:
+    - Añadido buscador por nombre, campo, fecha u organizador.
+    - El listado se limita a las coincidencias y muestra su contador.
+    - Se mantiene la selección explícita; ningún torneo se selecciona automáticamente.
+  Verificación:
+    - Build Vite: correcto.
+    - ESLint: correcto; permanece únicamente un warning preexistente de MobileScorecardEditor.jsx.
+
+[COMPLETADO] TRAINING — Historial, comparativas y exportación de tests de putting
+  Archivos modificados/creados:
+    - src/utils/trainingStats.js
+    - src/components/TrainingTestsView.jsx
+  Resumen:
+    - Se añadieron periodos derivados de la fecha: semana ISO, mes y temporada.
+    - El historial permite filtrar por periodo y tipo de test.
+    - Se muestran comparativas agregadas de tests, intentos, media de putts,
+      porcentaje de 1 putt, 3 putts y control de distancia hasta 1 metro.
+    - Se añadió exportación CSV y vista de impresión para guardar informes PDF.
+    - No se modifica el esquema existente de Firestore; los periodos se calculan
+      a partir de la fecha guardada.
+  Verificación:
+    - npm run lint
+    - npm run build
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Validar exportación y filtros con tests reales
+==========================================================================
+  Siguiente: Abrir Tests con una cuenta que tenga sesiones guardadas, probar
+  filtros semana/mes/temporada, descargar CSV y generar el PDF desde imprimir.
+
+[COMPLETADO] HOTFIX — Vista móvil de tests de putting
+  Archivos modificados:
+    - src/components/TrainingTestsView.jsx
+  Resumen:
+    - En pantallas pequeñas cada intento se muestra como una tarjeta vertical.
+    - Ahora quedan visibles distancia, pendiente, putts y distancia restante
+      sin desplazamiento horizontal.
+    - En escritorio se conserva la tabla completa.
+  Verificación:
+    - npm run lint
+    - npm run build
+    - Producción Vercel: READY
+    - Hostinger `/GolfTeam/`: despliegue completado
+
+[COMPLETADO] UX — Simplificación de configuración del torneo
+  Archivo modificado:
+    - src/components/CalendarView.jsx
+  Resumen:
+    - La configuración mantiene visibles nombre, fechas, par y organizador.
+    - Etiquetas, tipo/formato y grupos quedan dentro de «Más opciones»,
+      cerrado por defecto para reducir el desplazamiento en móvil.
+  Verificación:
+    - npm run lint
+    - npm run build
+    - Vercel producción: READY
+    - Hostinger `/GolfTeam/`: despliegue completado
+
+[COMPLETADO] UX — Ajuste de línea de fechas, par y organizador
+  Archivo modificado:
+    - src/components/CalendarView.jsx
+  Resumen:
+    - Fecha y control Multidía ya no se solapan en pantallas estrechas.
+    - Par y Organizador comparten fila, con un ancho proporcionado para cada uno.
+  Verificación:
+    - npm run lint
+    - npm run build
+    - Vercel producción: READY
+    - Hostinger `/GolfTeam/`: despliegue completado
+
+[COMPLETADO] HOTFIX — Evitar solapamiento definitivo del selector de fechas
+  Archivo modificado:
+    - src/components/CalendarView.jsx
+  Resumen:
+    - En móvil, la fecha ocupa toda su línea.
+    - El control Multidía aparece debajo, separado del selector nativo de iPhone.
+    - La segunda fecha también ocupa una línea completa cuando se activa.
+  Verificación:
+    - npm run lint
+    - npm run build
+    - Vercel producción: READY
+    - Hostinger `/GolfTeam/`: despliegue completado
+
+[COMPLETADO] UX — Separación del bloque de opciones y guardado
+  Archivo modificado:
+    - src/components/CalendarView.jsx
+  Resumen: Añadido espacio visual entre «Más opciones» y «Guardar Configuración».
+  Verificación: lint, build, Vercel READY y Hostinger completados.
+
+[COMPLETADO] UX — Registro incremental de putts en modo móvil
+  Archivo modificado:
+    - src/components/MobileScorecardEditor.jsx
+  Resumen:
+    - Ya no se introduce el número final de putts con el teclado.
+    - Se pulsa «Añadir primer putt» y después «+» por cada putt adicional.
+    - Cada putt añadido muestra inmediatamente su slider de distancia.
+  Verificación: lint, build, Vercel READY y Hostinger completados.
+
+[COMPLETADO] HOTFIX — Diálogo de confirmación centrado en móvil
+  Archivo modificado:
+    - src/components/FeedbackLayer.jsx
+  Resumen: Los diálogos de confirmación se renderizan en un portal sobre
+    document.body para permanecer centrados en la ventana visible.
+  Verificación: lint, build, Vercel READY y Hostinger completados.
+
+[COMPLETADO] UX — Retirada de posición final y hándicap inicial
+  Archivos modificados:
+    - src/components/CalendarView.jsx
+    - src/components/ResultsView.jsx
+  Resumen: Se eliminaron ambos campos de la interfaz de resultados sin borrar
+    los valores antiguos que puedan existir en Firestore.
+  Verificación: lint, build, Vercel READY y Hostinger completados.
+
+[COMPLETADO] PRODUCCIÓN — Tests de putting publicados
+  Verificación:
+    - Reglas Firestore desplegadas correctamente en `golfscorings-e4338`.
+    - Vercel producción Ready: `dpl_Gg8yYPwhPwDMihATZhBrTjUaEUvV`.
+    - Hostinger `/GolfTeam/` actualizado correctamente.
+    - Ruta pública `/GolfTeam/training` cargada con sesión real.
+    - Se verificaron formulario, cinco tests, distancias, pendientes y resumen sin error de renderizado.
+  Pendiente:
+    - Registrar el primer test real y confirmar lectura posterior desde Firestore.
+
+[COMPLETADO] FEATURE — Tests de putting basados en dossier de tecnificación
+  Archivos modificados:
+    - src/data/puttingTests.js
+    - src/services/trainingTests.service.js
+    - src/components/TrainingTestsView.jsx
+    - src/components/NavTabs.jsx
+    - src/App.jsx
+    - firestore.rules
+  Resumen:
+    - Nueva sección `/training` con los cinco tests de putting del dossier.
+    - Cada intento guarda distancia, pendiente, putts hasta embocar y distancia restante tras el primer putt.
+    - Persistencia privada por usuaria en `/users/{userId}/training_tests`.
+    - Resumen inmediato de intentos completados, media, 1 putt, 3 putts y control hasta 1 metro.
+  Verificación:
+    - ESLint correcto.
+    - Build Vite correcto.
+    - Ruta local carga y muestra login correctamente cuando no hay sesión.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Publicar y probar un test real
+==========================================================================
+  Siguiente: desplegar frontend y reglas Firestore; entrar con una cuenta, guardar un test de putting y confirmar la lectura posterior.
+
+[COMPLETADO] PRODUCCIÓN — Simulación integral Orden de Mérito 29/11/2026
+  Cuenta verificada:
+    - Nicole Likhomanova
+  Resultado guardado:
+    - 74 golpes (+2), 32 putts y 13/18 GIR.
+    - Tarjeta con birdies, pares y bogeys.
+    - GIR variados con valores G, +1 y +2.
+    - Hoyos con 1, 2 y 3 putts.
+    - Distancias variadas entre 0,25 m y 12 m.
+  Evidencia después de recargar desde Firestore:
+    - Hoyo 1: 5,00 m y 0,50 m.
+    - Hoyo 13: 2,50 m.
+    - Hoyo 18: 10,00 m, 2,00 m y 0,50 m.
+    - Informe: 74, +2, 32 putts y 13/18 GIR.
+    - Clasificación: Nicole en posición 1 con 74 (+2).
+    - Estadísticas: nueva ronda y putts contabilizados.
+    - Consola del navegador: sin errores.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Validar retorno desde segundo plano
+==========================================================================
+  Siguiente: Abrir el anotador móvil, mandar la PWA al segundo plano y volver para confirmar que conserva torneo, ronda y hoyo activos.
+
+[COMPLETADO] HOTFIX — Persistencia Firestore de distancias de putts
+  Archivos modificados:
+    - src/services/results.service.js
+    - src/utils/resultSerialization.js
+  Causa:
+    - La tarjeta mantenía `puttDistances` como un array de 18 arrays, pero Firestore no admite arrays anidados directamente.
+    - El autosave fallaba con `Nested arrays are not supported` al introducir distancias de putts.
+  Corrección:
+    - Antes de guardar, el array exterior se serializa como un mapa por número de hoyo.
+    - Al leer desde Firestore, el mapa vuelve a convertirse al modelo de 18 arrays que usa la interfaz.
+    - Se mantiene compatibilidad con resultados sin distancias y con el modelo interno existente.
+  Verificación:
+    - Recorrido autenticado en producción: Calendario, Estadísticas, Hándicap, Torneos, Amigos, Chat, detalle, clasificación e informe.
+    - Editor móvil a 390x844: Putts, GIR y dos sliders de distancia visibles y utilizables.
+    - Prueba de serialización y deserialización completa: correcta.
+    - ESLint y build Vite: correctos.
+    - Hostinger: bundle `index-BIAVrqNx.js`, carga autenticada correcta.
+    - Vercel producción: deployment `dpl_2vj9ccgEVJyMo4Mxu4HywSfircTg`, estado Ready.
+    - Consola de una sesión nueva: sin errores; solo aviso no bloqueante de Sentry sin DSN.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Verificar autosave real en una ronda de prueba
+==========================================================================
+  Siguiente: En una ronda que se pueda modificar, guardar putts con distancias, recargar y confirmar que los metros se restauran desde Firestore.
+
+==========================================================================
+  PUNTOS 5 Y 6 — BUILD Y CONFIGURACIÓN DE GIT (2026-10-17)
+==========================================================================
+  Completado:
+    - Vite separa Firebase, gráficos y exportación PDF mediante manualChunks.
+    - El chunk principal pasó de aproximadamente 693 KB a 313 KB.
+    - `npm run lint` termina con 0 errores; permanecen 49 avisos de hooks para revisión funcional.
+    - `npm run build -- --mode production` termina correctamente.
+    - Git inicializado en `C:\Users\miste\Documents\Codex\MyGolfLife`, rama `main`.
+    - Remoto `origin` configurado hacia `https://github.com/Reinaldomoon23/GolfCalendar.git`.
+    - `.gitignore` revisado para excluir secretos, datos privados y artefactos generados.
+  Pendiente:
+    - Configurar `user.name` y `user.email` de Git.
+    - Revisar el primer staging y crear commit/push cuando el usuario lo solicite.
+    - Revisar los avisos del build de Vite sobre imports dinámicos que también son estáticos.
+
+==========================================================================
+  ESLINT — AVISOS DE HOOKS CORREGIDOS (2026-10-17)
+==========================================================================
+  Completado:
+    - Corregidos los 49 avisos de ESLint relacionados con dependencias de hooks,
+      actualizaciones síncronas de estado y Fast Refresh.
+    - Se derivó `availableSeasons` con `useMemo` y se estabilizaron callbacks.
+    - Se separaron los hooks de los contextos para mantener Fast Refresh limpio.
+    - `npm run lint`: 0 errores, 0 avisos.
+    - `npm run build`: correcto.
+
+[COMPLETADO] SECURITY — Revisión y cierre de escrituras públicas de Firestore
+  Archivos modificados:
+    - firestore.rules
+    - DEPLOYMENT.md
+  Resumen:
+    - `handicap_history` ya no permite escrituras anónimas.
+    - Los documentos de participantes solo pueden escribirlos su propio usuario o un administrador.
+    - El alias `tournaments_leaderboard` queda reservado a administradores.
+    - `shared_tournaments` valida propietario/admin y limita la actualización pública al contador de suscriptores.
+  Verificación:
+    - Firebase CLI compiló las reglas correctamente.
+    - Reglas publicadas en `golfscorings-e4338` sin modificar datos ni índices.
+  Pendiente:
+    - Revisar si los campos de perfiles y resultados que se leen públicamente deben separarse en documentos públicos mínimos.
+
+[COMPLETADO] DEPLOY — Sincronización de hotfix de avatares en Hostinger
+  Archivos modificados:
+    - dist/*
+    - DEPLOYMENT.md
+  Resumen:
+    - Se publicó el build corregido en `/public_html/GolfTeam/` usando FTP Hostinger.
+    - Se subieron las protecciones `.htaccess` de API y datos y el kill switch de PWA.
+    - `profile.jpg` queda disponible para resolver el avatar legacy de Nicole.
+  Verificación:
+    - `https://reinaldomoon.top/GolfTeam/`: HTTP 200.
+    - `https://reinaldomoon.top/GolfTeam/profile.jpg`: HTTP 200.
+    - `api/users.json` y `data/debug_tournaments.log`: HTTP 403.
+  Seguridad:
+    - La contraseña usada no se guardó en el proyecto; debe rotarse porque fue compartida en el chat.
+
+[COMPLETADO] HOTFIX — Recuperar avatar legacy de Nicole
+  Archivos modificados:
+    - src/config/app.js
+    - src/components/ProfileImage.jsx
+  Resumen:
+    - La captura mostraba el fallback `CL` porque el perfil usaba `nicole.jpg` y ese archivo no existe en el despliegue actual.
+    - Se añadió compatibilidad con `profile.jpg`, que sí está disponible en `/GolfTeam/`.
+    - También se añadió fallback para referencias antiguas `profiles/nicole_*.jpg`.
+  Verificación:
+    - `npm run lint`: 0 errores.
+    - `npm run build -- --mode production`: correcto.
+    - Vercel publicado: `dpl_3Zs5c8np6satySgq7GuoNzZ6QQVj`, estado `READY`.
+    - `https://golf-calendar-v3.vercel.app/GolfTeam/profile.jpg`: responde correctamente.
+  Pendiente:
+    - Subir el mismo build a Hostinger para que `reinaldomoon.top` reciba este hotfix.
+
+[COMPLETADO] DOCUMENTACIÓN — Inventario de infraestructura y despliegues
+  Archivos modificados:
+    - DEPLOYMENT.md
+    - README.md
+  Resumen:
+    - Documentados Vercel, Hostinger, Firebase, Firestore, variables de entorno, comandos y comprobaciones.
+    - Se aclaró que `golfscorings-e4338` es el proyecto Firebase activo y `golfscoring-a9a6c` es histórico.
+    - Se eliminó del README la instrucción contradictoria que prohibía FTP; Hostinger queda documentado como legacy opcional.
+  Verificación:
+    - Documento creado en la raíz del proyecto.
+    - No se han incluido contraseñas, tokens ni claves privadas.
+
+==========================================================================
+  PRÓXIMO PASO: DOCUMENTACIÓN — Mantener DEPLOYMENT.md tras cada cambio de infraestructura
+==========================================================================
+  Siguiente: Actualizar el documento cuando cambien URLs, proyecto Firebase, destino FTP, variables o flujo de publicación.
+
+[COMPLETADO] AVATARES — Almacenamiento gratuito compatible con Firebase Spark
+  Archivos modificados:
+    - src/services/profile.service.js
+    - src/firebase.js
+    - src/components/ProfileImage.jsx
+  Resumen:
+    - Se elimina la dependencia de Firebase Storage, que requiere Blaze en este proyecto.
+    - Las imágenes se redimensionan a un máximo de 320 px y se comprimen antes de guardarse en `photo_url`.
+    - Se mantiene el límite de 700 KB para evitar documentos de Firestore excesivamente grandes.
+    - Se acepta la imagen `data:image/...` directamente en `ProfileImage`.
+  Verificación:
+    - `npm run lint`: 0 errores, 49 avisos existentes de hooks.
+    - `npm run build -- --mode production`: correcto.
+    - Vercel producción: `dpl_Bg8uvVxzsRp2th1R215EGE9XxD5a`, estado `READY`.
+    - `/GolfTeam/` carga correctamente y `/api/users.json` no expone el JSON legacy.
+
+==========================================================================
+  PRÓXIMO PASO: PRODUCCIÓN — Probar subida de avatar con una cuenta real
+==========================================================================
+  Siguiente: iniciar sesión, seleccionar una imagen desde el botón de avatar y confirmar que se guarda y aparece después de recargar.
+
+[COMPLETADO] HARDENING — Publicación Vercel saneada y comprobación de exposición
+  Archivos modificados:
+    - vite.config.js
+    - .vercelignore
+    - public/api/.htaccess
+    - public/data/.htaccess
+    - public-app/*
+    - src/components/ProfileImage.jsx
+    - deploy_ftp_root.cjs
+    - src/services/profile.service.js
+    - storage.rules
+    - firebase.json
+  Resumen:
+    - Vercel deja de incluir `public/` legacy, datos JSON, PHP y logs en el bundle.
+    - La subida de avatar queda preparada para Firebase Storage con validación de tipo, tamaño y usuario autenticado.
+    - Se eliminó la credencial FTP embebida en el código; ahora se leen variables de entorno.
+    - Producción publicada en `dpl_2jgDuRLcmzN2ZybXmFwx1ZXvu1sZ` y alias `https://golf-calendar-v3.vercel.app`.
+  Verificación:
+    - `npm run lint`: 0 errores, 49 avisos de hooks.
+    - `npm run build -- --mode production`: correcto.
+    - Vercel: estado `READY`.
+    - `/api/users.json`, `/api/update_user.php`, `/data/debug_tournaments.log` y `/profiles/test.jpg`: sin contenido sensible.
+  Pendiente externo:
+    - Ejecutar `firebase login` y desplegar `storage.rules`.
+    - Rotar la antigua credencial FTP y configurar `ROUNDTRACKER_FTP_USER`, `ROUNDTRACKER_FTP_PASSWORD` y opcionalmente `ROUNDTRACKER_FTP_HOST` antes de proteger Hostinger.
+
+==========================================================================
+  PRÓXIMO PASO: AUTENTICACIÓN — Firebase CLI y credenciales FTP rotadas
+==========================================================================
+  Siguiente: completar esas autenticaciones localmente y repetir la protección de Hostinger y la prueba real de subida de avatar.
+
 [COMPLETADO] FACTORIZACIÓN 3.9 — Formulario de creación de torneo fuera de CalendarView
   Archivos modificados:
     - src/components/CalendarView.jsx
@@ -2016,6 +2498,29 @@ SIGUIENTE PASO:
 ==========================================================================
   Siguiente: Entrar en `Introducir resultado`, mandar la app a segundo plano, volver y confirmar que sigue abierta la misma ventana hasta cerrar.
 
+[COMPLETADO] HOTFIX — Login bloqueado por ciclo de suscripción Auth
+  Archivos modificados:
+    - src/App.jsx
+  Causa:
+    - AppContent creaba dos callbacks vacíos nuevos en cada render y los pasaba a useAuth.
+    - Esos callbacks cambiaban las dependencias de resetSessionState, reiniciaban onAuthStateChanged y provocaban un ciclo de estado/render.
+  Corrección:
+    - Los callbacks de compatibilidad para handicap y PDF ahora tienen una referencia estable fuera del componente.
+  Verificación integral en producción:
+    - Formulario cargado en https://reinaldomoon.top/GolfTeam/.
+    - Usuario y contraseña introducidos correctamente.
+    - Clic real en `Iniciar sesión` ejecutado correctamente.
+    - Calendario principal de Nicole visible con avatar, hándicap 2.9 y torneos.
+    - Recarga completa realizada; la sesión se restauró y volvió a mostrar el calendario.
+    - ESLint y build Vite: correctos.
+    - Hostinger: bundle `index-Cfl8ZnGD.js`, HTTP 200.
+    - Vercel producción: deployment `dpl_C9Mxk4FhheJVS7QcggPwoAbq1CJV`, estado Ready.
+
+==========================================================================
+  PRÓXIMO PASO: UI — Continuar revisión interna con sesión iniciada
+==========================================================================
+  Siguiente: Revisar botones internos de calendario, tarjeta, modo móvil, compartir y comunidad.
+
 [COMPLETADO] HOTFIX — Redirección raíz Vercel a /GolfTeam/
   Archivos modificados:
     - vercel.json
@@ -2032,3 +2537,21 @@ SIGUIENTE PASO:
   PRÓXIMO PASO: PRODUCCIÓN — Probar modo móvil con Putts/GIR
 ==========================================================================
   Siguiente: En una cuenta real, activar `Track Putts` y `Track GIR`, entrar en `Modo Móvil`, esperar autosave y confirmar que ambos campos siguen visibles.
+[COMPLETADO] VUELTAS LIBRES — Selector de campos
+Fecha: 2026-10-30
+Archivos: src/components/FreeRoundsView.jsx, src/App.jsx
+Resumen: El formulario de vuelta libre muestra un desplegable con los campos de spanish_courses.json y calcula el par del campo seleccionado. Se conserva una opción para introducir otro campo y la tarjeta recibe los pares reales cuando están disponibles.
+Próximo paso: Validar el selector publicado desde móvil.
+
+[COMPLETADO] VUELTAS LIBRES — Autocompletado de campos
+Fecha: 2026-10-30
+Archivos: src/components/FreeRoundsView.jsx
+Resumen: Sustituido el desplegable por un campo de texto con datalist y sugerencias de campos. La selección exacta mantiene el cálculo automático del par; también se permiten nombres escritos manualmente.
+Próximo paso: Validar el autocompletado publicado desde móvil.
+
+[COMPLETADO] VUELTAS LIBRES — Solo flujo de puntuación
+Fecha: 2026-10-30
+Archivos: src/components/CalendarView.jsx
+Resumen: En las vueltas libres se oculta el editor de configuración propio de torneos. Se mantiene únicamente la tarjeta de puntuación hoyo a hoyo; los torneos conservan su configuración completa.
+Próximo paso: Validar la tarjeta de puntuación publicada.
+

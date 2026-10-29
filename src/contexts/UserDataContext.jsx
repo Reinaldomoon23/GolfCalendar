@@ -8,8 +8,9 @@
  * - Real-time Firestore synchronization
  */
 
-import { createContext, useContext, useState, useEffect } from 'react';
-import { useAuthContext } from './AuthContext';
+import { useEffect } from 'react';
+import { useAuthContext } from './useAuthContext';
+import { UserDataContext } from './user-data-context';
 import { useTournaments } from '../hooks/useTournaments';
 import { getUserDocId } from '../utils/userProfiles';
 import {
@@ -20,8 +21,6 @@ import {
   deleteResult,
   savePreferences
 } from '../services/results.service';
-
-const UserDataContext = createContext(null);
 
 export function UserDataProvider({ children }) {
   const {
@@ -140,7 +139,7 @@ export function UserDataProvider({ children }) {
       unsubPrefs();
       unsubResults();
     };
-  }, [activeUserDocId, user?.username]);
+  }, [activeUserDocId, user, setPreferences, setResults]);
 
   const value = {
     // Tournaments
@@ -172,10 +171,3 @@ export function UserDataProvider({ children }) {
   return <UserDataContext.Provider value={value}>{children}</UserDataContext.Provider>;
 }
 
-export function useUserData() {
-  const context = useContext(UserDataContext);
-  if (!context) {
-    throw new Error('useUserData must be used within UserDataProvider');
-  }
-  return context;
-}

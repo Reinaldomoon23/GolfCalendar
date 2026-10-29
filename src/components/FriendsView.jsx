@@ -677,7 +677,7 @@ export default function FriendsView({ user, activeCalendarTournaments = [], subs
       unsubOutgoing();
       unsubChats();
     };
-  }, [localUser?.uid, localUser?.docId, localUser?.username, communityProfileStatus.isComplete]);
+  }, [localUser, communityProfileStatus.isComplete]);
 
   useEffect(() => {
     if (!selectedChat?.id || !communityProfileStatus.isComplete) {
@@ -691,7 +691,7 @@ export default function FriendsView({ user, activeCalendarTournaments = [], subs
 
     const unsubscribe = subscribeToChatMessages(selectedChat.id, localUser, setChatMessages);
     return () => unsubscribe();
-  }, [selectedChat?.id, localUser?.uid, localUser?.docId, communityProfileStatus.isComplete]);
+  }, [selectedChat?.id, localUser, communityProfileStatus.isComplete]);
 
   useEffect(() => {
     if (!selectedChat?.id) return;
@@ -705,7 +705,7 @@ export default function FriendsView({ user, activeCalendarTournaments = [], subs
         });
       }
     }
-  }, [chats, selectedChat?.id, localUser?.uid, localUser?.docId]);
+  }, [chats, selectedChat?.id, localUser]);
 
   useEffect(() => {
     let cancelled = false;

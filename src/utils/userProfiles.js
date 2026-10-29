@@ -38,7 +38,7 @@ export async function fetchUserProfileByUsername(db, username) {
           if (mappedProfileSnap.exists()) {
             return normalizeProfile(mappedProfileSnap.data(), normalizedUsername, mappedProfileSnap.id);
           }
-        } catch (err) {
+        } catch {
            // If we can't read the full profile but we have the UID, return minimal profile so listeners work
            return { username: normalizedUsername, uid: mappedUid, docId: mappedUid };
         }
@@ -149,7 +149,7 @@ export async function ensureUserProfileDocument(db, profile, fallbackUsername = 
   const normalized = normalizeProfile(profile, fallbackUsername);
   if (!normalized?.username) return null;
 
-  const { docId, manager_id, ...payload } = normalized;
+  const { docId, manager_id: _managerId, ...payload } = normalized;
   const targetDocId = normalized.uid || docId || normalized.username;
   const profilePayload = {
     ...payload,
