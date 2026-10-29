@@ -1371,6 +1371,14 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
     - Los porcentajes por tramo usan como denominador los tripateos medidos, no todos los tripateos.
   Siguiente: Ejecutar validaciones y publicar.
 
+[COMPLETADO] VUELTAS LIBRES — Abrir directamente la tarjeta de anotación
+  Archivos modificados:
+    - src/App.jsx
+  Resumen:
+    - Al crear una vuelta libre se abre automáticamente en modo edición.
+    - Se reutiliza la misma tarjeta hoyo a hoyo que los torneos: golpes, GIR, putts, distancia previa y penalizaciones.
+  Siguiente: Ejecutar validaciones y publicar.
+
 [COMPLETADO] INFORMES — Evitar duplicados de resultados antiguos
   Archivos modificados:
     - src/utils/reportAnalytics.js

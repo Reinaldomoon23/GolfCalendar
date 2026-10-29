@@ -787,7 +787,7 @@ function AppContent() {
       updatedAt: new Date().toISOString(),
     };
     await handleSaveSpecificResult(round.id, entry);
-    navigate(`/free-round/${round.id}`);
+    navigate(`/free-round/${round.id}`, { state: { edit: true } });
   };
 
   const handleUpdateFreeRound = async (updatedTournament) => {
