@@ -27,6 +27,12 @@ export default function NavTabs() {
           Calendario
         </button>
       </Link>
+      <Link to="/free-rounds" style={{ textDecoration: 'none' }}>
+        <button className={`btn ${isFreeRounds ? 'btn-primary' : 'card'}`}>
+          <Flag size={20} />
+          Vueltas libres
+        </button>
+      </Link>
       <Link to="/training" style={{ textDecoration: 'none' }}>
         <button className={`btn ${isTraining ? 'btn-primary' : 'card'}`}>
           <ClipboardList size={20} />
@@ -55,12 +61,6 @@ export default function NavTabs() {
         <button className={`btn ${isTournaments ? 'btn-primary' : 'card'}`}>
           <Trophy size={20} />
           Torneos
-        </button>
-      </Link>
-      <Link to="/free-rounds" style={{ textDecoration: 'none' }}>
-        <button className={`btn ${isFreeRounds ? 'btn-primary' : 'card'}`}>
-          <Flag size={20} />
-          Vueltas libres
         </button>
       </Link>
       <Link to="/friends" style={{ textDecoration: 'none' }}>

@@ -358,7 +358,10 @@ export async function leaveTournament(user, tournamentId) {
 
   const canonicalId = resolveCanonicalTournamentId(tournamentId);
   const ref = getUserSubdocRef(db, user, 'subscribed_tournaments', canonicalId);
-  const participantRef = doc(db, 'tournaments', canonicalId, 'participants', String(user.username));
+  const participantIds = Array.from(new Set([
+    canonicalId,
+    ...getTournamentIdCandidates(canonicalId),
+  ].filter(Boolean).map(String)));
   
   // Check source before decrementing counter
   try {
@@ -373,11 +376,13 @@ export async function leaveTournament(user, tournamentId) {
     console.warn('[leaveTournament] Could not update subscriberCount:', e.message);
   }
 
-  try {
-    await deleteDoc(participantRef);
-  } catch (e) {
-    console.warn('[leaveTournament] Could not remove participant doc:', e.message);
-  }
+  await Promise.all(participantIds.map(async (participantId) => {
+    try {
+      await deleteDoc(doc(db, 'tournaments', participantId, 'participants', String(user.username)));
+    } catch (e) {
+      console.warn(`[leaveTournament] Could not remove participant doc ${participantId}:`, e.message);
+    }
+  }));
 
   await deleteDoc(ref);
 }

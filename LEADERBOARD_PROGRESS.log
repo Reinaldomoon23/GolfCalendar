@@ -1450,6 +1450,18 @@ SESIÓN: 2026-10-29 | Codex
     - npm run lint: 0 errores; permanece 1 aviso previo de hooks.
     - npm run build: correcto.
 
+[COMPLETADO] TORNEOS — Desapuntarse elimina también el roster público
+  Archivos modificados:
+    - src/services/tournaments.service.js
+    - src/components/NavTabs.jsx
+  Resumen:
+    - Al abandonar un torneo se eliminan los documentos de participante del
+      ID canónico y de sus posibles IDs legados.
+    - La pestaña “Vueltas libres” queda junto a “Calendario”.
+  Verificación:
+    - npm run lint: 0 errores; permanece 1 aviso previo de hooks.
+    - npm run build: correcto.
+
   PRÓXIMO PASO: PRODUCCIÓN — Crear una vuelta libre de prueba y completar varios hoyos.
 
 ==========================================================================
