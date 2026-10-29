@@ -763,7 +763,9 @@ function AppContent() {
   };
 
   const handleCreateFreeRound = async (round) => {
-    const pars = round.par === 72 ? Array(18).fill('4') : Array(18).fill(String(Math.max(1, Math.round(round.par / 18))));
+    const pars = Array.isArray(round.pars) && round.pars.length === 18
+      ? round.pars.map((value) => String(value))
+      : round.par === 72 ? Array(18).fill('4') : Array(18).fill(String(Math.max(1, Math.round(round.par / 18))));
     const entry = {
       recordType: 'free_round',
       tournamentName: round.name,

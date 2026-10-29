@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { CalendarDays, ChevronRight, MapPin, Plus, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import spanishCourses from '../data/spanish_courses.json';
 
 const cardStyle = {
   background: 'var(--color-surface)',
@@ -33,21 +34,33 @@ function FreeRoundForm({ onCancel, onCreate }) {
     par: '72',
   });
   const [error, setError] = useState('');
+  const [customCourse, setCustomCourse] = useState('');
 
   const update = (field, value) => setForm((current) => ({ ...current, [field]: value }));
+
+  const selectCourse = (value) => {
+    const course = spanishCourses.find((item) => item.name === value);
+    setForm((current) => ({
+      ...current,
+      course: value,
+      ...(course?.pars?.length ? { par: String(course.pars.reduce((total, holePar) => total + Number(holePar || 0), 0)) } : {}),
+    }));
+  };
 
   const submit = () => {
     if (!form.name.trim() || !form.date) {
       setError('Indica un nombre y una fecha.');
       return;
     }
+    const selectedCourse = spanishCourses.find((item) => item.name === form.course);
     onCreate({
       id: `free-round-${form.date}-${Date.now()}`,
       name: form.name.trim(),
       date: form.date,
       dates: formatDate(form.date),
-      course: form.course.trim() || 'Campo de golf',
+      course: (form.course === '__custom__' ? customCourse : form.course).trim() || 'Campo de golf',
       par: Number(form.par) || 72,
+      pars: selectedCourse?.pars || null,
     });
   };
 
@@ -59,7 +72,12 @@ function FreeRoundForm({ onCancel, onCreate }) {
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.75rem' }}>
       <label>Nombre<input value={form.name} onChange={(event) => update('name', event.target.value)} style={inputStyle} /></label>
       <label>Fecha<input type="date" value={form.date} onChange={(event) => update('date', event.target.value)} style={inputStyle} /></label>
-      <label>Campo<input value={form.course} onChange={(event) => update('course', event.target.value)} placeholder="Ej. Camiral Tour" style={inputStyle} /></label>
+      <label>Campo<select value={form.course} onChange={(event) => selectCourse(event.target.value)} style={inputStyle}>
+        <option value="">Selecciona un campo</option>
+        {spanishCourses.map((course) => <option key={course.name} value={course.name}>{course.name}</option>)}
+        <option value="__custom__">Otro campo…</option>
+      </select></label>
+      {form.course === '__custom__' && <label>Nombre del campo<input value={customCourse} onChange={(event) => setCustomCourse(event.target.value)} placeholder="Escribe el nombre del campo" style={inputStyle} /></label>}
       <label>Par del campo<input type="number" min="1" value={form.par} onChange={(event) => update('par', event.target.value)} style={inputStyle} /></label>
     </div>
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '1rem', flexWrap: 'wrap' }}>

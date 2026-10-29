@@ -2537,3 +2537,9 @@ SIGUIENTE PASO:
   PRÓXIMO PASO: PRODUCCIÓN — Probar modo móvil con Putts/GIR
 ==========================================================================
   Siguiente: En una cuenta real, activar `Track Putts` y `Track GIR`, entrar en `Modo Móvil`, esperar autosave y confirmar que ambos campos siguen visibles.
+[COMPLETADO] VUELTAS LIBRES — Selector de campos
+Fecha: 2026-10-30
+Archivos: src/components/FreeRoundsView.jsx, src/App.jsx
+Resumen: El formulario de vuelta libre muestra un desplegable con los campos de spanish_courses.json y calcula el par del campo seleccionado. Se conserva una opción para introducir otro campo y la tarjeta recibe los pares reales cuando están disponibles.
+Próximo paso: Validar el selector publicado desde móvil.
+
