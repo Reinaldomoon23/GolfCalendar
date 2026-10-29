@@ -90,6 +90,7 @@ function FreeRoundForm({ user, onSaved, onCancel }) {
 
 export default function ReportsView({ user, results = {}, tournaments = [] }) {
   const [trainingSessions, setTrainingSessions] = useState([]);
+  const [reportMode, setReportMode] = useState('overview');
   const [sourceType, setSourceType] = useState('golf');
   const [periodType, setPeriodType] = useState('all');
   const [periodValue, setPeriodValue] = useState('6');
@@ -106,6 +107,19 @@ export default function ReportsView({ user, results = {}, tournaments = [] }) {
   const conclusions = useMemo(() => buildActivityConclusions(rows), [rows]);
   const putting = useMemo(() => buildPuttingAnalysis(rows), [rows]);
   const puttingConclusions = useMemo(() => buildPuttingConclusions(putting), [putting]);
+  const comparison = useMemo(() => {
+    const baseFilters = { periodType, periodValue, startDate, endDate, eventCount };
+    const tournamentRows = filterActivityRows(allRows, { ...baseFilters, sourceType: 'tournament' });
+    const freeRows = filterActivityRows(allRows, { ...baseFilters, sourceType: 'free' });
+    return { tournament: summarizeActivityRows(tournamentRows), free: summarizeActivityRows(freeRows) };
+  }, [allRows, periodType, periodValue, startDate, endDate, eventCount]);
+
+  const changeMode = (mode) => {
+    setReportMode(mode);
+    if (mode === 'tournaments') setSourceType('tournament');
+    else if (mode === 'free') setSourceType('free');
+    else if (mode === 'overview' || mode === 'comparison') setSourceType('golf');
+  };
 
   if (!user) return <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '1rem' }}><div style={cardStyle}>Inicia sesión para consultar tus informes.</div></div>;
 
@@ -117,17 +131,29 @@ export default function ReportsView({ user, results = {}, tournaments = [] }) {
       </div>
     </div>
 
+    <div style={{ ...cardStyle, marginBottom: '1rem', padding: '0.55rem', display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }} aria-label="Tipo de informe">
+      {[['overview', 'Resumen'], ['tournaments', 'Torneos'], ['free', 'Vueltas libres'], ['comparison', 'Comparativa']].map(([mode, label]) => <button key={mode} type="button" onClick={() => changeMode(mode)} style={{ ...buttonStyle, background: reportMode === mode ? 'var(--color-primary)' : 'transparent', color: reportMode === mode ? '#fff' : 'inherit', borderColor: reportMode === mode ? 'var(--color-primary)' : 'transparent' }}>{label}</button>)}
+    </div>
+
     {showFreeRound && <FreeRoundForm user={user} onSaved={() => setShowFreeRound(false)} onCancel={() => setShowFreeRound(false)} />}
 
     <div style={{ ...cardStyle, marginBottom: '1rem' }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(155px, 1fr))', gap: '0.7rem' }}>
-        <label>Origen<select value={sourceType} onChange={(event) => setSourceType(event.target.value)} style={inputStyle}><option value="golf">Torneos y vueltas libres</option><option value="tournament">Solo torneos</option><option value="free">Solo vueltas libres</option><option value="training">Solo entrenamientos</option></select></label>
+        <label>Origen<select value={sourceType} onChange={(event) => { setSourceType(event.target.value); setReportMode(event.target.value === 'tournament' ? 'tournaments' : event.target.value === 'free' ? 'free' : 'overview'); }} style={inputStyle}><option value="golf">Torneos y vueltas libres</option><option value="tournament">Solo torneos</option><option value="free">Solo vueltas libres</option><option value="training">Solo entrenamientos</option></select></label>
         <label>Periodo<select value={periodType} onChange={(event) => setPeriodType(event.target.value)} style={inputStyle}><option value="all">Todo el historial</option><option value="months">Últimos meses</option><option value="dates">Entre fechas</option></select></label>
         {periodType === 'months' && <label>Meses<select value={periodValue} onChange={(event) => setPeriodValue(event.target.value)} style={inputStyle}><option value="1">1 mes</option><option value="3">3 meses</option><option value="6">6 meses</option><option value="12">12 meses</option><option value="24">24 meses</option></select></label>}
         {periodType === 'dates' && <><label>Desde<input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} style={inputStyle} /></label><label>Hasta<input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} style={inputStyle} /></label></>}
         <label>Número de eventos<select value={eventCount} onChange={(event) => setEventCount(event.target.value)} style={inputStyle}><option value="all">Todos</option><option value="5">Últimos 5</option><option value="10">Últimos 10</option><option value="20">Últimos 20</option></select></label>
       </div>
     </div>
+
+    {reportMode === 'comparison' && <div style={{ ...cardStyle, marginBottom: '1rem' }}>
+      <h2 style={{ margin: '0 0 0.8rem', fontSize: '1.1rem' }}>Comparativa: torneos frente a vueltas libres</h2>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '0.8rem' }}>
+        {[['Torneos', comparison.tournament, '#e9f5ff'], ['Vueltas libres', comparison.free, '#eefbf3']].map(([label, data, background]) => <div key={label} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '0.8rem', background }}><h3 style={{ margin: '0 0 0.6rem' }}>{label}</h3><div style={{ display: 'grid', gap: '0.35rem', fontSize: '0.9rem' }}><div>Vueltas: <strong>{data.scoredRounds}</strong></div><div>Media golpes: <strong>{formatReportNumber(data.scoreAverage)}</strong></div><div>Vs par: <strong>{data.vsParAverage === null ? '-' : formatVsPar(Number(data.vsParAverage.toFixed(1)))}</strong></div><div>Media putts: <strong>{formatReportNumber(data.puttsAverage)}</strong></div><div>GIR medio: <strong>{data.girRate === null ? '-' : `${(data.girRate * 100).toFixed(0)}%`}</strong></div><div>Distancia putt: <strong>{data.distanceAverage === null ? '-' : `${data.distanceAverage.toFixed(2)} m`}</strong></div><div>Penalizaciones: <strong>{data.penaltyTotal}</strong></div></div></div>)}
+      </div>
+      <p style={{ margin: '0.8rem 0 0', color: 'var(--color-text-muted)', fontSize: '0.82rem' }}>La comparativa usa exactamente los mismos filtros de periodo y número de eventos seleccionados arriba.</p>
+    </div>}
 
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.7rem', marginBottom: '1rem' }}>
       {[['Eventos', summary.events], ['Vueltas', summary.rows], ['Media golpes', formatReportNumber(summary.scoreAverage)], ['Vs par', summary.vsParAverage === null ? '-' : formatVsPar(Number(summary.vsParAverage.toFixed(1)))], ['Media putts', formatReportNumber(summary.puttsAverage)], ['GIR medio', summary.girRate === null ? '-' : `${(summary.girRate * 100).toFixed(0)}%`], ['Distancia putt', summary.distanceAverage === null ? '-' : `${summary.distanceAverage.toFixed(2)} m`], ['Penalizaciones', summary.penaltyTotal]].map(([label, value]) => <div key={label} style={{ ...cardStyle, padding: '0.8rem' }}><div style={{ color: 'var(--color-text-muted)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</div><strong style={{ display: 'block', fontSize: '1.35rem', marginTop: '0.25rem' }}>{value}</strong></div>)}

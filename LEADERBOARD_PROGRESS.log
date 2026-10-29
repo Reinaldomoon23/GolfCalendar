@@ -1386,6 +1386,24 @@ SESIÓN: 2026-10-28 | Codex
   PRÓXIMO PASO: PRODUCCIÓN — Abrir Informes con una vuelta que tenga putts y distancias por hoyo.
 
 ==========================================================================
+SESIÓN: 2026-10-29 | Codex
+==========================================================================
+
+[COMPLETADO] INFORMES — Separación visual de torneos y vueltas libres
+  Archivos modificados:
+    - src/components/ReportsView.jsx
+  Resumen:
+    - Añadidas vistas independientes: Resumen, Torneos, Vueltas libres y Comparativa.
+    - La comparativa muestra golpes, vs par, putts, GIR, distancia de putt y penalizaciones.
+    - La comparativa respeta los filtros de periodo y número de eventos.
+    - Se mantiene la compatibilidad con resultados existentes y entrenamientos.
+  Verificación:
+    - npm run lint: 0 errores; permanece 1 aviso previo de hooks.
+    - npm run build: correcto.
+
+  PRÓXIMO PASO: PRODUCCIÓN — Publicar y revisar en móvil las cuatro vistas de Informes.
+
+==========================================================================
 SESIÓN: 2026-10-20 | Codex
 ==========================================================================
 
