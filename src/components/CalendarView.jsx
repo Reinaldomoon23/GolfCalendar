@@ -193,6 +193,7 @@ export default function CalendarView({
         id ? tournaments.find(t => String(t.id) === id) || null : null
         , [id, tournaments]);
     const selectedResult = selectedTournament ? results[selectedTournament.id] : null;
+    const isFreeRound = Boolean(selectedTournament?.freeRound || selectedTournament?.type === 'free_round');
 
     // --- NEW: Editing Tournament Details State ---
     const [editingDetails, setEditingDetails] = useState({});
@@ -1596,7 +1597,7 @@ export default function CalendarView({
                     <TournamentDetailBadges tournament={t} isPast={isPast} />
 
                     {isEditing ? (
-                        <div style={{ display: 'grid', gap: '1rem', marginBottom: '2rem' }}>
+                        <div style={{ display: isFreeRound ? 'none' : 'grid', gap: '1rem', marginBottom: '2rem' }}>
                             {/* Name Edit */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                                 <label style={{ fontSize: '0.8rem', color: '#888' }}>Nombre del Torneo</label>
@@ -1709,7 +1710,7 @@ export default function CalendarView({
                             </div>
 
                             {/* Organizer (Main Entity) */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                            <div style={{ display: isFreeRound ? 'none' : 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                                     <label style={{ fontSize: '0.8rem', color: '#888' }}>Organizador</label>
                                     <select
@@ -1738,7 +1739,7 @@ export default function CalendarView({
                             </div>
 
                             {/* Objetivo (Target Score) */}
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                            <div style={{ display: isFreeRound ? 'none' : 'flex', flexDirection: 'column', gap: '5px' }}>
                                 <label style={{ fontSize: '0.8rem', color: '#888' }}>Objetivo (Golpes respecto al par, ej: 7 para +7)</label>
                                 <input
                                     type="number"
@@ -1750,7 +1751,7 @@ export default function CalendarView({
                             </div>
 
                             {/* Tags / Properties */}
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <div style={{ display: isFreeRound ? 'none' : 'flex', flexDirection: 'column', gap: '8px' }}>
                                 <label style={{ fontSize: '0.8rem', color: '#888' }}>Etiquetas</label>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
                                     <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: '#f8fafc', padding: '8px', borderRadius: '6px' }}>
@@ -1822,7 +1823,7 @@ export default function CalendarView({
                             {/* Optional: Type Logic/Dropdown kept for Format but simplified? Or keep as is for now? 
                                 User asked to clarify Org vs Tags. Type is still useful for 'Campeonato', 'Circuit', etc.
                             */}
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                            <div style={{ display: isFreeRound ? 'none' : 'flex', flexDirection: 'column', gap: '5px' }}>
                                 <label style={{ fontSize: '0.8rem', color: '#888' }}>Tipo / Formato</label>
                                 <select
                                     value={editingDetails.type || 'club'}
@@ -1873,8 +1874,8 @@ export default function CalendarView({
                             {renderSummaryCard()}
 
                             {/* --- NEW: DETAILS EDITOR --- */}
-                            <div style={{ marginBottom: '2rem', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.5rem' }}>
-                                <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: 'var(--color-primary)' }}>Configuración del Torneo</h3>
+                            <div style={{ display: isFreeRound ? 'none' : 'block', marginBottom: '2rem', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.5rem' }}>
+                                <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: 'var(--color-primary)' }}>{isFreeRound ? 'Configuración de la vuelta' : 'Configuración del Torneo'}</h3>
 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem', marginBottom: '1.5rem' }}>
 

@@ -2549,3 +2549,9 @@ Archivos: src/components/FreeRoundsView.jsx
 Resumen: Sustituido el desplegable por un campo de texto con datalist y sugerencias de campos. La selección exacta mantiene el cálculo automático del par; también se permiten nombres escritos manualmente.
 Próximo paso: Validar el autocompletado publicado desde móvil.
 
+[COMPLETADO] VUELTAS LIBRES — Solo flujo de puntuación
+Fecha: 2026-10-30
+Archivos: src/components/CalendarView.jsx
+Resumen: En las vueltas libres se oculta el editor de configuración propio de torneos. Se mantiene únicamente la tarjeta de puntuación hoyo a hoyo; los torneos conservan su configuración completa.
+Próximo paso: Validar la tarjeta de puntuación publicada.
+
