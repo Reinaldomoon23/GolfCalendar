@@ -719,6 +719,7 @@ export default function CalendarView({
             const updatedCard = field === 'puttDistances'
                 ? {
                     ...roundCard,
+                    puttDistanceReference: 'before_putt',
                     puttDistances: Array.from({ length: 18 }, (_, index) => index === holeIdx
                         ? (Array.isArray(value) ? value : [])
                         : (roundCard.puttDistances?.[index] || []))

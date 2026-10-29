@@ -36,7 +36,11 @@ const MobileScorecardEditor = ({
     };
     const handlePuttDistance = (puttIndex, rawValue) => {
         const nextDistances = [...puttDistances];
-        nextDistances[puttIndex] = snapPuttDistance(rawValue);
+        const previousDistance = puttIndex > 0 ? Number(puttDistances[puttIndex - 1]) : null;
+        const selectedDistance = snapPuttDistance(rawValue);
+        nextDistances[puttIndex] = Number.isFinite(previousDistance) && previousDistance >= 0
+            ? Math.min(selectedDistance, previousDistance)
+            : selectedDistance;
         onUpdate(holeIdx, 'puttDistances', nextDistances);
     };
     const changePuttCount = (delta) => {
@@ -529,7 +533,7 @@ const MobileScorecardEditor = ({
                                     <span style={{ minWidth: '70px', textAlign: 'center', color: '#f8fafc', fontWeight: '800' }}>{putts} putt{Number(putts) === 1 ? '' : 's'}</span>
                                     <button onClick={() => changePuttCount(1)} aria-label="Añadir un putt" style={{ width: '42px', height: '42px', borderRadius: '12px', border: 'none', background: '#8b5cf6', color: 'white', fontSize: '1.5rem', fontWeight: '800', cursor: 'pointer' }}>+</button>
                                 </div>
-                                <div style={{ color: '#c4b5fd', fontSize: '0.75rem', fontWeight: '800', textAlign: 'center', marginBottom: '0.6rem' }}>DISTANCIA DE CADA PUTT</div>
+                                <div style={{ color: '#c4b5fd', fontSize: '0.75rem', fontWeight: '800', textAlign: 'center', marginBottom: '0.6rem' }}>DISTANCIA ANTES DE CADA PUTT</div>
                                 {Array.from({ length: Number(putts) }).map((_, index) => {
                                     const distance = puttDistances[index] ?? 0;
                                     return (
@@ -541,7 +545,7 @@ const MobileScorecardEditor = ({
                                         </div>
                                     );
                                 })}
-                                <div style={{ color: '#94a3b8', fontSize: '0.65rem', textAlign: 'center' }}>0–1 m: 0,25 · 1–3 m: 0,50 · desde 3 m: 1 m</div>
+                                <div style={{ color: '#94a3b8', fontSize: '0.65rem', textAlign: 'center' }}>Distancia antes de golpear · cada putt debe ser igual o más corto que el anterior</div>
                             </>
                         )}
                     </div>

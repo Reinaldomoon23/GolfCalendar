@@ -1416,6 +1416,22 @@ SESIÓN: 2026-10-29 | Codex
     - npm run lint: 0 errores; permanece 1 aviso previo de hooks.
     - npm run build: correcto.
 
+[COMPLETADO] PUTTING — Distancia antes de cada putt
+  Archivos modificados:
+    - src/components/MobileScorecardEditor.jsx
+    - src/components/CalendarView.jsx
+    - src/components/ReportsView.jsx
+    - src/utils/reportAnalytics.js
+  Resumen:
+    - El slider se interpreta como distancia antes de golpear.
+    - Los putts posteriores no pueden registrarse con una distancia mayor que
+      la del putt anterior.
+    - La métrica de tripateos se muestra como distancia inicial.
+    - Las nuevas tarjetas guardan la referencia `before_putt`.
+  Verificación:
+    - npm run lint: 0 errores; permanece 1 aviso previo de hooks.
+    - npm run build: correcto.
+
 ==========================================================================
 SESIÓN: 2026-10-20 | Codex
 ==========================================================================
