@@ -1432,6 +1432,26 @@ SESIÓN: 2026-10-29 | Codex
     - npm run lint: 0 errores; permanece 1 aviso previo de hooks.
     - npm run build: correcto.
 
+[COMPLETADO] ARQUITECTURA — Apartado independiente de vueltas libres
+  Archivos modificados/creados:
+    - src/components/FreeRoundsView.jsx
+    - src/components/NavTabs.jsx
+    - src/components/ReportsView.jsx
+    - src/components/CalendarView.jsx
+    - src/App.jsx
+  Resumen:
+    - Se añadió el menú principal “Vueltas libres”.
+    - Las vueltas libres se crean desde su propio apartado, no desde Informes.
+    - Cada vuelta libre crea una tarjeta de 18 hoyos editable con el mismo flujo
+      de golpes, GIR, putts, distancias y penalizaciones que un torneo.
+    - Informes queda dedicado exclusivamente al análisis y comparativa.
+    - Se mantiene compatibilidad con vueltas libres antiguas.
+  Verificación:
+    - npm run lint: 0 errores; permanece 1 aviso previo de hooks.
+    - npm run build: correcto.
+
+  PRÓXIMO PASO: PRODUCCIÓN — Crear una vuelta libre de prueba y completar varios hoyos.
+
 ==========================================================================
 SESIÓN: 2026-10-20 | Codex
 ==========================================================================

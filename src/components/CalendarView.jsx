@@ -479,7 +479,7 @@ export default function CalendarView({
             // Lookup course pars (Loose matching)
             const courseData = findCourseData(t.course);
             const scorecard = resolveCourseScorecard(t, courseData);
-            const defaultPars = scorecard?.pars || Array(18).fill('');
+            const defaultPars = scorecard?.pars || (Array.isArray(t.pars) ? t.pars : Array(18).fill(''));
 
             // Helper to get initial scorecard for a round
             const getInitialScorecard = (rIdx) => {

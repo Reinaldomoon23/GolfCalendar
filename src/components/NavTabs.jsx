@@ -5,7 +5,7 @@
  */
 
 import { Link, useLocation } from 'react-router-dom';
-import { Calendar as CalendarIcon, BarChart3, TrendingUp, Trophy, Users, ClipboardList, FileText } from 'lucide-react';
+import { Calendar as CalendarIcon, BarChart3, TrendingUp, Trophy, Users, ClipboardList, FileText, Flag } from 'lucide-react';
 
 export default function NavTabs() {
   const { pathname } = useLocation();
@@ -17,6 +17,7 @@ export default function NavTabs() {
   const isFriends = pathname === '/friends';
   const isTraining = pathname === '/training';
   const isReports = pathname === '/reports';
+  const isFreeRounds = pathname === '/free-rounds' || pathname.startsWith('/free-round/');
 
   return (
     <nav className="nav-tabs">
@@ -54,6 +55,12 @@ export default function NavTabs() {
         <button className={`btn ${isTournaments ? 'btn-primary' : 'card'}`}>
           <Trophy size={20} />
           Torneos
+        </button>
+      </Link>
+      <Link to="/free-rounds" style={{ textDecoration: 'none' }}>
+        <button className={`btn ${isFreeRounds ? 'btn-primary' : 'card'}`}>
+          <Flag size={20} />
+          Vueltas libres
         </button>
       </Link>
       <Link to="/friends" style={{ textDecoration: 'none' }}>

@@ -14,6 +14,7 @@ const PublicLeaderboardView = lazy(() => import('./components/PublicLeaderboardV
 const TeamLiveScorecard = lazy(() => import('./components/TeamLiveScorecard'));
 const TournamentsCentralView = lazy(() => import('./components/TournamentsCentralView'));
 const FriendsView = lazy(() => import('./components/FriendsView'));
+const FreeRoundsView = lazy(() => import('./components/FreeRoundsView'));
 const AdminDashboardView = lazy(() => import('./components/admin/AdminDashboardView'));
 const AdminRoute = lazy(() => import('./components/admin/AdminRoute'));
 
@@ -697,6 +698,26 @@ function AppContent() {
     return copy;
   }, [results]);
 
+  const normalizeFreeRoundDate = (value) => {
+    const raw = String(value || '');
+    const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    return iso ? `${iso[3]}/${iso[2]}/${iso[1]}` : raw;
+  };
+
+  const freeRounds = useMemo(() => Object.entries(mappedResults)
+    .filter(([, entry]) => entry?.recordType === 'free_round')
+    .map(([id, entry]) => ({
+      id,
+      name: entry.tournamentName || 'Vuelta libre',
+      dates: normalizeFreeRoundDate(entry.tournamentDates),
+      course: entry.tournamentCourse || 'Campo de golf',
+      par: Number(entry.tournamentPar) || 72,
+      type: 'free_round',
+      custom: true,
+      freeRound: true,
+      pars: entry.scorecards?.[0]?.pars || Array(18).fill('4'),
+    })), [mappedResults]);
+
   const tournamentsState = useTournaments(user, preferences, handleUpdatePreferences, mappedResults, {
     disabled: false,
   });
@@ -739,6 +760,45 @@ function AppContent() {
     } catch (err) {
       console.error('[results] Error deleting result:', err);
     }
+  };
+
+  const handleCreateFreeRound = async (round) => {
+    const pars = round.par === 72 ? Array(18).fill('4') : Array(18).fill(String(Math.max(1, Math.round(round.par / 18))));
+    const entry = {
+      recordType: 'free_round',
+      tournamentName: round.name,
+      tournamentCourse: round.course,
+      tournamentDates: round.dates,
+      tournamentPar: round.par,
+      rounds: [''],
+      totalPutts: [''],
+      track_putts: true,
+      track_girs: true,
+      scorecards: {
+        0: {
+          pars,
+          strokes: Array(18).fill(''),
+          putts: Array(18).fill(''),
+          penalties: Array(18).fill(''),
+          puttDistances: Array.from({ length: 18 }, () => []),
+          girs: Array(18).fill(''),
+        },
+      },
+      updatedAt: new Date().toISOString(),
+    };
+    await handleSaveSpecificResult(round.id, entry);
+    navigate(`/free-round/${round.id}`);
+  };
+
+  const handleUpdateFreeRound = async (updatedTournament) => {
+    const existing = mappedResults[updatedTournament.id] || {};
+    await handleSaveSpecificResult(updatedTournament.id, {
+      ...existing,
+      tournamentName: updatedTournament.name,
+      tournamentCourse: updatedTournament.course,
+      tournamentDates: updatedTournament.dates,
+      tournamentPar: Number(updatedTournament.par) || existing.tournamentPar || 72,
+    });
   };
 
   if (IS_MULTI && !authReady && !user) {
@@ -849,6 +909,25 @@ function AppContent() {
           } />
           <Route path="/stats" element={<StatsView user={user} linkedUsers={linkedUsers} results={mappedResults} tournaments={tournaments} />} />
           <Route path="/reports" element={<ReportsView user={user} results={mappedResults} tournaments={tournaments} />} />
+          <Route path="/free-rounds" element={<FreeRoundsView freeRounds={freeRounds} onCreateFreeRound={handleCreateFreeRound} />} />
+          <Route path="/free-round/:id" element={
+            <CalendarView
+              viewMode="calendar"
+              tournaments={freeRounds}
+              results={mappedResults}
+              activeGroups={[]}
+              hiddenGroups={[]}
+              customThemes={preferences.themes}
+              user={user}
+              onUpdateResults={handleUpdateResults}
+              onSaveSpecificResult={handleSaveSpecificResult}
+              onDeleteResult={async (id) => { await handleDeleteResult(id); navigate('/free-rounds'); }}
+              onDeleteTournament={async (id) => { await handleDeleteResult(id); navigate('/free-rounds'); }}
+              onUpdateTournament={handleUpdateFreeRound}
+              managedUsers={linkedUsers.map(u => u.username)}
+              allAvailableTournaments={freeRounds}
+            />
+          } />
           <Route path="/training" element={<TrainingTestsView user={user} />} />
           <Route path="/handicap" element={<HandicapView user={user} currentHandicap={handicap} history={history} results={mappedResults} tournaments={tournaments} />} />
           <Route path="/tournaments" element={

@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { BarChart3, Download, FileText, Plus, Printer, Save, X } from 'lucide-react';
+import { BarChart3, Download, FileText, Printer } from 'lucide-react';
 import { subscribeToTrainingTests } from '../services/trainingTests.service';
-import { saveResult } from '../services/results.service';
 import {
   buildActivityConclusions,
   buildActivityRows,
@@ -33,61 +32,6 @@ function downloadCsv(rows) {
   URL.revokeObjectURL(url);
 }
 
-function FreeRoundForm({ user, onSaved, onCancel }) {
-  const [form, setForm] = useState({ name: 'Vuelta libre', date: new Date().toISOString().slice(0, 10), course: '', par: '72', score: '', putts: '', penalties: '0' });
-  const [status, setStatus] = useState('');
-  const update = (field, value) => setForm((current) => ({ ...current, [field]: value }));
-
-  const handleSave = async () => {
-    const score = Number(form.score);
-    if (!form.name.trim() || !form.date || !Number.isFinite(score) || score <= 0) {
-      setStatus('Indica nombre, fecha y golpes totales.');
-      return;
-    }
-    const id = `free-round-${form.date}-${Date.now()}`;
-    const result = {
-      recordType: 'free_round',
-      tournamentName: form.name.trim(),
-      tournamentCourse: form.course.trim(),
-      tournamentDates: form.date,
-      tournamentPar: Number(form.par) || 72,
-      rounds: [score],
-      totalPutts: [Number(form.putts) > 0 ? Number(form.putts) : ''],
-      penalties: [Number(form.penalties) || 0],
-      updatedAt: new Date().toISOString(),
-    };
-    try {
-      setStatus('Guardando...');
-      await saveResult(user, id, result);
-      setStatus('Vuelta guardada.');
-      onSaved?.();
-    } catch (error) {
-      console.error('[reports] Free round save failed:', error);
-      setStatus('No se pudo guardar la vuelta.');
-    }
-  };
-
-  return <div style={{ ...cardStyle, marginBottom: '1rem' }}>
-    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem', alignItems: 'center', marginBottom: '0.8rem' }}>
-      <h2 style={{ margin: 0, fontSize: '1.1rem' }}>Añadir vuelta fuera de torneo</h2>
-      <button type="button" onClick={onCancel} style={{ ...buttonStyle, padding: '0.45rem' }} aria-label="Cerrar"><X size={16} /></button>
-    </div>
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.7rem' }}>
-      <label>Nombre<input value={form.name} onChange={(event) => update('name', event.target.value)} style={inputStyle} /></label>
-      <label>Fecha<input type="date" value={form.date} onChange={(event) => update('date', event.target.value)} style={inputStyle} /></label>
-      <label>Campo<input value={form.course} onChange={(event) => update('course', event.target.value)} style={inputStyle} /></label>
-      <label>Par<input type="number" min="1" value={form.par} onChange={(event) => update('par', event.target.value)} style={inputStyle} /></label>
-      <label>Golpes<input type="number" min="1" value={form.score} onChange={(event) => update('score', event.target.value)} style={inputStyle} /></label>
-      <label>Putts totales<input type="number" min="0" value={form.putts} onChange={(event) => update('putts', event.target.value)} style={inputStyle} /></label>
-      <label>Penalizaciones<input type="number" min="0" value={form.penalties} onChange={(event) => update('penalties', event.target.value)} style={inputStyle} /></label>
-    </div>
-    <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', marginTop: '0.9rem', flexWrap: 'wrap' }}>
-      <button type="button" onClick={handleSave} style={{ ...buttonStyle, background: 'var(--color-primary)', color: '#fff', borderColor: 'var(--color-primary)' }}><Save size={16} /> Guardar vuelta</button>
-      <span style={{ color: status.startsWith('No') ? '#b91c1c' : 'var(--color-text-muted)' }}>{status}</span>
-    </div>
-  </div>;
-}
-
 export default function ReportsView({ user, results = {}, tournaments = [] }) {
   const [trainingSessions, setTrainingSessions] = useState([]);
   const [reportMode, setReportMode] = useState('overview');
@@ -97,7 +41,6 @@ export default function ReportsView({ user, results = {}, tournaments = [] }) {
   const [eventCount, setEventCount] = useState('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [showFreeRound, setShowFreeRound] = useState(false);
 
   useEffect(() => subscribeToTrainingTests(user, setTrainingSessions), [user]);
 
@@ -127,15 +70,13 @@ export default function ReportsView({ user, results = {}, tournaments = [] }) {
     <div style={{ ...cardStyle, marginBottom: '1rem', background: 'linear-gradient(135deg, #0f2d25, #1e6048)', color: '#fff' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
         <div><div style={{ opacity: 0.75, fontSize: '0.75rem', letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 900 }}>Análisis de rendimiento</div><h1 style={{ margin: '0.25rem 0', fontSize: '1.6rem' }}>Informes de golf</h1><p style={{ margin: 0, opacity: 0.8 }}>Torneos, entrenamientos y vueltas libres en una misma lectura.</p></div>
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}><button type="button" onClick={() => setShowFreeRound(true)} style={{ ...buttonStyle, background: '#f8d67b', color: '#102018', borderColor: '#f8d67b' }}><Plus size={16} /> Añadir vuelta libre</button><button type="button" onClick={() => downloadCsv(rows)} style={{ ...buttonStyle, background: 'rgba(255,255,255,0.12)', color: '#fff', borderColor: 'rgba(255,255,255,0.4)' }}><Download size={16} /> CSV</button><button type="button" onClick={() => window.print()} style={{ ...buttonStyle, background: 'rgba(255,255,255,0.12)', color: '#fff', borderColor: 'rgba(255,255,255,0.4)' }}><Printer size={16} /> Imprimir</button></div>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}><button type="button" onClick={() => downloadCsv(rows)} style={{ ...buttonStyle, background: 'rgba(255,255,255,0.12)', color: '#fff', borderColor: 'rgba(255,255,255,0.4)' }}><Download size={16} /> CSV</button><button type="button" onClick={() => window.print()} style={{ ...buttonStyle, background: 'rgba(255,255,255,0.12)', color: '#fff', borderColor: 'rgba(255,255,255,0.4)' }}><Printer size={16} /> Imprimir</button></div>
       </div>
     </div>
 
     <div style={{ ...cardStyle, marginBottom: '1rem', padding: '0.55rem', display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }} aria-label="Tipo de informe">
       {[['overview', 'Resumen'], ['tournaments', 'Torneos'], ['free', 'Vueltas libres'], ['comparison', 'Comparativa']].map(([mode, label]) => <button key={mode} type="button" onClick={() => changeMode(mode)} style={{ ...buttonStyle, background: reportMode === mode ? 'var(--color-primary)' : 'transparent', color: reportMode === mode ? '#fff' : 'inherit', borderColor: reportMode === mode ? 'var(--color-primary)' : 'transparent' }}>{label}</button>)}
     </div>
-
-    {showFreeRound && <FreeRoundForm user={user} onSaved={() => setShowFreeRound(false)} onCancel={() => setShowFreeRound(false)} />}
 
     <div style={{ ...cardStyle, marginBottom: '1rem' }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(155px, 1fr))', gap: '0.7rem' }}>
