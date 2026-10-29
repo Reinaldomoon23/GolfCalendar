@@ -1371,6 +1371,16 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
     - Los porcentajes por tramo usan como denominador los tripateos medidos, no todos los tripateos.
   Siguiente: Ejecutar validaciones y publicar.
 
+[COMPLETADO] INFORMES — Usar únicamente la distancia previa al primer putt
+  Archivos modificados:
+    - src/utils/reportAnalytics.js
+    - src/components/ReportsView.jsx
+  Resumen:
+    - Las estadísticas de distancia solo usan tarjetas con referencia `before_putt`.
+    - En los tripateos, la métrica usa exclusivamente `puttDistances[0]`, antes del primer putt.
+    - Se excluyen registros antiguos cuya semántica de distancia no está confirmada.
+  Siguiente: Ejecutar validaciones y publicar.
+
 ==========================================================================
 SESIÓN: 2026-10-28 | Codex
 ==========================================================================

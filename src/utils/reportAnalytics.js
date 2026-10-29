@@ -35,10 +35,13 @@ const getRoundDate = (entry = {}, tournament = {}, roundIndex = 0) => {
 
 const getCard = (entry = {}, index = 0) => entry.scorecards?.[index] || entry.scorecards?.[String(index)] || {};
 
-const getPuttDistances = (card = {}) => (card.puttDistances || [])
+const getPuttDistances = (card = {}) => {
+  if (card.puttDistanceReference !== 'before_putt') return [];
+  return (card.puttDistances || [])
   .flatMap((holeDistances) => Array.isArray(holeDistances) ? holeDistances : [])
   .map(toNumber)
   .filter((value) => value !== null && value >= 0);
+};
 
 const getRoundRows = (id, entry = {}, tournament = {}) => {
   const rounds = Array.isArray(entry.rounds) ? entry.rounds : [];
@@ -82,7 +85,7 @@ const getRoundRows = (id, entry = {}, tournament = {}) => {
       puttsByHole,
       girsByHole,
       puttDistancesByHole: Array.from({ length: 18 }, (_, holeIndex) => (
-        Array.isArray(card.puttDistances?.[holeIndex])
+        card.puttDistanceReference === 'before_putt' && Array.isArray(card.puttDistances?.[holeIndex])
           ? card.puttDistances[holeIndex].map(toNumber).filter((value) => value !== null && value >= 0)
           : []
       )),
