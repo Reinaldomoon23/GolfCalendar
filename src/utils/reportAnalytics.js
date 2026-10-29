@@ -128,9 +128,24 @@ const getTrainingRows = (sessions = []) => sessions.map((session) => {
 
 export function buildActivityRows(results = {}, tournaments = [], trainingSessions = []) {
   const tournamentMap = new Map((tournaments || []).map((tournament) => [String(tournament.id), tournament]));
-  const resultRows = Object.entries(results || {}).flatMap(([id, entry]) => (
+  const buildCanonicalResultId = (entry = {}) => {
+    if (!entry.tournamentName || !entry.tournamentDates) return null;
+    const slug = String(entry.tournamentName).toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    return `${slug}_${String(entry.tournamentDates).replace(/[^0-9]/g, '')}`;
+  };
+  const resultRows = Object.entries(results || {})
+    .filter(([id, entry]) => {
+      if (entry?.recordType === 'free_round') return true;
+      const canonicalId = buildCanonicalResultId(entry);
+      // App.jsx keeps legacy numeric IDs for compatibility. If the canonical
+      // document exists too, the legacy copy must not create duplicate rounds.
+      return !canonicalId || String(id) === canonicalId || !results[canonicalId];
+    })
+    .flatMap(([id, entry]) => (
     getRoundRows(id, entry, tournamentMap.get(String(id)) || {})
-  ));
+    ));
   return [...resultRows, ...getTrainingRows(trainingSessions)]
     .sort((a, b) => b.date.getTime() - a.date.getTime());
 }

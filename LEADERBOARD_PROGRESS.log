@@ -1371,6 +1371,14 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
     - Los porcentajes por tramo usan como denominador los tripateos medidos, no todos los tripateos.
   Siguiente: Ejecutar validaciones y publicar.
 
+[COMPLETADO] INFORMES — Evitar duplicados de resultados antiguos
+  Archivos modificados:
+    - src/utils/reportAnalytics.js
+  Resumen:
+    - Cuando existe resultado canónico y copia legacy del mismo torneo, el informe usa solo el canónico.
+    - Evita que una ronda antigua o ficticia aparezca como mejor vuelta.
+  Siguiente: Ejecutar validaciones y publicar.
+
 [COMPLETADO] INFORMES — Usar únicamente la distancia previa al primer putt
   Archivos modificados:
     - src/utils/reportAnalytics.js
