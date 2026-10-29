@@ -36,7 +36,10 @@ const MobileScorecardEditor = ({
     };
     const handlePuttDistance = (puttIndex, rawValue) => {
         const nextDistances = [...puttDistances];
-        const previousDistance = puttIndex > 0 ? Number(puttDistances[puttIndex - 1]) : null;
+        const previousRawDistance = puttIndex > 0 ? puttDistances[puttIndex - 1] : null;
+        const previousDistance = previousRawDistance === '' || previousRawDistance === null || previousRawDistance === undefined
+            ? null
+            : Number(previousRawDistance);
         const selectedDistance = snapPuttDistance(rawValue);
         nextDistances[puttIndex] = Number.isFinite(previousDistance) && previousDistance >= 0
             ? Math.min(selectedDistance, previousDistance)
