@@ -1362,6 +1362,15 @@ SESIÓN: 2026-04-27 | Modelo: Gemini 3 Flash (Google DeepMind)
 ==========================================================================
   Siguiente: En una cuenta real, activar `Track Putts` y `Track GIR`, entrar en `Modo Móvil`, esperar autosave y confirmar que ambos campos siguen visibles.
 
+[COMPLETADO] INFORMES — Aclarar la muestra de distancia inicial en tripateos
+  Archivos modificados:
+    - src/utils/reportAnalytics.js
+    - src/components/ReportsView.jsx
+  Resumen:
+    - La media de distancia inicial en tripateos ahora indica cuántos tripateos tienen distancia registrada.
+    - Los porcentajes por tramo usan como denominador los tripateos medidos, no todos los tripateos.
+  Siguiente: Ejecutar validaciones y publicar.
+
 ==========================================================================
 SESIÓN: 2026-10-28 | Codex
 ==========================================================================

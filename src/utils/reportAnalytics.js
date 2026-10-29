@@ -277,9 +277,10 @@ export function buildPuttingAnalysis(rows = []) {
       triplets: count((hole) => ((label === 'GIR') === hole.isGir) && hole.putts >= 3),
     };
   });
+  const measuredTripletCount = tripletHoles.filter((hole) => hole.firstPuttDistance !== null).length;
   const buckets = PUTT_DISTANCE_BUCKETS.map((bucket) => {
     const bucketTriplets = tripletHoles.filter((hole) => hole.firstPuttDistance !== null && hole.firstPuttDistance >= bucket.min && hole.firstPuttDistance < bucket.max);
-    return { ...bucket, count: bucketTriplets.length, rate: tripletHoles.length ? bucketTriplets.length / tripletHoles.length : null };
+    return { ...bucket, count: bucketTriplets.length, rate: measuredTripletCount ? bucketTriplets.length / measuredTripletCount : null };
   });
 
   return {
@@ -292,6 +293,8 @@ export function buildPuttingAnalysis(rows = []) {
     fourPlusPuttCount: count((hole) => hole.putts >= 4),
     tripletCount: tripletHoles.length,
     tripletRate: holes.length ? tripletHoles.length / holes.length : null,
+    tripletDistanceMeasuredCount: measuredTripletCount,
+    tripletDistanceMeasuredRate: tripletHoles.length ? measuredTripletCount / tripletHoles.length : null,
     firstPuttDistanceCount: firstPuttDistances.length,
     firstPuttDistanceAverage: average(firstPuttDistances),
     firstPuttDistanceMedian: median(firstPuttDistances),
@@ -315,7 +318,9 @@ export function buildPuttingConclusions(analysis) {
     conclusions.push(`La distancia media del primer putt es ${analysis.firstPuttDistanceAverage.toFixed(2)} m; hay ${analysis.firstPuttDistanceCount} primeros putts medidos.`);
   }
   if (analysis.tripletCount) {
-    const distanceText = analysis.tripletDistanceAverage === null ? 'no hay distancia inicial registrada' : `la distancia inicial fue de ${analysis.tripletDistanceAverage.toFixed(2)} m de media`;
+    const distanceText = analysis.tripletDistanceAverage === null
+      ? 'no hay distancia inicial registrada'
+      : `la distancia inicial fue de ${analysis.tripletDistanceAverage.toFixed(2)} m de media (${analysis.tripletDistanceMeasuredCount} de ${analysis.tripletCount} tripateos medidos)`;
     conclusions.push(`Hay ${analysis.tripletCount} tripateo${analysis.tripletCount === 1 ? '' : 's'} (${(analysis.tripletRate * 100).toFixed(1)}% de los hoyos); en esos hoyos, ${distanceText}.`);
     const mostCommonBucket = [...analysis.tripletDistanceBuckets].sort((a, b) => b.count - a.count)[0];
     if (mostCommonBucket?.count) conclusions.push(`El tramo con más tripateos es ${mostCommonBucket.label} (${mostCommonBucket.count}).`);
