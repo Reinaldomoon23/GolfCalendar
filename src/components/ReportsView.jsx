@@ -173,6 +173,7 @@ export default function ReportsView({ user, results = {}, tournaments = [] }) {
             ['Primer putt medio', putting.firstPuttDistanceAverage === null ? '-' : `${putting.firstPuttDistanceAverage.toFixed(2)} m`],
             ['Tripateos', putting.tripletCount],
             ['% tripateos', putting.tripletRate === null ? '-' : `${(putting.tripletRate * 100).toFixed(1)}%`],
+            ['Primer putt en tripateos', putting.tripletDistanceAverage === null ? '-' : `${putting.tripletDistanceAverage.toFixed(2)} m`],
             ['2.º putt medio', putting.secondPuttDistanceAverage === null ? '-' : `${putting.secondPuttDistanceAverage.toFixed(2)} m`],
           ].map(([label, value]) => <div key={label} style={{ ...cardStyle, padding: '0.75rem', background: 'var(--color-bg)' }}><div style={{ color: 'var(--color-text-muted)', fontSize: '0.72rem', textTransform: 'uppercase' }}>{label}</div><strong style={{ display: 'block', fontSize: '1.3rem', marginTop: '0.25rem' }}>{value}</strong></div>)}
         </div>

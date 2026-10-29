@@ -315,8 +315,8 @@ export function buildPuttingConclusions(analysis) {
     conclusions.push(`La distancia media del primer putt es ${analysis.firstPuttDistanceAverage.toFixed(2)} m; hay ${analysis.firstPuttDistanceCount} primeros putts medidos.`);
   }
   if (analysis.tripletCount) {
-    const distanceText = analysis.tripletDistanceAverage === null ? 'sin distancia inicial registrada' : `desde ${analysis.tripletDistanceAverage.toFixed(2)} m de media`;
-    conclusions.push(`Hay ${analysis.tripletCount} tripateo${analysis.tripletCount === 1 ? '' : 's'} (${(analysis.tripletRate * 100).toFixed(1)}% de los hoyos), normalmente ${distanceText}.`);
+    const distanceText = analysis.tripletDistanceAverage === null ? 'no hay distancia inicial registrada' : `el primer putt fue de ${analysis.tripletDistanceAverage.toFixed(2)} m de media`;
+    conclusions.push(`Hay ${analysis.tripletCount} tripateo${analysis.tripletCount === 1 ? '' : 's'} (${(analysis.tripletRate * 100).toFixed(1)}% de los hoyos); en esos hoyos, ${distanceText}.`);
     const mostCommonBucket = [...analysis.tripletDistanceBuckets].sort((a, b) => b.count - a.count)[0];
     if (mostCommonBucket?.count) conclusions.push(`El tramo con más tripateos es ${mostCommonBucket.label} (${mostCommonBucket.count}).`);
   } else {

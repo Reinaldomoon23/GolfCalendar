@@ -1403,6 +1403,19 @@ SESIÓN: 2026-10-29 | Codex
 
   PRÓXIMO PASO: PRODUCCIÓN — Publicar y revisar en móvil las cuatro vistas de Informes.
 
+[COMPLETADO] INFORMES — Aclarar distancia media en tripateos
+  Archivos modificados:
+    - src/components/ReportsView.jsx
+    - src/utils/reportAnalytics.js
+  Resumen:
+    - La métrica distingue la media general del primer putt de la media del
+      primer putt exclusivamente en hoyos terminados con tripateo.
+    - La conclusión y la tarjeta ahora muestran explícitamente “Primer putt
+      en tripateos”.
+  Verificación:
+    - npm run lint: 0 errores; permanece 1 aviso previo de hooks.
+    - npm run build: correcto.
+
 ==========================================================================
 SESIÓN: 2026-10-20 | Codex
 ==========================================================================
