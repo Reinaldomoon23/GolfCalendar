@@ -204,7 +204,17 @@ export default function TournamentsCentralView({ user, allTournaments = [], subs
               {monthTournaments.map(t => {
                 const isJoined = (subscribedIds || []).some(id => String(id) === String(t.id));
                 const isOfficial = !t.isShared && !t.custom;
-                const roster = participantMeta[String(t.id)] || { count: 0, names: [] };
+                const rawRoster = participantMeta[String(t.id)] || { count: 0, names: [] };
+                const normalizedCurrentUser = [user?.username, user?.full_name]
+                  .filter(Boolean)
+                  .map((value) => String(value).trim().toLowerCase());
+                const visibleRosterNames = !isJoined
+                  ? rawRoster.names.filter((name) => !normalizedCurrentUser.includes(String(name).trim().toLowerCase()))
+                  : rawRoster.names;
+                const roster = {
+                  names: visibleRosterNames,
+                  count: Math.max(0, rawRoster.count - (rawRoster.names.length - visibleRosterNames.length)),
+                };
                 const isRosterOpen = expandedRosterId === String(t.id);
                 
                 return (

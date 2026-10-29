@@ -1462,6 +1462,11 @@ SESIÓN: 2026-10-29 | Codex
     - npm run lint: 0 errores; permanece 1 aviso previo de hooks.
     - npm run build: correcto.
 
+  Ajuste adicional:
+    - TournamentsCentralView no muestra a la usuaria actual como inscrita si
+      ya no figura en sus suscripciones, aunque exista un documento antiguo
+      pendiente de propagación.
+
   PRÓXIMO PASO: PRODUCCIÓN — Crear una vuelta libre de prueba y completar varios hoyos.
 
 ==========================================================================
