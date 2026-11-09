@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, X, Save, Delete } from 'lucide-react';
+import RfegStatsPanel from './RfegStatsPanel';
 
 const MobileScorecardEditor = ({
     card,
@@ -14,7 +15,11 @@ const MobileScorecardEditor = ({
     onJumpToHole,
     allScorecards = {}, // all rounds scorecards for cumulative score
     currentRoundIdx = 0, // index of the active round
-    targetScore = null  // new prop for Objective relative to par
+    targetScore = null,  // new prop for Objective relative to par
+    tournamentName = '',
+    roundDate = null,
+    roundNumber = 1,
+    notify = () => {}
 }) => {
     const [activeField, setActiveField] = useState(config.track_girs ? 'girs' : (config.track_putts ? 'putts' : 'strokes'));
 
@@ -122,6 +127,7 @@ const MobileScorecardEditor = ({
     }
     const [isFirstKey, setIsFirstKey] = useState(true);
     const [showHoleSelector, setShowHoleSelector] = useState(false);
+    const [showRfegStats, setShowRfegStats] = useState(false);
 
     // Reset active field and key state when hole changes
     useEffect(() => {
@@ -313,7 +319,8 @@ const MobileScorecardEditor = ({
             display: 'flex', flexDirection: 'column',
             animation: 'fadeIn 0.2s ease-out',
             color: 'white',
-            fontFamily: 'Inter, system-ui, sans-serif'
+            fontFamily: 'Inter, system-ui, sans-serif',
+            overflowY: showRfegStats ? 'auto' : 'hidden'
         }}>
             {/* Hole Selector Overlay */}
             {showHoleSelector && (
@@ -433,6 +440,23 @@ const MobileScorecardEditor = ({
                 </div>
                 <div style={{ width: '24px' }} />
             </div>
+
+            <div style={{ padding: '0 1.5rem 0.5rem' }}>
+                <button type="button" onClick={() => setShowRfegStats((shown) => !shown)} style={{ width: '100%', padding: '0.65rem', borderRadius: 10, border: '1px solid #334155', background: '#1e293b', color: '#bfdbfe', fontWeight: 800 }}>
+                    {showRfegStats ? 'Ocultar estadísticas RFEG' : 'Estadísticas avanzadas RFEG'}
+                </button>
+            </div>
+            {showRfegStats && <div style={{ padding: '0 1rem 1rem', color: '#0f172a' }}>
+                <RfegStatsPanel
+                    card={card}
+                    roundNumber={roundNumber}
+                    tournamentName={tournamentName}
+                    courseName={courseName}
+                    roundDate={roundDate}
+                    notify={notify}
+                    onUpdate={onUpdate}
+                />
+            </div>}
 
             {/* Field Selector / Mini Dashboard */}
             <div style={{ padding: '0 1.5rem', display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>

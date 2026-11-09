@@ -2603,3 +2603,48 @@ SESIÓN: 2026-11-09 | Fuente oficial corregida y producción restaurada
   - Verificado por lectura de la API: link.productionBranch = codex/mygolflife-baseline.
   - Próximos commits de esta rama activan producción; se conserva npm run deploy:all
     para publicación controlada Vercel + Hostinger.
+
+==========================================================================
+SESIÓN: 2026-11-09 | Integración RFEGStats y cierre del roadmap Leaderboard
+==========================================================================
+
+[COMPLETADO — LEADERBOARD, FASES 1–3]
+  - Tabs Mis Resultados/Clasificación y reglas públicas de participantes.
+  - Conteo agregado de roster en el explorador de comunidad y en tarjetas/filas
+    centrales; la interfaz ya no confunde subscriberCount con participantes.
+  - El alta de roster sucede al apuntarse; una segunda llamada no incrementa el
+    contador legado. Página pública, panel de administración y filtro por ronda
+    estaban ya implementados y quedaron auditados.
+  - Estado reflejado en LEADERBOARD_ROADMAP.md.
+
+[COMPLETADO — INTEGRACIÓN RFEGSTATS EN MYGOLFLIFE]
+  - Añadidos los endpoints autenticados de credenciales/catálogo y transferencia,
+    con credenciales AES-256-GCM en servidor y secreto RFEGSTATS_CREDENTIALS_KEY
+    configurado en Vercel. El formulario no comunica la contraseña al navegador
+    más allá del envío HTTPS inicial.
+  - Añadidos paneles de estadísticas para tarjeta clásica y modo móvil, código
+    persistente RT, catálogo y equivalencias de club/recorrido, revisión explícita,
+    CSV alternativo, comprobación de duplicados y bloqueo ante resultados ambiguos.
+  - Añadida carga/guardado privado de estadísticas por torneo. Los resultados
+    públicos eliminan el campo `rfeg`; las reglas solo permiten acceso al jugador,
+    manager autorizado o administrador.
+  - Añadido `cheerio` al package y lockfile; Node mínimo declarado como 20.18.1.
+  - Instrucciones de campos, privacidad y operación: docs/RFEGSTATS_INTEGRATION.md.
+  - Auditoría estática y build Vite correctos. ESLint no informa errores; solo
+    quedan avisos de hooks ya existentes en CalendarView y MobileScorecardEditor.
+  - No se ha enviado ninguna ronda real. La primera prueba federativa debe usar
+    una ronda completa seleccionada por el usuario y comprobar el código RT.
+
+[PUBLICACIÓN]
+  - El checkout oficial es MyGolfLife en codex/mygolflife-baseline y el proyecto
+    Vercel golf-calendar-v3; su Production Branch está alineada.
+  - Las reglas Firebase deben desplegarse con el proyecto explícito
+    golfscorings-e4338; procedimiento documentado en
+    docs/DEPLOYMENT_SOURCE_OF_TRUTH.md.
+
+[PRÓXIMO PASO]
+  - Completar commit/push y despliegue de reglas + Vercel/Hostinger desde la
+    carpeta oficial; comprobar rutas API sin realizar un envío federativo.
+  - Primera transferencia real: esperar a que exista una ronda completa y que
+    el usuario confirme el destino en RFEGStats.
+==========================================================================

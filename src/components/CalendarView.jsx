@@ -15,14 +15,17 @@ import TournamentCreateForm from './TournamentCreateForm';
 import TournamentContextMenu from './TournamentContextMenu';
 import TournamentDetailActions from './TournamentDetailActions';
 import TournamentDetailBadges from './TournamentDetailBadges';
-import { generateTournamentDeterministicId } from '../services/tournaments.service';
+import { fetchTournamentParticipantCounts, generateTournamentDeterministicId, resolveCanonicalTournamentId } from '../services/tournaments.service';
 import TournamentLeaderboard from './TournamentLeaderboard';
 import TournamentReport from './TournamentReport';
+import RfegStatsPanel from './RfegStatsPanel';
 import { useFeedbackLayer } from './FeedbackLayer';
 import { isSharedTournamentId } from '../services/leaderboard.service';
 import { fetchTournamentWeatherSamples } from '../services/weather.service';
 import { getScorecardParTotal, resolveCourseScorecard } from '../utils/courseScorecards';
 import { buildTournamentReport, printTournamentReport } from '../utils/tournamentReport';
+import { createEmptyRfegStats, createRfegRoundCode } from '../utils/rfegStats';
+import { getRfegStatistics } from '../services/results.service';
 
 // -------------------------------------------------------------------------
 // LOGIC HELPERS (Shared with Results)
@@ -72,6 +75,7 @@ const findCourseData = (courseName) => {
 };
 
 const normalizeParArray = (pars = []) => pars.map(p => String(p || '').trim());
+const RFEG_METADATA_FIELDS = new Set(['roundCode', 'clubId', 'clubName', 'courseId', 'courseName', 'conditions', 'observations']);
 
 const samePars = (a = [], b = []) => {
     const normalizedA = normalizeParArray(a);
@@ -167,6 +171,25 @@ export default function CalendarView({
             return { ...t, conflict: hasConflict };
         });
     }, [initialTournaments]);
+
+    const sharedTournamentIdsKey = useMemo(
+        () => tournaments.filter((tournament) => isSharedTournamentId(tournament.id)).map((tournament) => String(tournament.id)).join('|'),
+        [tournaments]
+    );
+    const [participantCountState, setParticipantCountState] = useState({ key: '', counts: {} });
+    const participantCounts = participantCountState.key === sharedTournamentIdsKey ? participantCountState.counts : {};
+
+    useEffect(() => {
+        let cancelled = false;
+        const ids = sharedTournamentIdsKey ? sharedTournamentIdsKey.split('|') : [];
+        if (!ids.length) return () => { cancelled = true; };
+
+        fetchTournamentParticipantCounts(ids).then((counts) => {
+            if (!cancelled) setParticipantCountState({ key: sharedTournamentIdsKey, counts });
+        }).catch((error) => console.warn('[leaderboard] Could not load participant counts:', error));
+
+        return () => { cancelled = true; };
+    }, [sharedTournamentIdsKey]);
 
     const [filter, setFilter] = useState('upcoming'); // all, upcoming, conflicts, grand_prix
     const [calendarType, setCalendarType] = useState('list'); // 'list' | 'month'
@@ -470,6 +493,7 @@ export default function CalendarView({
     // Initialize form when editing starts or when tournament is selected (auto-edit)
     // Initialize form when editing starts or when tournament is selected (auto-edit)
     useEffect(() => {
+        let cancelled = false;
         if (selectedTournament) {
             const t = selectedTournament;
             const existing = results[t.id] || {};
@@ -481,6 +505,7 @@ export default function CalendarView({
             const courseData = findCourseData(t.course);
             const scorecard = resolveCourseScorecard(t, courseData);
             const defaultPars = scorecard?.pars || (Array.isArray(t.pars) ? t.pars : Array(18).fill(''));
+            const defaultHandicaps = scorecard?.handicap || Array(18).fill('');
 
             // Helper to get initial scorecard for a round
             const getInitialScorecard = (rIdx) => {
@@ -505,22 +530,26 @@ export default function CalendarView({
                     return {
                         ...card,
                         pars: mergedPars,
+                        handicaps: normalizeHoleArray(card.handicaps?.some?.((value) => value !== '') ? card.handicaps : defaultHandicaps),
                         strokes: normalizeHoleArray(card.strokes),
                         putts: normalizeHoleArray(card.putts),
                         penalties: normalizeHoleArray(card.penalties),
                         puttDistances: Array.from({ length: 18 }, (_, holeIndex) => Array.isArray(card.puttDistances?.[holeIndex]) ? card.puttDistances[holeIndex] : []),
-                        girs: normalizeHoleArray(card.girs)
+                        girs: normalizeHoleArray(card.girs),
+                        rfeg: Object.fromEntries(Object.entries({ ...createEmptyRfegStats(), ...(card.rfeg || {}) }).map(([field, values]) => [field, RFEG_METADATA_FIELDS.has(field) ? values : normalizeHoleArray(values)]))
                     };
                 }
                 // New card
                 console.log(`No saved card for R${rIdx}, creating new.`);
                 return {
                     pars: defaultPars.map(p => p || ''),
+                    handicaps: normalizeHoleArray(defaultHandicaps),
                     strokes: Array(18).fill(''),
                     putts: Array(18).fill(''),
                     penalties: Array(18).fill(''),
                     puttDistances: Array.from({ length: 18 }, () => []),
-                    girs: Array(18).fill('')
+                    girs: Array(18).fill(''),
+                    rfeg: createEmptyRfegStats()
                 };
             };
 
@@ -538,8 +567,25 @@ export default function CalendarView({
                 totalPutts: roundDates.map((_, i) => (existing.totalPutts && existing.totalPutts[i]) ? existing.totalPutts[i] : ((existing.scorecards && existing.scorecards[i] && existing.scorecards[i].putts) ? existing.scorecards[i].putts.reduce((a, b) => a + (parseInt(b) || 0), 0) || '' : '')),
                 scorecards: initialScorecards
             });
+            if (user) {
+                getRfegStatistics(user, t.id).then((privateScorecards) => {
+                    if (cancelled || !Object.keys(privateScorecards).length) return;
+                    setFormData((prev) => {
+                        const scorecards = { ...prev.scorecards };
+                        Object.entries(privateScorecards).forEach(([roundKey, rfeg]) => {
+                            if (!scorecards[roundKey]) return;
+                            scorecards[roundKey] = {
+                                ...scorecards[roundKey],
+                                rfeg: Object.fromEntries(Object.entries({ ...createEmptyRfegStats(), ...(rfeg || {}) }).map(([field, values]) => [field, RFEG_METADATA_FIELDS.has(field) ? values : normalizeHoleArray(values)]))
+                            };
+                        });
+                        return { ...prev, scorecards };
+                    });
+                }).catch((error) => console.warn('[rfeg] Could not load private statistics:', error));
+            }
         }
-    }, [id, results, selectedTournament]);
+        return () => { cancelled = true; };
+    }, [id, results, selectedTournament, user]);
 
     // New Tournament Form State
     const [newTournament, setNewTournament] = useState({
@@ -712,20 +758,36 @@ export default function CalendarView({
         // field = 'pars' or 'strokes'
         setFormData(prev => {
             const currentScorecards = prev.scorecards || {};
-            const roundCard = currentScorecards[roundIdx] || { pars: Array(18).fill(''), strokes: Array(18).fill('') };
-
-            const newArray = [...(roundCard[field] || Array(18).fill(''))];
-            newArray[holeIdx] = value;
-
-            const updatedCard = field === 'puttDistances'
-                ? {
+            const roundCard = currentScorecards[roundIdx] || { pars: Array(18).fill(''), strokes: Array(18).fill(''), rfeg: createEmptyRfegStats() };
+            let updatedCard;
+            const rfegFieldName = field.startsWith('rfeg.') ? field.slice('rfeg.'.length) : '';
+            if (rfegFieldName && RFEG_METADATA_FIELDS.has(rfegFieldName)) {
+                updatedCard = { ...roundCard, rfeg: { ...createEmptyRfegStats(), ...(roundCard.rfeg || {}), [rfegFieldName]: value } };
+            } else if (rfegFieldName) {
+                const rfeg = { ...createEmptyRfegStats(), ...(roundCard.rfeg || {}) };
+                const values = normalizeHoleArray(rfeg[rfegFieldName]);
+                values[holeIdx] = value;
+                updatedCard = { ...roundCard, rfeg: { ...rfeg, [rfegFieldName]: values } };
+            } else if (field === 'puttDistances') {
+                updatedCard = {
                     ...roundCard,
                     puttDistanceReference: 'before_putt',
                     puttDistances: Array.from({ length: 18 }, (_, index) => index === holeIdx
                         ? (Array.isArray(value) ? value : [])
                         : (roundCard.puttDistances?.[index] || []))
+                };
+            } else {
+                const newArray = [...(roundCard[field] || Array(18).fill(''))];
+                newArray[holeIdx] = value;
+                if (field === 'girs') {
+                    const rfeg = { ...createEmptyRfegStats(), ...(roundCard.rfeg || {}) };
+                    const girValues = normalizeHoleArray(rfeg.gir);
+                    girValues[holeIdx] = value === 'G' ? 'yes' : (value ? 'no' : '');
+                    updatedCard = { ...roundCard, girs: newArray, rfeg: { ...rfeg, gir: girValues } };
+                } else {
+                    updatedCard = { ...roundCard, [field]: newArray };
                 }
-                : { ...roundCard, [field]: newArray };
+            }
 
             // Calculate Totals Automation
             let newRounds = [...prev.rounds];
@@ -769,14 +831,17 @@ export default function CalendarView({
             const courseData = findCourseData(selectedTournament.course);
             const scorecard = resolveCourseScorecard(selectedTournament, courseData);
             const defaultPars = scorecard?.pars || Array(18).fill('');
+            const defaultHandicaps = scorecard?.handicap || Array(18).fill('');
 
             const newCardInfo = {
                 pars: defaultPars.map(p => p || ''),
+                handicaps: normalizeHoleArray(defaultHandicaps),
                 strokes: Array(18).fill(''),
                 putts: Array(18).fill(''),
                 penalties: Array(18).fill(''),
                 puttDistances: Array.from({ length: 18 }, () => []),
-                girs: Array(18).fill('')
+                girs: Array(18).fill(''),
+                rfeg: { ...createEmptyRfegStats(), roundCode: createRfegRoundCode() }
             };
 
             const newFormData = {
@@ -1462,6 +1527,11 @@ export default function CalendarView({
                         <span>{t.dates}</span>
                         <span>{t.course}</span>
                     </div>
+                    {(t.isShared || isSharedTournamentId(t.id)) && participantCounts[resolveCanonicalTournamentId(t.id)] !== undefined && participantCounts[resolveCanonicalTournamentId(t.id)] !== null && (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 4, fontSize: '0.72rem', color: '#2563eb', fontWeight: 700 }}>
+                            <Users size={12} /> {participantCounts[resolveCanonicalTournamentId(t.id)]} {participantCounts[resolveCanonicalTournamentId(t.id)] === 1 ? 'participante' : 'participantes'}
+                        </span>
+                    )}
                 </div>
 
                 {/* Score Summary */}
@@ -2677,6 +2747,15 @@ export default function CalendarView({
                                                 </div>
                                             </div>
                                         )}
+                                        <RfegStatsPanel
+                                            card={formData.scorecards[idx]}
+                                            roundNumber={idx + 1}
+                                            tournamentName={editingDetails.name || t.name}
+                                            courseName={editingDetails.course || t.course}
+                                            roundDate={getRoundDates(editingDetails.dates || t.dates)[idx]}
+                                            notify={notify}
+                                            onUpdate={(holeIdx, field, value) => handleHoleChange(idx, holeIdx, field, value)}
+                                        />
                                     </div>
                                 ))}
                             </div>
@@ -2875,6 +2954,10 @@ export default function CalendarView({
                         currentRoundIdx={mobileMode.cardIdx}
                         targetScore={editingDetails.target_score !== undefined ? editingDetails.target_score : (t?.target_score ?? null)}
                         courseName={t?.course || 'Campo de Golf'}
+                        tournamentName={editingDetails.name || t?.name || ''}
+                        roundDate={getRoundDates(editingDetails.dates || t?.dates)[mobileMode.cardIdx]}
+                        roundNumber={mobileMode.cardIdx + 1}
+                        notify={notify}
                         config={{
                             track_putts: editingDetails.track_putts === true,
                             track_girs: editingDetails.track_girs === true
@@ -3218,10 +3301,10 @@ export default function CalendarView({
                                             COMPARTIDO POR {t.sharedByName?.toUpperCase() || 'USUARIO'}
                                         </span>
                                     )}
-                                    {(t.isShared || isSharedTournamentId(t.id)) && t.subscriberCount > 0 && (
+                                    {(t.isShared || isSharedTournamentId(t.id)) && participantCounts[resolveCanonicalTournamentId(t.id)] !== undefined && participantCounts[resolveCanonicalTournamentId(t.id)] !== null && (
                                         <span className="badge" style={{ backgroundColor: 'rgba(37, 99, 235, 0.1)', color: '#2563eb', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center' }}>
                                             <Users size={11} style={{ marginRight: '4px' }} />
-                                            {t.subscriberCount} {t.subscriberCount === 1 ? 'PARTICIPANTE' : 'PARTICIPANTES'}
+                                            {participantCounts[resolveCanonicalTournamentId(t.id)]} {participantCounts[resolveCanonicalTournamentId(t.id)] === 1 ? 'PARTICIPANTE' : 'PARTICIPANTES'}
                                         </span>
                                     )}
                                 </div>
@@ -3353,6 +3436,10 @@ export default function CalendarView({
                     allScorecards={formData.scorecards || {}}
                     targetScore={editingDetails.target_score !== undefined ? editingDetails.target_score : (selectedTournament?.target_score ?? null)}
                     courseName={selectedTournament?.course || 'Campo de Golf'}
+                    tournamentName={editingDetails.name || selectedTournament?.name || ''}
+                    roundDate={getRoundDates(editingDetails.dates || selectedTournament?.dates)[mobileMode.cardIdx]}
+                    roundNumber={mobileMode.cardIdx + 1}
+                    notify={notify}
                     config={{
                         track_putts: editingDetails.track_putts === true,
                         track_girs: editingDetails.track_girs === true

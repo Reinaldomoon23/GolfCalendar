@@ -55,6 +55,17 @@ pnpm install --lockfile-only
 pnpm install --frozen-lockfile
 ```
 
+Las reglas de Firestore de esta app se despliegan explícitamente al proyecto de
+producción `golfscorings-e4338` (la carpeta no lleva `.firebaserc`):
+
+```powershell
+npx firebase-tools deploy --only firestore:rules --project golfscorings-e4338
+```
+
+Antes de desplegarlas, revisa `git rev-parse --show-toplevel` y confirma el
+proyecto objetivo. No omitas `--project` ni sustituyas el identificador por uno
+de los otros proyectos Firebase de la cuenta.
+
 ## Incidente del 9 de noviembre de 2026
 
 Se publicó una vez desde otra copia local, que apuntaba al mismo proyecto

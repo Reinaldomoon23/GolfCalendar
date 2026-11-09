@@ -32,17 +32,31 @@ export function serializeResultForFirestore(resultData) {
 }
 
 export function deserializeResultFromFirestore(resultData) {
-  if (!resultData?.scorecards) return resultData;
+  if (!resultData?.scorecards) {
+    if (!resultData || !Object.prototype.hasOwnProperty.call(resultData, 'rfeg')) return resultData;
+    const sanitized = { ...resultData };
+    delete sanitized.rfeg;
+    return sanitized;
+  }
 
   const scorecards = Object.fromEntries(
     Object.entries(resultData.scorecards).map(([roundIndex, card]) => {
-      if (!card?.puttDistances) return [roundIndex, card];
-      return [roundIndex, {
+      if (!card?.puttDistances) {
+        if (!card?.rfeg) return [roundIndex, card];
+        const publicCard = { ...card };
+        delete publicCard.rfeg;
+        return [roundIndex, publicCard];
+      }
+      const publicCard = {
         ...card,
         puttDistances: normalizePuttDistanceHoles(card.puttDistances),
-      }];
+      };
+      delete publicCard.rfeg;
+      return [roundIndex, publicCard];
     })
   );
 
-  return { ...resultData, scorecards };
+  const sanitized = { ...resultData, scorecards };
+  delete sanitized.rfeg;
+  return sanitized;
 }

@@ -6,7 +6,7 @@
  */
 
 import { db } from '../firebase';
-import { collection, doc, onSnapshot, setDoc, deleteDoc, serverTimestamp, query, getDoc, updateDoc, increment, getDocs } from 'firebase/firestore';
+import { collection, doc, onSnapshot, setDoc, deleteDoc, serverTimestamp, query, getDoc, getCountFromServer, updateDoc, increment, getDocs } from 'firebase/firestore';
 import { getUserSubcollectionRef, getUserSubdocRef } from '../utils/userProfiles';
 import { getYear } from '../utils/dateHelpers';
 import { joinTournamentAsParticipant } from './leaderboard.service';
@@ -316,6 +316,8 @@ export async function joinTournament(user, tournament) {
     id: canonicalId,
   };
   const ref = getUserSubdocRef(db, user, 'subscribed_tournaments', canonicalId);
+  const existingSubscription = await getDoc(ref);
+  const isNewSubscription = !existingSubscription.exists();
   await setDoc(ref, {
     tournamentId: canonicalId,
     joinedAt: serverTimestamp(),
@@ -337,7 +339,7 @@ export async function joinTournament(user, tournament) {
 
     // Shared/community tournaments also keep an aggregate counter on their
     // source doc for legacy UI surfaces.
-    if (canonicalTournament.isShared || String(canonicalId).includes('_')) {
+    if (isNewSubscription && (canonicalTournament.isShared || String(canonicalId).includes('_'))) {
       const sharedRef = doc(db, 'shared_tournaments', canonicalId);
       await updateDoc(sharedRef, { 
         subscriberCount: increment(1) 
@@ -512,4 +514,21 @@ export async function fetchTournamentParticipantMeta(tournamentIds) {
   );
 
   return meta;
+}
+
+/** Fetches aggregate participant counts for badges without downloading roster details. */
+export async function fetchTournamentParticipantCounts(tournamentIds) {
+  if (!tournamentIds?.length) return {};
+
+  const counts = {};
+  await Promise.all(tournamentIds.map(async (id) => {
+    const key = resolveCanonicalTournamentId(id);
+    try {
+      const snapshot = await getCountFromServer(collection(db, 'tournaments', key, 'participants'));
+      counts[key] = snapshot.data().count;
+    } catch {
+      counts[key] = null;
+    }
+  }));
+  return counts;
 }

@@ -114,6 +114,11 @@ service cloud.firestore {
       allow delete: if isAdmin();
 
       // Subcollections
+      match /rfeg_statistics/{resultId} {
+        // Federative statistics contain private performance details.
+        allow read, write: if isAdmin() || canAccessUser(userId);
+      }
+
       match /results/{resultId} {
         // Read: Owner, manager, or public (for live scorecards)
         allow read: if true; // Public read for live mode

@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { X, Search, Plus, MapPin, Calendar, User, Share2, Info, Users, CheckCircle, LogOut } from 'lucide-react';
-import { fetchParticipantCounts } from '../services/tournaments.service';
+import { fetchTournamentParticipantCounts, resolveCanonicalTournamentId } from '../services/tournaments.service';
 import { isPast } from '../utils/dateHelpers';
 
 const CATEGORIES = [
@@ -38,7 +38,7 @@ export default function CommunityExplorerModal({
         const ids = safeSharedTournaments.filter(t => t?.isShared && t?.id).map(t => String(t.id));
         if (!ids.length) return;
         setLoadingCounts(true);
-        fetchParticipantCounts(ids).then(counts => {
+        fetchTournamentParticipantCounts(ids).then(counts => {
             setParticipantCounts(counts);
             setLoadingCounts(false);
         }).catch(() => setLoadingCounts(false));
@@ -239,7 +239,7 @@ export default function CommunityExplorerModal({
                         filtered.map(t => {
                             const joined = isJoinedTournament(t.id);
                             const cat = CATEGORIES.find(c => (t.groups || []).includes(c.id) || t.type === c.id) || CATEGORIES[0];
-                            const count = participantCounts[String(t.id)];
+                            const count = participantCounts[resolveCanonicalTournamentId(t.id)];
                             const isLoading = joiningId === String(t.id);
                             
                             return (
@@ -298,9 +298,9 @@ export default function CommunityExplorerModal({
                                                     <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: '600' }}>
                                                         {loadingCounts
                                                             ? '...'
-                                                            : count !== undefined
+                                                            : count !== undefined && count !== null
                                                                 ? `${count} ${count === 1 ? 'jugadora apuntada' : 'jugadoras apuntadas'}`
-                                                                : '0 jugadoras apuntadas'
+                                                                : 'No disponible'
                                                         }
                                                     </span>
                                                 </div>

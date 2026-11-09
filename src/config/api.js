@@ -8,6 +8,8 @@ export const API_ENDPOINTS = {
   setTempPassword: "https://golf-calendar-v3.vercel.app/api/set_temp_password",
   sendChatPush: "https://golf-calendar-v3.vercel.app/api/send_chat_push",
   weatherSamples: "https://golf-calendar-v3.vercel.app/api/get_weather_samples",
+  rfegStatsCredentials: "https://golf-calendar-v3.vercel.app/api/rfegstats_credentials",
+  rfegStatsTransfer: "https://golf-calendar-v3.vercel.app/api/rfegstats_transfer",
 };
 
 // API request timeout (milliseconds)

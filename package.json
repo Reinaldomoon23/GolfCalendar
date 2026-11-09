@@ -5,6 +5,9 @@
   "type": "module",
   "description": "RoundTracker - Professional golf tournament and handicap tracking app",
   "author": "Reinaldo Moon",
+  "engines": {
+    "node": ">=20.18.1"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -21,6 +24,7 @@
   "dependencies": {
     "@sentry/react": "^10.45.0",
     "chart.js": "^4.5.1",
+    "cheerio": "1.2.0",
     "firebase": "^12.9.0",
     "firebase-admin": "^14.5.0",
     "html2canvas": "^1.4.1",
