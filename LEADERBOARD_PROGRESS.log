@@ -2352,3 +2352,13 @@ SESIÓN: 2026-11-09 | Codex — Corrección de lockfile y publicación
   PENDIENTE: push GitHub desde este clon; comprobar el hook y, si falla por las
   refs refs/codex/... inválidas, continuar desde un clon limpio local.
 ==========================================================================
+
+[COMPLETADO] Sincronización GitHub
+  - El push inicial desde el checkout sincronizado fue rechazado por non-fast-forward.
+  - Se clonó main en C:\Users\miste\source\PlayersCalendar-publish, se aplicaron
+    los tres commits locales sobre la punta remota y se activó el hook pre-push.
+  - Push confirmado: main avanzó de 3c11408 a b0d66e9 (posteriormente se añade
+    este registro final). No se forzó ni reescribió el historial remoto.
+  - Mantener este checkout local limpio como base hasta migrar el trabajo fuera
+    de Google Drive y reconciliar el checkout antiguo.
+==========================================================================
