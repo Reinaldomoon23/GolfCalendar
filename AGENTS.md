@@ -66,5 +66,21 @@ Para GitHub (el token puede haber caducado, regenerar si falla):
 git add . && git commit -m "descripción" && git push -u origin main
 ```
 
+### Seguridad Git antes de publicar
+
+- Este checkout está en `G:\Mi unidad`, una carpeta sincronizada. A largo
+  plazo, mantén el checkout (especialmente `.git`) en una carpeta local que no
+  sincronice Google Drive.
+- En este repositorio, instala el hook de protección una vez con
+  `npm run git-safety:install`. No hagas `git add .` si `git status` muestra
+  borrados masivos; revisa primero el diff.
+- `npm run deploy` y `npm run deploy:all` comprueban el índice y los borrados
+  preparados. El hook `pre-push` comprueba los commits que van a GitHub.
+- No publiques archivos de entorno: `.vercelignore` excluye `.env*` de los
+  paquetes de Vercel. Los secretos van en el panel de variables de Vercel.
+- Si falta `.git/index` o hay un `.git/index.lock`, no resetees ni prepares todo
+  el árbol. Sigue la recuperación documentada en
+  `docs/GIT_PUBLISH_SAFETY.md`.
+
 ## Contexto del feature en desarrollo: Sistema de Leaderboard
 Ver `LEADERBOARD_ROADMAP.md` y `LEADERBOARD_PROGRESS.log` para el estado exacto.

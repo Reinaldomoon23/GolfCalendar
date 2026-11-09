@@ -6,7 +6,7 @@
  */
 
 import { db } from '../firebase';
-import { onSnapshot, setDoc, deleteDoc } from 'firebase/firestore';
+import { onSnapshot, setDoc, deleteDoc, getDoc, writeBatch } from 'firebase/firestore';
 import {
   getUserSubcollectionRef,
   getUserSubdocRef,
@@ -99,11 +99,45 @@ export function subscribeToResults(user, onUpdate) {
 export async function saveResult(user, tournamentId, resultData) {
   if (!user || !tournamentId) throw new Error('User and tournamentId are required');
   const ref = getUserSubdocRef(db, user, 'results', String(tournamentId));
-  await setDoc(ref, resultData);
+  const scorecards = resultData?.scorecards || {};
+  const privateScorecards = {};
+  const includesRfegStats = Object.values(scorecards).some((card) => Object.prototype.hasOwnProperty.call(card || {}, 'rfeg'));
+  const publicScorecards = Object.fromEntries(Object.entries(scorecards).map(([roundKey, card]) => {
+    if (card?.rfeg) privateScorecards[roundKey] = card.rfeg;
+    const publicCard = { ...(card || {}) };
+    delete publicCard.rfeg;
+    return [roundKey, publicCard];
+  }));
+  const publicResult = { ...resultData, scorecards: publicScorecards };
+  delete publicResult.rfeg;
+
+  const privateRef = getUserSubdocRef(db, user, 'rfeg_statistics', String(tournamentId));
+  const hasPrivateStats = Object.values(privateScorecards).some((round) => (
+    Boolean(round?.roundCode) ||
+    Object.values(round || {}).some((values) => Array.isArray(values) && values.some((value) => value !== '' && value !== null && value !== undefined))
+  ));
+  const batch = writeBatch(db);
+  batch.set(ref, publicResult);
+  if (includesRfegStats) {
+    if (hasPrivateStats) {
+      batch.set(privateRef, { scorecards: privateScorecards, updatedAt: new Date().toISOString() });
+    } else {
+      batch.delete(privateRef);
+    }
+  }
+  await batch.commit();
 
   syncParticipantScoreForResult(user, tournamentId, resultData).catch((err) => {
     console.warn('[results] Could not backfill participant score:', err);
   });
+}
+
+/** Loads owner-only RFEG fields kept outside publicly readable live results. */
+export async function getRfegStatistics(user, tournamentId) {
+  if (!user || !tournamentId) return {};
+  const ref = getUserSubdocRef(db, user, 'rfeg_statistics', String(tournamentId));
+  const snapshot = await getDoc(ref);
+  return snapshot.exists() ? (snapshot.data().scorecards || {}) : {};
 }
 
 /**
@@ -130,6 +164,7 @@ export async function deleteResult(user, tournamentId) {
   if (!user || !tournamentId) throw new Error('User and tournamentId are required');
   const ref = getUserSubdocRef(db, user, 'results', String(tournamentId));
   await deleteDoc(ref);
+  await deleteDoc(getUserSubdocRef(db, user, 'rfeg_statistics', String(tournamentId)));
 
   const leaderboardId = getLeaderboardSyncId(tournamentId);
   if (leaderboardId) {
@@ -149,12 +184,14 @@ export async function deleteAllResults(user) {
 
   const { getDocs, writeBatch } = await import('firebase/firestore');
   const ref = getUserSubcollectionRef(db, user, 'results');
-  const snapshot = await getDocs(ref);
+  const privateRef = getUserSubcollectionRef(db, user, 'rfeg_statistics');
+  const [snapshot, privateSnapshot] = await Promise.all([getDocs(ref), getDocs(privateRef)]);
 
-  if (snapshot.empty) return;
+  if (snapshot.empty && privateSnapshot.empty) return;
 
   const batch = writeBatch(db);
   snapshot.forEach((doc) => batch.delete(doc.ref));
+  privateSnapshot.forEach((doc) => batch.delete(doc.ref));
   await batch.commit();
 
   console.log(`[results] Deleted ${snapshot.size} results for ${user.username}`);

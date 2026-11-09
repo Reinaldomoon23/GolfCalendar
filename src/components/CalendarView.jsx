@@ -18,11 +18,14 @@ import TournamentDetailBadges from './TournamentDetailBadges';
 import { generateTournamentDeterministicId } from '../services/tournaments.service';
 import TournamentLeaderboard from './TournamentLeaderboard';
 import TournamentReport from './TournamentReport';
+import RfegStatsPanel from './RfegStatsPanel';
 import { useFeedbackLayer } from './FeedbackLayer';
 import { isSharedTournamentId } from '../services/leaderboard.service';
 import { fetchTournamentWeatherSamples } from '../services/weather.service';
 import { getScorecardParTotal, resolveCourseScorecard } from '../utils/courseScorecards';
 import { buildTournamentReport, printTournamentReport } from '../utils/tournamentReport';
+import { createEmptyRfegStats, createRfegRoundCode } from '../utils/rfegStats';
+import { getRfegStatistics } from '../services/results.service';
 
 // -------------------------------------------------------------------------
 // LOGIC HELPERS (Shared with Results)
@@ -80,6 +83,7 @@ const samePars = (a = [], b = []) => {
 };
 
 const normalizeHoleArray = (values = []) => Array.from({ length: 18 }, (_, index) => values?.[index] ?? '');
+const RFEG_METADATA_FIELDS = new Set(['roundCode', 'clubId', 'clubName', 'courseId', 'courseName', 'conditions', 'observations']);
 
 const shouldReplaceSavedPars = (t, savedPars, defaultPars) => {
     const courseName = normalizeCourseName(t?.course);
@@ -467,6 +471,7 @@ export default function CalendarView({
     // Initialize form when editing starts or when tournament is selected (auto-edit)
     // Initialize form when editing starts or when tournament is selected (auto-edit)
     useEffect(() => {
+        let cancelled = false;
         if (selectedTournament) {
             const t = selectedTournament;
             const existing = results[t.id] || {};
@@ -481,6 +486,7 @@ export default function CalendarView({
             const courseData = findCourseData(t.course);
             const scorecard = resolveCourseScorecard(t, courseData);
             const defaultPars = scorecard?.pars || Array(18).fill('');
+            const defaultHandicaps = scorecard?.handicap || Array(18).fill('');
 
             // Helper to get initial scorecard for a round
             const getInitialScorecard = (rIdx) => {
@@ -505,18 +511,23 @@ export default function CalendarView({
                     return {
                         ...card,
                         pars: mergedPars,
+                        handicaps: normalizeHoleArray(card.handicaps?.some?.((value) => value !== '') ? card.handicaps : defaultHandicaps),
                         strokes: normalizeHoleArray(card.strokes),
                         putts: normalizeHoleArray(card.putts),
-                        girs: normalizeHoleArray(card.girs)
+                        girs: normalizeHoleArray(card.girs),
+                        rfeg: Object.fromEntries(Object.entries({ ...createEmptyRfegStats(), ...(card.rfeg || {}) })
+                            .map(([field, values]) => [field, normalizeHoleArray(values)]))
                     };
                 }
                 // New card
                 console.log(`No saved card for R${rIdx}, creating new.`);
                 return {
                     pars: defaultPars.map(p => p || ''),
+                    handicaps: normalizeHoleArray(defaultHandicaps),
                     strokes: Array(18).fill(''),
                     putts: Array(18).fill(''),
-                    girs: Array(18).fill('')
+                    girs: Array(18).fill(''),
+                    rfeg: createEmptyRfegStats()
                 };
             };
 
@@ -534,8 +545,27 @@ export default function CalendarView({
                 totalPutts: roundDates.map((_, i) => (existing.totalPutts && existing.totalPutts[i]) ? existing.totalPutts[i] : ((existing.scorecards && existing.scorecards[i] && existing.scorecards[i].putts) ? existing.scorecards[i].putts.reduce((a, b) => a + (parseInt(b) || 0), 0) || '' : '')),
                 scorecards: initialScorecards
             });
+
+            if (user) {
+                getRfegStatistics(user, t.id).then((privateScorecards) => {
+                    if (cancelled || !Object.keys(privateScorecards).length) return;
+                    setFormData((prev) => {
+                        const scorecards = { ...prev.scorecards };
+                        Object.entries(privateScorecards).forEach(([roundKey, rfeg]) => {
+                            if (!scorecards[roundKey]) return;
+                            scorecards[roundKey] = {
+                                ...scorecards[roundKey],
+                                rfeg: Object.fromEntries(Object.entries({ ...createEmptyRfegStats(), ...(rfeg || {}) })
+                                    .map(([field, values]) => [field, RFEG_METADATA_FIELDS.has(field) ? values : normalizeHoleArray(values)]))
+                            };
+                        });
+                        return { ...prev, scorecards };
+                    });
+                }).catch((error) => console.warn('[rfeg] Could not load private statistics:', error));
+            }
         }
-    }, [id, JSON.stringify(results[id])]);
+        return () => { cancelled = true; };
+    }, [id, JSON.stringify(results[id]), user?.username]);
 
     // New Tournament Form State
     const [newTournament, setNewTournament] = useState({
@@ -708,12 +738,31 @@ export default function CalendarView({
         // field = 'pars' or 'strokes'
         setFormData(prev => {
             const currentScorecards = prev.scorecards || {};
-            const roundCard = currentScorecards[roundIdx] || { pars: Array(18).fill(''), strokes: Array(18).fill('') };
+            const roundCard = currentScorecards[roundIdx] || { pars: Array(18).fill(''), strokes: Array(18).fill(''), putts: Array(18).fill(''), girs: Array(18).fill(''), rfeg: createEmptyRfegStats() };
 
-            const newArray = [...(roundCard[field] || Array(18).fill(''))];
-            newArray[holeIdx] = value;
-
-            const updatedCard = { ...roundCard, [field]: newArray };
+            let updatedCard;
+            const rfegFieldName = field.startsWith('rfeg.') ? field.slice('rfeg.'.length) : '';
+            if (field.startsWith('rfeg.') && RFEG_METADATA_FIELDS.has(rfegFieldName)) {
+                const rfeg = { ...createEmptyRfegStats(), ...(roundCard.rfeg || {}), [rfegFieldName]: value };
+                updatedCard = { ...roundCard, rfeg };
+            } else if (field.startsWith('rfeg.')) {
+                const rfegField = field.slice('rfeg.'.length);
+                const rfeg = { ...createEmptyRfegStats(), ...(roundCard.rfeg || {}) };
+                const values = normalizeHoleArray(rfeg[rfegField]);
+                values[holeIdx] = value;
+                updatedCard = { ...roundCard, rfeg: { ...rfeg, [rfegField]: values } };
+            } else {
+                const newArray = [...(roundCard[field] || Array(18).fill(''))];
+                newArray[holeIdx] = value;
+                if (field === 'girs') {
+                    const rfeg = { ...createEmptyRfegStats(), ...(roundCard.rfeg || {}) };
+                    const girValues = normalizeHoleArray(rfeg.gir);
+                    girValues[holeIdx] = value === 'G' ? 'yes' : (value ? 'no' : '');
+                    updatedCard = { ...roundCard, girs: newArray, rfeg: { ...rfeg, gir: girValues } };
+                } else {
+                    updatedCard = { ...roundCard, [field]: newArray };
+                }
+            }
 
             // Calculate Totals Automation
             let newRounds = [...prev.rounds];
@@ -760,9 +809,20 @@ export default function CalendarView({
 
             const newCardInfo = {
                 pars: defaultPars.map(p => p || ''),
+                handicaps: normalizeHoleArray(scorecard?.handicap || Array(18).fill('')),
                 strokes: Array(18).fill(''),
                 putts: Array(18).fill(''),
-                girs: Array(18).fill('')
+                girs: Array(18).fill(''),
+                rfeg: {
+                    ...createEmptyRfegStats(),
+                    roundCode: currentScorecards[roundIdx]?.rfeg?.roundCode || createRfegRoundCode(),
+                    clubId: currentScorecards[roundIdx]?.rfeg?.clubId || '',
+                    clubName: currentScorecards[roundIdx]?.rfeg?.clubName || '',
+                    courseId: currentScorecards[roundIdx]?.rfeg?.courseId || '',
+                    courseName: currentScorecards[roundIdx]?.rfeg?.courseName || '',
+                    conditions: currentScorecards[roundIdx]?.rfeg?.conditions || [],
+                    observations: currentScorecards[roundIdx]?.rfeg?.observations || '',
+                }
             };
 
             const newFormData = {
@@ -2266,9 +2326,11 @@ export default function CalendarView({
                                                             const newSc = { ...currentSc };
                                                             newSc[idx] = {
                                                                 pars: currentSc[idx]?.pars || Array(18).fill(''),
+                                                                handicaps: currentSc[idx]?.handicaps || Array(18).fill(''),
                                                                 strokes: currentSc[idx]?.strokes || Array(18).fill(''),
                                                                 putts: currentSc[idx]?.putts || Array(18).fill(''),
-                                                                girs: currentSc[idx]?.girs || Array(18).fill('')
+                                                                girs: currentSc[idx]?.girs || Array(18).fill(''),
+                                                                rfeg: currentSc[idx]?.rfeg || createEmptyRfegStats()
                                                             };
                                                             return { ...prev, scorecards: newSc };
                                                         }
@@ -2662,6 +2724,15 @@ export default function CalendarView({
                                                 </div>
                                             </div>
                                         )}
+                                        <RfegStatsPanel
+                                            card={formData.scorecards[idx]}
+                                            roundNumber={idx + 1}
+                                            tournamentName={editingDetails.name || t.name}
+                                            courseName={editingDetails.course || t.course}
+                                            roundDate={getRoundDates(editingDetails.dates || t.dates)[idx]}
+                                            notify={notify}
+                                            onUpdate={(holeIdx, field, value) => handleHoleChange(idx, holeIdx, field, value)}
+                                        />
                                     </div>
                                 ))}
                             </div>

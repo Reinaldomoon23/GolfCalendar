@@ -2032,3 +2032,297 @@ SIGUIENTE PASO:
   PRÓXIMO PASO: PRODUCCIÓN — Probar modo móvil con Putts/GIR
 ==========================================================================
   Siguiente: En una cuenta real, activar `Track Putts` y `Track GIR`, entrar en `Modo Móvil`, esperar autosave y confirmar que ambos campos siguen visibles.
+
+==========================================================================
+SESIÓN: 2026-11-07 | Codex
+==========================================================================
+
+[COMPLETADO LOCAL] CAPTURA RFEG — Campos estadísticos y exportación
+  Archivos modificados:
+    - src/components/RfegStatsPanel.jsx
+    - src/utils/rfegStats.js
+    - src/components/CalendarView.jsx
+    - src/services/results.service.js
+    - firestore.rules
+  Resumen:
+    Se añadió captura de FIR, DTH, GIR, putts, D1P/D2P, recuperación, lie,
+    distancia de recuperación y penalidades. Los datos RFEG se guardan aparte
+    de los resultados públicos, bajo users/{user}/rfeg_statistics, y se
+    exportan como CSV copiable/descargable con 18 hoyos y metadatos.
+    La pantalla toma los hándicaps por hoyo de la tarjeta del campo cuando
+    están disponibles. El enlace abre RFEG para completar la carga manual.
+  Verificación:
+    - Revisión estática de los flujos de captura, guardado, lectura y exportación.
+    - No se ejecutó build/test ni deploy en esta sesión.
+
+  PRÓXIMO PASO: Desplegar reglas Firestore y validar flujo de captura/exportación
+  Siguiente: Desplegar firestore.rules y probar una ronda de práctica con datos
+  reales; confirmar qué opciones pide RFEG y si existe una importación oficial.
+==========================================================================
+
+==========================================================================
+SESIÓN: 2026-11-08 | Codex
+==========================================================================
+
+[COMPLETADO LOCAL] CAPTURA RFEG — Identificador estable por vuelta
+  Archivos modificados:
+    - src/utils/rfegStats.js
+    - src/components/RfegStatsPanel.jsx
+    - src/components/CalendarView.jsx
+    - src/services/results.service.js
+    - C:\Users\miste\.codex\skills\rfegstats-transfer\SKILL.md
+  Resumen:
+    Cada vuelta obtiene un identificador RT- de 10 caracteres aleatorios una sola
+    vez y se conserva al editar o resetear la tarjeta. El código se guarda dentro
+    de los datos RFEG privados, aparece en el panel y se incluye en el CSV. El
+    panel permite copiar la descripción para RFEGStats con el mismo código.
+    Se inspeccionó el formulario autenticado: no tiene referencia externa visible;
+    Descripción es un campo de texto sin maxlength HTML declarado.
+  Verificación:
+    - Inspección estática de persistencia privada y manejador de scorecard.
+    - La ronda de prueba federativa de 75 sigue visible y no fue modificada.
+    - No se ejecutó build/test ni deploy.
+
+  PRÓXIMO PASO: Envío asistido RFEGStats
+  Siguiente: Determinar un método autorizado para enviar los campos de la ronda
+  desde RoundTracker y validar el flujo sin duplicar vueltas usando el código RT-.
+==========================================================================
+
+==========================================================================
+SESIÓN: 2026-11-08 | Codex — Continuación
+==========================================================================
+
+[COMPLETADO LOCAL] CONEXIÓN RFEGStats — Credenciales cifradas y validación
+  Archivos modificados/creados:
+    - api/_rfegstats_server.js
+    - api/rfegstats_credentials.js
+    - src/services/rfegStats.service.js
+    - src/config/api.js
+    - src/components/RfegStatsPanel.jsx
+  Resumen:
+    Se añadió un endpoint autenticado con Firebase que valida el acceso contra
+    el formulario oficial de RFEGStats y guarda usuario/contraseña cifrados con
+    AES-256-GCM en una subcolección de servidor inaccesible al cliente. El panel
+    permite conectar, actualizar y eliminar las credenciales; la contraseña se
+    limpia del estado de UI tras validar. El servidor nunca registra el cuerpo
+    ni los errores del proveedor con datos de acceso.
+  Configuración pendiente:
+    - Definir RFEGSTATS_CREDENTIALS_KEY en Vercel como secreto de 32 bytes
+      (hex de 64 caracteres o Base64 de 32 bytes) antes de habilitar la conexión.
+  Verificación:
+    - Inspección estática del flujo de autenticación y cifrado.
+    - No se ejecutó build/test ni deploy; no se validó el endpoint en producción.
+
+  PRÓXIMO PASO: VOLCADO DE RONDAS RFEGStats
+  Siguiente: Implementar envío por tramos 1-9/10-18, mapear valores de la forma
+  y descripción RT-, comprobar duplicados y verificar sin alterar la ronda 75.
+==========================================================================
+
+=========================================================================
+SESIÓN: 2026-11-08 | Codex — Revisión del formulario RFEGStats
+=========================================================================
+
+[COMPLETADO LOCAL] RFEG — Mapeo verificado y corrección del panel
+  Archivos modificados:
+    - src/utils/rfegStats.js
+    - src/components/RfegStatsPanel.jsx
+  Resumen:
+    Se corrigieron los códigos de DTH, distancia de recuperación, GIR/FIR,
+    putts 4+ y distancia 0 m a los valores usados por el formulario RFEG.
+    La validación ya pide lie/distancia solo cuando se declara una recuperación.
+    También se importó useEffect, que el panel ya utilizaba sin importar.
+  Verificación:
+    - Inspección de solo lectura del formulario de los hoyos 1-9 y de sus
+      nombres/códigos de campos; no se guardó ni modificó ninguna ronda.
+    - La ronda de prueba de 75 sigue intacta.
+    - No se ejecutó build/test ni deploy.
+
+  PRÓXIMO PASO: Resolver catálogo dinámico de clubes/recorridos RFEG
+  Siguiente: Encontrar cómo la web carga el identificador válido del club y
+  sus recorridos para PGA Catalunya; después implementar transferencia con
+  revisión previa, comprobación por código RT- y verificación del resultado.
+=========================================================================
+
+=========================================================================
+SESIÓN: 2026-11-08 | Codex — Integración local RFEGStats
+=========================================================================
+
+[COMPLETADO LOCAL, PENDIENTE DE VALIDACIÓN EXTERNA] Transferencia asistida
+  Archivos modificados/creados:
+    - api/_rfegstats_server.js
+    - api/rfegstats_credentials.js
+    - api/rfegstats_transfer.js
+    - src/config/api.js
+    - src/services/rfegStats.service.js
+    - src/components/RfegStatsPanel.jsx
+    - src/components/CalendarView.jsx
+    - src/utils/rfegStats.js
+    - .env.example
+  Resumen:
+    Se añadió carga de clubes/recorridos, metadatos de ronda, condiciones y
+    observaciones; una vista de revisión antes del envío; mapeo por hoyo para
+    los campos conocidos; preflight del flujo 1-9/10-18 contra una ronda ya
+    existente; comprobación del código RT; reserva idempotente por usuario y
+    bloqueo de reintentos ambiguos. El servidor valida que el club/recorrido
+    sigan en el catálogo y reabre la tarjeta para verificar las estadísticas.
+    La carga privada ahora conserva como escalares el código RT, selección de
+    federación, condiciones y observaciones, sin convertirlos en arrays.
+  Verificación:
+    - Inspección estática de los formularios y mapeos previamente observados.
+    - La sesión de RFEGStats caducó durante esta sesión; no se pudo consultar
+      el catálogo autenticado ni probar un envío. No se tocó la ronda de 75.
+    - No se ejecutó build/test ni deploy.
+  Requisito de despliegue:
+    - Definir RFEGSTATS_CREDENTIALS_KEY como secreto server-side en Vercel.
+  PRÓXIMO PASO: Revisión con el usuario y validación RFEG sin crear datos de prueba
+  Siguiente: Reautenticar en RFEGStats, validar catálogo y pasos en lectura, y
+  solo después habilitar/desplegar el envío asistido.
+=========================================================================
+
+=========================================================================
+SESIÓN: 2026-11-08 | Codex — Equivalencias de campos RFEG
+=========================================================================
+
+[COMPLETADO LOCAL, PENDIENTE DE CATÁLOGO EN SESIÓN ACTIVA] Cruce de nombres
+  Archivos modificados:
+    - src/utils/rfegStats.js
+    - src/components/RfegStatsPanel.jsx
+    - src/services/rfegStats.service.js
+    - api/rfegstats_credentials.js
+  Resumen:
+    Se añadieron normalización de nombres (acentos, puntuación y palabras
+    comunes), sugerencias ordenadas por similitud y etiquetas de confianza.
+    Se incorporaron alias conocidos Camiral Tour → PGA Cataluña / Tour Course
+    y Camiral Stadium → PGA Cataluña / Stadium Course. Camiral sin recorrido
+    se deja ambiguo para evitar seleccionar un recorrido por suposición.
+    El panel muestra sugerencias separadas para club y recorrido y permite
+    guardar equivalencias confirmadas por el usuario en el área privada de
+    la integración para reutilizarlas en futuras vueltas.
+  Verificación:
+    - Comparación estática con los nombres Camiral, Camiral Stadium y Camiral
+      Tour de `spanish_courses.json` y las opciones vistas en el formulario.
+    - RFEGStats volvió a pedir acceso; no se validó el catálogo en vivo.
+    - No se ejecutó build/test ni deploy.
+  PRÓXIMO PASO: Verificar las sugerencias contra el catálogo federativo activo
+  Siguiente: Tras el inicio manual de sesión, comprobar clubes/recorridos y
+  ajustar aliases si el catálogo devuelve nombres distintos.
+=========================================================================
+
+==========================================================================
+SESIÓN: 2026-11-09 | Codex — Revisión de pendientes RFEGStats
+==========================================================================
+
+[REVISADO LOCAL] Estado de integración y validación
+  Resumen:
+    Se revisó el flujo de transferencia, la carga de catálogo, la reserva contra
+    duplicados y el estado documentado. El envío exige confirmación en la app;
+    la ronda de prueba de 75 no se consultó ni modificó en esta revisión.
+  Verificación:
+    - `npm run build` no pudo arrancar porque Vite no está instalado en el
+      workspace (`vite` no se reconoce).
+    - `npm ci` quedó sin salida durante más de un minuto y se interrumpió; no
+      se completó instalación ni compilación.
+    - No se accedió a RFEGStats, no se envió ninguna ronda y no se desplegó.
+  Pendiente externo:
+    - Instalar dependencias y compilar cuando el registro npm responda.
+    - Inicio manual de sesión para validar catálogo y protocolo en lectura.
+    - Configurar `RFEGSTATS_CREDENTIALS_KEY` en Vercel antes del despliegue.
+  PRÓXIMO PASO: Validación de catálogo y despliegue controlado
+  Siguiente: Tras disponer de sesión federativa activa, validar catálogo y
+  protocolo; después revisar el build y configurar el secreto server-side.
+==========================================================================
+
+==========================================================================
+SESIÓN: 2026-11-09 | Codex — Auditoría completa RFEGStats
+==========================================================================
+
+[REVISADO LOCAL, PENDIENTE DE VALIDACIÓN Y PUBLICACIÓN] Integración de estadísticas
+  Archivos revisados:
+    - api/_rfegstats_server.js
+    - api/rfegstats_credentials.js
+    - api/rfegstats_transfer.js
+    - src/services/rfegStats.service.js
+    - src/utils/rfegStats.js
+    - src/components/RfegStatsPanel.jsx
+    - src/components/CalendarView.jsx
+    - src/services/results.service.js
+    - firestore.rules
+    - Instrucciones para rellenar las estadísticas NIVEL II Y III
+  Archivos ajustados:
+    - api/rfegstats_transfer.js: validar penalidades como 0, 1 o 2 en servidor.
+    - src/components/RfegStatsPanel.jsx: eliminar una variable sin uso.
+    - src/services/results.service.js: mantener la extracción privada de rfeg sin variable sin uso.
+  Verificación:
+    - Build de producción exitoso en copia temporal del proyecto.
+    - ESLint dirigido a endpoints y archivos RFEG exitoso.
+    - Sintaxis Node de los tres endpoints exitosa.
+    - Tarjeta sintética de 18 hoyos completa validada y mapeada.
+    - El lint global sigue fallando con 104 errores y 41 avisos en distintos
+      archivos del proyecto; no todos pertenecen a la integración RFEG.
+    - No se creó ni modificó ninguna ronda en RFEGStats.
+  Bloqueos antes de publicar:
+    - Vercel rechazó la consulta del proyecto con 403. Se generó enlace de
+      autorización para el equipo; falta que el usuario lo apruebe.
+    - Sin acceso al proyecto no se pudo verificar RFEGSTATS_CREDENTIALS_KEY,
+      despliegue actual, ni configuración de producción.
+    - No se validó el catálogo ni el protocolo contra una sesión federativa activa.
+    - El estado Git muestra 1.457 eliminaciones preparadas y 99 rutas sin
+      seguimiento; no se hizo commit ni push para evitar publicar borrados ajenos.
+  PRÓXIMO PASO: Autorizar equipo Vercel y validar integración de producción
+  Siguiente: Aprobar el enlace de autorización; verificar el secreto y la
+  configuración del proyecto, validar el catálogo/protocolo RFEG en lectura,
+  confirmar reglas Firestore desplegadas y después desplegar de forma controlada.
+==========================================================================
+
+==========================================================================
+SESIÓN: 2026-11-09 | Codex — Recuperación del índice Git y protección de publicación
+==========================================================================
+
+[COMPLETADO LOCAL] Recuperación de Git y controles previos a publicar
+  Archivos creados/modificados:
+    - scripts/check-git-publish-state.mjs
+    - .githooks/pre-push
+    - docs/GIT_PUBLISH_SAFETY.md
+    - package.json
+    - LEADERBOARD_PROGRESS.log
+    - Configuración local: core.hooksPath=.githooks
+  Resumen:
+    Se confirmó que faltaba `.git/index` y que `.git/index.lock` contenía el
+    índice válido de los 1.457 archivos de HEAD, sin diferencias y sin procesos
+    Git activos. Se restauró el índice sin tocar archivos fuente. Git vuelve a
+    mostrar cambios reales, sin borrados masivos preparados.
+    Se instaló un guard para bloquear índice ausente/vacío, lock presente y
+    borrados masivos en el índice, `npm run deploy`, `deploy:all` y `pre-push`.
+    La documentación explica la recuperación y recomienda mantener `.git` fuera
+    de carpetas sincronizadas.
+  Verificación:
+    - Guard normal y hook pre-push ejecutados con éxito en este checkout.
+    - Simulación aislada: bloqueó 60 borrados preparados de 100 archivos y el
+      push del commit que contenía esos borrados.
+    - El hook quedó habilitado localmente y solo él se preparó en el índice.
+    - No se publicó ni se subió a GitHub.
+  PENDIENTE: Validación/autorización de Vercel y publicación controlada RFEGStats.
+  Siguiente: Autorizar el equipo Vercel, verificar secreto/configuración, validar
+    catálogo y protocolo federativo en lectura y desplegar cuando esté completo.
+==========================================================================
+
+==========================================================================
+SESIÓN: 2026-11-09 | Codex — Configuración de producción y cierre de guardas
+==========================================================================
+
+[COMPLETADO] Preparación de producción
+  Cambios de configuración:
+    - Vercel `golf-calendar-v3`: `RFEGSTATS_CREDENTIALS_KEY` creada como Secret
+      de 32 bytes para Production, Preview y Development; el valor no se guardó
+      en archivos ni se mostró.
+    - Firestore: reglas compiladas y publicadas en `golfscorings-e4338`; la
+      subcolección privada `rfeg_statistics` está limitada a propietaria/admin.
+    - `.vercelignore`: excluye archivos `.env*` de los paquetes de Vercel.
+    - `AGENTS.md`: incluye recuperación del índice y comprobaciones de Git.
+  Verificación:
+    - Vercel CLI confirmó la creación de la variable secreta en los tres entornos.
+    - Firebase CLI confirmó `Deploy complete` para `firestore.rules`.
+    - El `.env` local contiene solo nombres `VITE_` públicos; no se mostraron valores.
+  Siguiente: Ejecutar build final, revisar y subir el commit de integración, publicar
+    a Vercel y validar conexión/catálogo RFEG en lectura, sin crear rondas.
+==========================================================================
