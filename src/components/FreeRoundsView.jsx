@@ -26,24 +26,40 @@ const formatDate = (value) => {
   return year && month && day ? `${day}/${month}/${year}` : '';
 };
 
+const normalizeCourseName = (value) => String(value || '')
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .trim()
+  .replace(/\s+/g, ' ')
+  .toLocaleLowerCase('es');
+
+const findCatalogCourse = (courseName) => spanishCourses.find(
+  (course) => normalizeCourseName(course.name) === normalizeCourseName(courseName),
+);
+
+const getCourseParTotal = (course) => {
+  if (!Array.isArray(course?.pars) || course.pars.length !== 18) return null;
+  const pars = course.pars.map(Number);
+  if (pars.some((par) => !Number.isInteger(par) || par < 3 || par > 6)) return null;
+  return pars.reduce((total, par) => total + par, 0);
+};
+
 function FreeRoundForm({ onCancel, onCreate }) {
   const [form, setForm] = useState({
     name: 'Vuelta libre',
     date: new Date().toISOString().slice(0, 10),
     course: '',
-    par: '72',
+    par: '',
   });
   const [error, setError] = useState('');
+
+  const selectedCourse = findCatalogCourse(form.course);
+  const calculatedPar = getCourseParTotal(selectedCourse);
 
   const update = (field, value) => setForm((current) => ({ ...current, [field]: value }));
 
   const selectCourse = (value) => {
-    const course = spanishCourses.find((item) => item.name === value);
-    setForm((current) => ({
-      ...current,
-      course: value,
-      ...(course?.pars?.length ? { par: String(course.pars.reduce((total, holePar) => total + Number(holePar || 0), 0)) } : {}),
-    }));
+    setForm((current) => ({ ...current, course: value, par: '' }));
   };
 
   const submit = () => {
@@ -51,15 +67,21 @@ function FreeRoundForm({ onCancel, onCreate }) {
       setError('Indica un nombre y una fecha.');
       return;
     }
-    const selectedCourse = spanishCourses.find((item) => item.name === form.course.trim());
+    const matchedCourse = findCatalogCourse(form.course);
+    const coursePar = getCourseParTotal(matchedCourse);
+    const par = coursePar ?? Number(form.par);
+    if (!Number.isInteger(par) || par < 1) {
+      setError('Selecciona un campo del catálogo o introduce manualmente el par total del campo.');
+      return;
+    }
     onCreate({
       id: `free-round-${form.date}-${Date.now()}`,
       name: form.name.trim(),
       date: form.date,
       dates: formatDate(form.date),
       course: form.course.trim() || 'Campo de golf',
-      par: Number(form.par) || 72,
-      pars: selectedCourse?.pars || null,
+      par,
+      pars: getCourseParTotal(matchedCourse) !== null ? matchedCourse.pars : null,
     });
   };
 
@@ -75,7 +97,7 @@ function FreeRoundForm({ onCancel, onCreate }) {
       <datalist id="free-round-course-list">
         {spanishCourses.map((course) => <option key={course.name} value={course.name} />)}
       </datalist>
-      <label>Par del campo<input type="number" min="1" value={form.par} onChange={(event) => update('par', event.target.value)} style={inputStyle} /></label>
+      <label>Par del campo{calculatedPar !== null && <span style={{ display: 'block', marginTop: '0.2rem', color: 'var(--color-text-muted)', fontSize: '0.8rem', fontWeight: 400 }}>Calculado con los 18 hoyos de {selectedCourse.name}</span>}<input type="number" min="1" value={calculatedPar ?? form.par} onChange={(event) => update('par', event.target.value)} readOnly={calculatedPar !== null} placeholder={calculatedPar !== null ? '' : 'Elige un campo o indica el par'} style={{ ...inputStyle, ...(calculatedPar !== null ? { background: 'var(--color-surface-soft)', cursor: 'default' } : {}) }} /></label>
     </div>
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '1rem', flexWrap: 'wrap' }}>
       <button type="button" onClick={submit} style={{ border: 'none', borderRadius: '999px', padding: '0.7rem 1rem', background: 'var(--color-primary)', color: '#fff', fontWeight: 800, cursor: 'pointer' }}><Plus size={16} style={{ verticalAlign: 'middle', marginRight: '0.3rem' }} />Crear vuelta</button>

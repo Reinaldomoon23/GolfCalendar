@@ -2683,3 +2683,12 @@ SESIÓN: 2026-11-09 | Integración RFEGStats y cierre del roadmap Leaderboard
   - Commit de la interfaz/documentación: dc89154. No hay más tareas de código.
   - Pendiente solo la validación funcional con una ronda completa real, cuando
     el usuario elija cuál enviar y confirme el destino federativo.
+
+[ACTUALIZACIÓN — PAR AUTOMÁTICO EN VUELTAS LIBRES]
+  - El formulario normaliza tildes, espacios y mayúsculas para reconocer un
+    campo del catálogo. El par se deriva sumando exactamente sus 18 hoyos y se
+    muestra como solo lectura para evitar divergencias.
+  - Campos fuera del catálogo ya no reciben 72 por defecto: requieren un par
+    manual; los campos reconocidos guardan sus pares individuales reales.
+  - Comprobado Camiral Tour: 18 pares suman 72. ESLint y build Vite correctos.
+  - Pendiente: publicar este cambio desde la carpeta oficial y verificarlo.

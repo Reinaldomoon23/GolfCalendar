@@ -26,6 +26,14 @@ La web de la Federación no ofrece una API pública identificada. La transferenc
 
 Las distancias de recuperación de más de 40 m se marcan como tales; no cuentan para la estadística de recuperación definida por las instrucciones de uso. FIR queda deshabilitado en par 3. Las reglas completas de captura recibidas del usuario están en el material de instrucciones del proyecto.
 
+## Vueltas libres y par del campo
+
+Al crear una vuelta libre, elegir o escribir un nombre de campo del catálogo
+calcula el par total sumando los pares de sus 18 hoyos y conserva esa tarjeta
+de pares para la captura. El nombre se compara sin distinguir mayúsculas,
+espacios repetidos ni tildes. Si el campo no existe en el catálogo, se debe
+introducir el par total manualmente; no se asigna 72 por defecto.
+
 ## Privacidad y credenciales
 
 - El nombre de usuario y contraseña de RFEGStats solo se envían al endpoint del servidor por HTTPS.
