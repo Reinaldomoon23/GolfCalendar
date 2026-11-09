@@ -63,6 +63,11 @@ async function checkOutgoingPushes(root) {
   for (const line of refs) {
     const [localRef, localSha, remoteRef, remoteSha] = line.trim().split(/\s+/);
     if (!localSha || !remoteSha || /^0+$/.test(localSha) || /^0+$/.test(remoteSha) || localSha === remoteSha) continue;
+    try {
+      git(['cat-file', '-e', `${remoteSha}^{commit}`], { cwd: root });
+    } catch {
+      throw new Error(`El commit remoto ${remoteSha.slice(0, 12)} no está en este clon. Ejecuta git fetch para sincronizarlo; si fetch falla, sigue la recuperación de docs/GIT_PUBLISH_SAFETY.md.`);
+    }
     const trackedCount = countNulEntries(git(['ls-tree', '-r', '--name-only', remoteSha, '-z'], { cwd: root }));
     const deleted = countNulEntries(git(['diff', '--name-only', '--diff-filter=D', '-z', remoteSha, localSha], { cwd: root }));
     assertDeletionCountIsSafe(deleted, trackedCount, `El push ${localRef} → ${remoteRef} incluye un borrado masivo`);

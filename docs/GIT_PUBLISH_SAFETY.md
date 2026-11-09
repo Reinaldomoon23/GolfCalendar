@@ -46,8 +46,18 @@ puede autorizar una ejecución concreta con `PUBLISH_ALLOW_MASS_DELETIONS=1`.
    archivos y trabaja desde un clon limpio, copiando los cambios del usuario.
 5. Ejecuta `git status --short --branch` y revisa `git diff --cached --stat`
    antes de preparar o subir cualquier cambio.
+6. Si el hook indica que el commit remoto no está en el clon, ejecuta `git fetch`.
+   Si falla por referencias `refs/codex/...` inválidas, conserva esas referencias
+   y usa un clon limpio en una carpeta local no sincronizada antes de reintentar.
 
 ## Prevención a largo plazo
+
+`pnpm-lock.yaml` también debe estar versionado. Este archivo estaba excluido por
+`.gitignore`; aunque exista localmente, Vercel necesita recibirlo junto con los
+cambios de dependencias para poder instalar con `--frozen-lockfile`. Al añadirlo
+por primera vez, usa `git add -f pnpm-lock.yaml` y confirma que aparece en el
+commit. En cambios posteriores, actualízalo con `pnpm install --lockfile-only`
+y valida con `pnpm install --frozen-lockfile`.
 
 Mantén el checkout Git en una carpeta local que no sincronice `.git` (por
 ejemplo, bajo `C:\Users\miste\source`) y usa Google Drive para documentos o

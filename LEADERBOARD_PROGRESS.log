@@ -2326,3 +2326,21 @@ SESIÓN: 2026-11-09 | Codex — Configuración de producción y cierre de guarda
   Siguiente: Ejecutar build final, revisar y subir el commit de integración, publicar
     a Vercel y validar conexión/catálogo RFEG en lectura, sin crear rondas.
 ==========================================================================
+
+==========================================================================
+SESIÓN: 2026-11-09 | Codex — Corrección de lockfile y publicación
+==========================================================================
+
+[COMPLETADO] Causa adicional del build de Vercel
+  - pnpm-lock.yaml estaba ignorado por .gitignore y no se versionaba.
+  - Se añadió la dependencia raíz workbox-window al lockfile sincronizado.
+  - En la copia de validación, pnpm install --frozen-lockfile instaló todas las
+    dependencias y pnpm run build terminó correctamente.
+  - docs/GIT_PUBLISH_SAFETY.md ahora exige versionar el lockfile y documenta
+    cómo actualizarlo y validarlo.
+
+[PENDIENTE] Despliegue de producción y sincronización GitHub.
+  Siguiente: incluir lockfile y documentación en el commit, desplegar por Vercel,
+  comprobar que queda Ready y anotar resultado/URL. El push de GitHub puede seguir
+  bloqueado por referencias Codex dañadas del clon sincronizado.
+==========================================================================
