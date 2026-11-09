@@ -393,5 +393,16 @@
             "grand_prix"
         ],
         "valedera": true
+    },
+    {
+        "id": "tt_v2__2026-11-20__2026-11-22__club__golf-barcelona__barcelona-international-golf-cup-wagr__9d2cf8c7",
+        "dates": "20/11/2026 - 22/11/2026",
+        "name": "BARCELONA INTERNATIONAL GOLF CUP -WAGR",
+        "course": "Golf Barcelona",
+        "organizer": "CLUB",
+        "type": "club",
+        "groups": [
+            "wagr"
+        ]
     }
 ]

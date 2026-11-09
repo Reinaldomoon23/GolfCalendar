@@ -2707,3 +2707,11 @@ SESIÓN: 2026-11-09 | Integración RFEGStats y cierre del roadmap Leaderboard
   - Hostinger sirve la versión actualizada del componente Vueltas libres
     (HTTP 200) y muestra el texto del par calculado por recorrido.
   - Compilación y verificación completas. Commit de lógica: 25ae4b6.
+
+[TORNEO AÑADIDO — BARCELONA INTERNATIONAL GOLF CUP -WAGR]
+  - Temporada 2026, 20/11/2026–22/11/2026, Golf Barcelona.
+  - Añadido con ID canónico determinista a tournaments_2026.json y al espejo
+    tournaments.json usado por las fichas públicas. Grupo WAGR.
+  - La tarjeta de Golf Barcelona existe en el catálogo: 18 hoyos, par total 72.
+  - Validación de JSON/ID y build Vite correctos. Pendiente publicar Vercel y
+    Hostinger, y confirmar que aparece en la versión en producción.
