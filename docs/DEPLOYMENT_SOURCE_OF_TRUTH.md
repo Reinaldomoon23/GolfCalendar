@@ -3,6 +3,8 @@
 ## Fuente oficial
 
 - Carpeta: `C:\Users\miste\Documents\Codex\MyGolfLife`
+- Única carpeta activa. `G:\Mi unidad\00ReinaldoCodes\Players Calendar` se
+  conserva solo como archivo para consultas o recuperación puntual de material.
 - Repositorio: `Reinaldomoon23/GolfCalendar`
 - Rama de trabajo de este checkout: `codex/mygolflife-baseline`
 - Proyecto Vercel: `golf-calendar-v3` (ver `.vercel/project.json`)
@@ -13,6 +15,10 @@ No despliegues desde copias antiguas del repositorio. Las ramas pueden contener
 cambios funcionales distintos aunque compartan nombre, dominio o historial.
 Antes de publicar, comprueba `git status --short --branch`, la rama activa y el
 identificador del proyecto Vercel.
+
+La copia de Google Drive no debe tratarse como sincronizada ni actual. Si hace
+falta recuperar un archivo histórico, cópialo de forma selectiva tras revisar su
+contenido; nunca hagas una sincronización destructiva del proyecto completo.
 
 ## Protección de carpeta y archivos
 

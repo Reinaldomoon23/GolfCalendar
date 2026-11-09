@@ -8,6 +8,10 @@ publicar, confirma que la terminal está en esta carpeta y que `.vercel/project.
 apunta a `golf-calendar-v3`. No publiques desde otras copias o clones antiguos.
 Procedimiento y recuperación: `docs/DEPLOYMENT_SOURCE_OF_TRUTH.md`.
 
+Esta es la única carpeta de trabajo activa. `G:\Mi unidad\00ReinaldoCodes\Players Calendar`
+es archivo histórico para consultar o recuperar material antiguo puntualmente;
+no es una copia de trabajo. No edites, borres, sincronices ni publiques desde allí.
+
 Antes de cualquier escritura, borrado, movimiento o publicación, ejecuta
 `git rev-parse --show-toplevel` y compara la ruta normalizada (separadores `/` o
 `\` y mayúsculas/minúsculas equivalentes) con la carpeta oficial indicada. Si

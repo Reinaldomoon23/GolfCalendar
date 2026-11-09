@@ -2588,3 +2588,11 @@ SESIÓN: 2026-11-09 | Fuente oficial corregida y producción restaurada
   Antes de escribir, mover, borrar o publicar, comparar la ruta normalizada de
   git rev-parse --show-toplevel con C:\Users\miste\Documents\Codex\MyGolfLife.
   Si no coincide, detenerse. No limpiar ni sincronizar copias antiguas borrando.
+
+[ACLARACIÓN DE CARPETAS — 2026-11-09]
+  MyGolfLife es la única carpeta de trabajo activa. La copia de Google Drive se
+  usa exclusivamente para consultar/recuperar material histórico, no para editar,
+  limpiar, sincronizar o desplegar.
+  La confusión explica la publicación desde una rama/copia desactualizada y el
+  lockfile ausente del control de versiones en esa copia. El índice Git también
+  estaba dañado allí; no se ha determinado su causa y no se atribuye a Drive.
