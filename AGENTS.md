@@ -8,6 +8,12 @@ publicar, confirma que la terminal está en esta carpeta y que `.vercel/project.
 apunta a `golf-calendar-v3`. No publiques desde otras copias o clones antiguos.
 Procedimiento y recuperación: `docs/DEPLOYMENT_SOURCE_OF_TRUTH.md`.
 
+Antes de cualquier escritura, borrado, movimiento o publicación, ejecuta
+`git rev-parse --show-toplevel` y compara la ruta normalizada (separadores `/` o
+`\` y mayúsculas/minúsculas equivalentes) con la carpeta oficial indicada. Si
+apunta a otra carpeta, no hagas cambios hasta localizar y confirmar la correcta.
+No uses rutas relativas desde una carpeta distinta.
+
 ## ¿Qué es este proyecto?
 PWA de golf (React 19 + Vite 7 + Firebase 12 + React Router 7).
 Permite a jugadoras de golf registrar resultados, seguir torneos en vivo y ver estadísticas.

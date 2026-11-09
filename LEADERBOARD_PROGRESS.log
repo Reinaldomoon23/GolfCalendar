@@ -2583,3 +2583,8 @@ SESIÓN: 2026-11-09 | Fuente oficial corregida y producción restaurada
     y la API pública usada no ofrecieron un control editable; no usar endpoints
     internos no documentados. Hasta resolverlo, publicar solo con npm run deploy:all
     desde la carpeta oficial y vigilar cualquier auto-deploy originado en main.
+
+[REGLA DE SEGURIDAD DE RUTAS — 2026-11-09]
+  Antes de escribir, mover, borrar o publicar, comparar la ruta normalizada de
+  git rev-parse --show-toplevel con C:\Users\miste\Documents\Codex\MyGolfLife.
+  Si no coincide, detenerse. No limpiar ni sincronizar copias antiguas borrando.

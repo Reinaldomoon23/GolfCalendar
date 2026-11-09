@@ -14,6 +14,14 @@ cambios funcionales distintos aunque compartan nombre, dominio o historial.
 Antes de publicar, comprueba `git status --short --branch`, la rama activa y el
 identificador del proyecto Vercel.
 
+## Protección de carpeta y archivos
+
+Antes de cualquier escritura, borrado o movimiento, ejecuta
+`git rev-parse --show-toplevel` y compara la ruta normalizada (barras `/` o `\`,
+sin distinguir mayúsculas) con `C:\Users\miste\Documents\Codex\MyGolfLife`.
+Si apunta a otra carpeta o hay duda sobre la ubicación, detente antes de actuar.
+No borres ni limpies archivos de otra copia para “sincronizarla”.
+
 La rama automática (`main`) todavía no coincide con la rama activa de
 `MyGolfLife`. La versión correcta está publicada manualmente desde esta carpeta.
 Hasta alinear esa configuración en Vercel, un push a `main` podría sustituirla.
