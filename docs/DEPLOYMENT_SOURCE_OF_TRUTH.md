@@ -71,5 +71,6 @@ de los otros proyectos Firebase de la cuenta.
 Se publicó una vez desde otra copia local, que apuntaba al mismo proyecto
 Vercel pero no contenía las últimas revisiones de `MyGolfLife`. Se corrigió
 publicando de nuevo desde la carpeta oficial indicada arriba y configurando
-esta rama como rama de producción. La integración RFEGStats preparada en aquella
-otra rama aún debe adaptarse y revisarse en esta rama antes de publicarla.
+esta rama como rama de producción. La integración RFEGStats se adaptó a esta
+rama, se desplegó desde la carpeta oficial y su endpoint se verificó en
+producción el 9 de noviembre de 2026.

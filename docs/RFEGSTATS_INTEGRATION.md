@@ -51,10 +51,10 @@ El código de ronda se conserva entre plataformas para localizar el mismo regist
 - APIs: `api/rfegstats_credentials.js`, `api/rfegstats_transfer.js` y `api/_rfegstats_server.js`.
 - Configuración de endpoints: `src/config/api.js`.
 - Reglas privadas: `firestore.rules`.
-- Mantener la versión de `cheerio` y `pnpm-lock.yaml` sincronizadas; la dependencia requiere Node.js 20.18.1 o posterior.
+- Mantener las dependencias y `pnpm-lock.yaml` sincronizados. Vercel está fijado a Node.js 24.x; Firebase Admin 13 usa `jwks-rsa` 3 para evitar la incompatibilidad CommonJS/ESM observada en Node.js 26.
 - Después de cualquier cambio en reglas, desplegarlas al proyecto Firebase `golfscorings-e4338` desde `MyGolfLife`.
 - Revisar el formulario actual de la Federación antes de reintentar si RFEGStats cambia. No usar endpoints no documentados distintos de las rutas del formulario comprobadas.
 
 ## Estado de verificación
 
-Compilación Vite y ESLint de los archivos de la integración: correctos salvo avisos de hooks preexistentes en CalendarView y MobileScorecardEditor. No se ha transferido una ronda real. La primera prueba de extremo a extremo debe ser una ronda completa que el usuario seleccione explícitamente; comprobar tanto el registro RFEGStats como su código RT antes de declarar la transferencia validada.
+Compilación Vite y ESLint de los archivos de la integración: correctos salvo avisos de hooks preexistentes en CalendarView y MobileScorecardEditor. Producción responde 401 a una petición sin sesión, confirmando que la función inicia y exige autenticación. No se ha transferido una ronda real. La primera prueba de extremo a extremo debe ser una ronda completa que el usuario seleccione explícitamente; comprobar tanto el registro RFEGStats como su código RT antes de declarar la transferencia validada.

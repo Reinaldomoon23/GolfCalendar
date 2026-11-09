@@ -2648,3 +2648,20 @@ SESIÓN: 2026-11-09 | Integración RFEGStats y cierre del roadmap Leaderboard
   - Primera transferencia real: esperar a que exista una ronda completa y que
     el usuario confirme el destino en RFEGStats.
 ==========================================================================
+
+[ACTUALIZACIÓN — PUBLICACIÓN Y HOTFIX RFEGSTATS, 09-11-2026]
+  - Reglas Firestore desplegadas a golfscorings-e4338; Vercel y Hostinger
+    publicados desde C:\Users\miste\Documents\Codex\MyGolfLife.
+  - Detectado en producción ERR_REQUIRE_ESM con jwks-rsa 4 / jose 6 usando
+    Node.js 26. Fijado Vercel a Node.js 24.x y Firebase Admin a 13.10.0,
+    que resuelve jwks-rsa 3 / jose 4.
+  - Verificación: despliegue Vercel READY, POST anónimo a
+    /api/rfegstats_credentials devuelve 401 (función activa y autenticación
+    requerida); /GolfTeam/ de Hostinger devuelve 200 con el bundle actual.
+  - Instalación pnpm congelada, ESLint de endpoints y build Vite correctos.
+    Permanece el aviso conocido del chunk Firebase >500 kB.
+  - Commit anterior de features: 3801d4d. Pendiente ahora: commit/push de este
+    hotfix y actualización documental.
+  - Único paso pendiente de producto: primera transferencia real de una ronda
+    completa elegida por el usuario y verificación en RFEGStats del código RT.
+    No se envió ninguna ronda durante este despliegue.
