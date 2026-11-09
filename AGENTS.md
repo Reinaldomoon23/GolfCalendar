@@ -1,6 +1,13 @@
 # AI_CONTEXT.md — Players Calendar / RoundTracker
 # Leer OBLIGATORIAMENTE antes de cualquier acción en este proyecto
 
+## Carpeta oficial del proyecto
+
+La carpeta activa es `C:\Users\miste\Documents\Codex\MyGolfLife`. Antes de
+publicar, confirma que la terminal está en esta carpeta y que `.vercel/project.json`
+apunta a `golf-calendar-v3`. No publiques desde otras copias o clones antiguos.
+Procedimiento y recuperación: `docs/DEPLOYMENT_SOURCE_OF_TRUTH.md`.
+
 ## ¿Qué es este proyecto?
 PWA de golf (React 19 + Vite 7 + Firebase 12 + React Router 7).
 Permite a jugadoras de golf registrar resultados, seguir torneos en vivo y ver estadísticas.

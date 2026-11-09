@@ -2555,3 +2555,22 @@ Archivos: src/components/CalendarView.jsx
 Resumen: En las vueltas libres se oculta el editor de configuración propio de torneos. Se mantiene únicamente la tarjeta de puntuación hoyo a hoyo; los torneos conservan su configuración completa.
 Próximo paso: Validar la tarjeta de puntuación publicada.
 
+
+==========================================================================
+SESIÓN: 2026-11-09 | Fuente oficial corregida y producción restaurada
+==========================================================================
+
+[COMPLETADO]
+  - Confirmada como fuente oficial C:\Users\miste\Documents\Codex\MyGolfLife,
+    rama codex/mygolflife-baseline, proyecto Vercel golf-calendar-v3.
+  - Re-publicada esta versión desde la carpeta oficial; Vercel quedó READY y
+    el despliegue FTP de /GolfTeam/ terminó correctamente.
+  - Se documenta la carpeta y el procedimiento en AGENTS.md y
+    docs/DEPLOYMENT_SOURCE_OF_TRUTH.md para evitar publicar desde una copia vieja.
+
+[PENDIENTE]
+  - La integración RFEGStats de la rama/copia equivocada aún no está adaptada a
+    MyGolfLife. No se debe considerar parte de esta publicación.
+  Siguiente paso: adaptar la integración sobre esta rama, auditarla y publicar
+  después de validar build y correspondencia de campos.
+==========================================================================
