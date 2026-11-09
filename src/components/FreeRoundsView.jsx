@@ -96,7 +96,7 @@ export default function FreeRoundsView({ freeRounds = [], onCreateFreeRound }) {
   return <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '1rem', color: 'var(--color-text)' }}>
     <div style={{ ...cardStyle, marginBottom: '1rem', background: 'linear-gradient(135deg, #123b32, #24775a)', color: '#fff' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-        <div><div style={{ opacity: 0.75, fontSize: '0.75rem', letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 900 }}>Registro de juego</div><h1 style={{ margin: '0.25rem 0', fontSize: '1.6rem' }}>Vueltas libres</h1><p style={{ margin: 0, opacity: 0.85 }}>Registra una ronda hoyo a hoyo, igual que en un torneo.</p></div>
+        <div><div style={{ opacity: 0.75, fontSize: '0.75rem', letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 900 }}>Registro de juego</div><h1 style={{ margin: '0.25rem 0', fontSize: '1.6rem' }}>Vueltas libres</h1><p style={{ margin: 0, opacity: 0.85 }}>Registra los 18 hoyos y, en la tarjeta, abre «Estadísticas federativas RFEG» para anotar putts, GIR, FIR, distancias, recuperaciones y penalizaciones.</p></div>
         <button type="button" onClick={() => setShowForm(true)} style={{ border: 'none', borderRadius: '999px', padding: '0.75rem 1rem', background: '#f8d67b', color: '#102018', fontWeight: 900, cursor: 'pointer' }}><Plus size={16} style={{ verticalAlign: 'middle', marginRight: '0.3rem' }} />Nueva vuelta libre</button>
       </div>
     </div>

@@ -2665,3 +2665,13 @@ SESIÓN: 2026-11-09 | Integración RFEGStats y cierre del roadmap Leaderboard
   - Único paso pendiente de producto: primera transferencia real de una ronda
     completa elegida por el usuario y verificación en RFEGStats del código RT.
     No se envió ninguna ronda durante este despliegue.
+
+[ACTUALIZACIÓN — ESTADÍSTICAS RFEG EN VUELTAS LIBRES, 09-11-2026]
+  - Auditado el mismo CalendarView/tarjeta para torneos y vueltas libres. Ambos
+    almacenan las estadísticas RFEG en el documento privado asociado al ID de
+    la ronda; putts, GIR y golpes también quedan en la tarjeta estándar.
+  - Se añadió guía visible en Vueltas libres con la lista de datos avanzados y
+    una aclaración en el panel compartido. La documentación ya explicita ambos
+    tipos de ronda.
+  - ESLint de componentes y build Vite correctos. Próximo: publicar Vercel y
+    Hostinger desde el checkout oficial y verificar el bundle.

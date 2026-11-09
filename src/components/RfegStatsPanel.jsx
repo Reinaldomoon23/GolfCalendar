@@ -294,11 +294,11 @@ export default function RfegStatsPanel({ card, onUpdate, tournamentName, courseN
     return (
         <section style={{ marginTop: 12, border: '1px solid #bfdbfe', borderRadius: 10, background: '#f8fbff', overflow: 'hidden' }}>
             <button type="button" onClick={() => setExpanded((value) => !value)} aria-expanded={expanded} style={{ width: '100%', padding: '12px 14px', border: 0, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, cursor: 'pointer', color: '#1e3a8a', fontWeight: 800, textAlign: 'left' }}>
-                <span>Estadísticas federativas RFEG</span>
+                <span>Estadísticas federativas RFEG · Torneo o vuelta libre</span>
                 <span style={{ color: readiness.complete ? '#15803d' : '#b45309', fontSize: 12 }}>{readiness.complete ? 'Lista para transferir' : `${readiness.completedHoles}/18 hoyos completos`} · {expanded ? 'Ocultar' : 'Abrir'}</span>
             </button>
             {expanded && <div style={{ padding: 14 }}>
-                <p style={{ margin: '0 0 12px', color: '#475569', fontSize: 13, lineHeight: 1.5 }}>Registra los datos según las instrucciones de Nivel II/III. Putts, GIR y golpes se comparten con la tarjeta clásica.</p>
+                <p style={{ margin: '0 0 12px', color: '#475569', fontSize: 13, lineHeight: 1.5 }}>Registra los datos según las instrucciones de Nivel II/III para torneos o vueltas libres. Putts, GIR y golpes se comparten con la tarjeta clásica; el resto de estadísticas federativas se guarda de forma privada con esta vuelta.</p>
                 <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: 11, marginBottom: 12, border: '1px solid #bfdbfe', borderRadius: 8, background: 'white' }}>
                     <div>
                         <div style={{ color: '#475569', fontSize: 11, fontWeight: 700 }}>Identificador compartido de la vuelta</div>

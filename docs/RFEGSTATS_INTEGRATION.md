@@ -2,7 +2,7 @@
 
 ## Objetivo y límites
 
-RoundTracker captura las estadísticas de cada hoyo, las conserva en un área privada de Firestore y permite al usuario iniciar una transferencia a su propia cuenta de RFEGStats. No se envía nada automáticamente al guardar resultados.
+RoundTracker captura las estadísticas de cada hoyo tanto en torneos como en vueltas libres, las conserva en un área privada de Firestore y permite al usuario iniciar una transferencia a su propia cuenta de RFEGStats. No se envía nada automáticamente al guardar resultados.
 
 La web de la Federación no ofrece una API pública identificada. La transferencia automatizada replica los formularios HTML autenticados que usa la web. El servidor vuelve a inspeccionar el formulario y los nombres de campos de hoyo antes de escribir. Si no reconoce el protocolo, detiene el envío. La exportación CSV sigue disponible como alternativa manual.
 
@@ -37,7 +37,7 @@ Las distancias de recuperación de más de 40 m se marcan como tales; no cuentan
 
 ## Flujo de transferencia
 
-1. En la tarjeta de una ronda, abrir “Estadísticas avanzadas RFEG”.
+1. En la tarjeta de un torneo o de una vuelta libre, abrir “Estadísticas avanzadas RFEG”.
 2. Completar los campos faltantes de los 18 hoyos y corregir HCP/par si el catálogo no los conoce.
 3. Conectar y validar las credenciales; cargar catálogo oficial y confirmar manualmente club y recorrido.
 4. Revisar el código, fecha, golpes, condiciones y destino.
