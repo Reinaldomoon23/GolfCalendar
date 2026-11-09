@@ -60,7 +60,7 @@ const getResolvedCourseData = (courseName, date) => {
   };
 };
 
-function FreeRoundForm({ onCancel, onCreate }) {
+function FreeRoundForm({ onCancel, onCreate, isCreating = false, saveError = '' }) {
   const [form, setForm] = useState({
     name: 'Vuelta libre',
     date: new Date().toISOString().slice(0, 10),
@@ -118,8 +118,9 @@ function FreeRoundForm({ onCancel, onCreate }) {
       <label>Par del campo{calculatedPar !== null && <span style={{ display: 'block', marginTop: '0.2rem', color: 'var(--color-text-muted)', fontSize: '0.8rem', fontWeight: 400 }}>Calculado con el recorrido {resolvedCourse.course.name}{resolvedCourse.scorecard?.label ? ` · ${resolvedCourse.scorecard.label}` : ''}</span>}<input type="number" min="1" value={calculatedPar ?? form.par} onChange={(event) => update('par', event.target.value)} readOnly={calculatedPar !== null} placeholder={calculatedPar !== null ? '' : 'Elige un campo o indica el par'} style={{ ...inputStyle, ...(calculatedPar !== null ? { background: 'var(--color-surface-soft)', cursor: 'default' } : {}) }} /></label>
     </div>
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '1rem', flexWrap: 'wrap' }}>
-      <button type="button" onClick={submit} style={{ border: 'none', borderRadius: '999px', padding: '0.7rem 1rem', background: 'var(--color-primary)', color: '#fff', fontWeight: 800, cursor: 'pointer' }}><Plus size={16} style={{ verticalAlign: 'middle', marginRight: '0.3rem' }} />Crear vuelta</button>
+      <button type="button" onClick={submit} disabled={isCreating} style={{ border: 'none', borderRadius: '999px', padding: '0.7rem 1rem', background: 'var(--color-primary)', color: '#fff', fontWeight: 800, cursor: isCreating ? 'wait' : 'pointer', opacity: isCreating ? 0.7 : 1 }}><Plus size={16} style={{ verticalAlign: 'middle', marginRight: '0.3rem' }} />{isCreating ? 'Guardando…' : 'Crear vuelta'}</button>
       {error && <span style={{ color: '#b91c1c', fontWeight: 700 }}>{error}</span>}
+      {saveError && <span role="alert" style={{ color: '#b91c1c', fontWeight: 700 }}>{saveError}</span>}
     </div>
   </div>;
 }
@@ -127,20 +128,32 @@ function FreeRoundForm({ onCancel, onCreate }) {
 export default function FreeRoundsView({ freeRounds = [], onCreateFreeRound }) {
   const navigate = useNavigate();
   const [showForm, setShowForm] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   const create = async (round) => {
-    await onCreateFreeRound(round);
-    setShowForm(false);
+    setIsCreating(true);
+    setSaveError('');
+    try {
+      if (typeof onCreateFreeRound !== 'function') throw new Error('La función de guardado no está disponible.');
+      await onCreateFreeRound(round);
+      setShowForm(false);
+    } catch (error) {
+      console.error('[free-rounds] Could not create free round:', error);
+      setSaveError(error?.message || 'No se pudo guardar la vuelta. Revisa tu conexión e inténtalo de nuevo.');
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   return <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '1rem', color: 'var(--color-text)' }}>
     <div style={{ ...cardStyle, marginBottom: '1rem', background: 'linear-gradient(135deg, #123b32, #24775a)', color: '#fff' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
         <div><div style={{ opacity: 0.75, fontSize: '0.75rem', letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 900 }}>Registro de juego</div><h1 style={{ margin: '0.25rem 0', fontSize: '1.6rem' }}>Vueltas libres</h1><p style={{ margin: 0, opacity: 0.85 }}>Registra los 18 hoyos y, en la tarjeta, abre «Estadísticas federativas RFEG» para anotar putts, GIR, FIR, distancias, recuperaciones y penalizaciones.</p></div>
-        <button type="button" onClick={() => setShowForm(true)} style={{ border: 'none', borderRadius: '999px', padding: '0.75rem 1rem', background: '#f8d67b', color: '#102018', fontWeight: 900, cursor: 'pointer' }}><Plus size={16} style={{ verticalAlign: 'middle', marginRight: '0.3rem' }} />Nueva vuelta libre</button>
+        <button type="button" onClick={() => { setSaveError(''); setShowForm(true); }} style={{ border: 'none', borderRadius: '999px', padding: '0.75rem 1rem', background: '#f8d67b', color: '#102018', fontWeight: 900, cursor: 'pointer' }}><Plus size={16} style={{ verticalAlign: 'middle', marginRight: '0.3rem' }} />Nueva vuelta libre</button>
       </div>
     </div>
-    {showForm && <FreeRoundForm onCancel={() => setShowForm(false)} onCreate={create} />}
+    {showForm && <FreeRoundForm onCancel={() => setShowForm(false)} onCreate={create} isCreating={isCreating} saveError={saveError} />}
     <div style={{ display: 'grid', gap: '0.75rem' }}>
       {freeRounds.map((round) => <button key={round.id} type="button" onClick={() => navigate(`/free-round/${round.id}`)} style={{ ...cardStyle, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', textAlign: 'left', color: 'inherit', cursor: 'pointer' }}>
         <span style={{ minWidth: 0 }}><strong style={{ display: 'block', fontSize: '1.05rem' }}>{round.name}</strong><span style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap', marginTop: '0.35rem', color: 'var(--color-text-muted)', fontSize: '0.88rem' }}><span><CalendarDays size={14} style={{ verticalAlign: 'middle', marginRight: '0.25rem' }} />{round.dates}</span><span><MapPin size={14} style={{ verticalAlign: 'middle', marginRight: '0.25rem' }} />{round.course}</span></span></span><ChevronRight size={20} color="var(--color-text-muted)" />

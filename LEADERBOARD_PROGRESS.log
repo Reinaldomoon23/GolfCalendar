@@ -2720,3 +2720,18 @@ SESIÓN: 2026-11-09 | Integración RFEGStats y cierre del roadmap Leaderboard
   - Vercel producción READY (dpl_JB8pSBVDK9JrDECeJEhir2yUHcpN).
   - Hostinger sirve tournaments_2026-bKersL7F.js con el evento presente (HTTP 200).
   - El torneo aparecerá en el calendario temporada 2026 bajo WAGR.
+
+[DIAGNÓSTICO Y CORRECCIÓN — CREACIÓN DE VUELTAS LIBRES, 09-11-2026]
+  - Reproducido en producción: el contador de resultados sincronizados pasó de
+    20 a 21 al crear una vuelta, pero la lista quedó vacía tras recargarla.
+    ID de prueba: `free-round-2026-11-09-1794263192025`.
+  - El listado reconstruye vueltas desde `recordType === 'free_round'`; se añadió
+    un respaldo por prefijo de ID para recuperar la vuelta si falta ese marcador.
+  - `handleSaveSpecificResult` ahora exige sesión y revierte el estado optimista
+    si Firestore rechaza la escritura.
+  - `FreeRoundsView` mantiene el formulario abierto, bloquea doble envío y muestra
+    el error devuelto si la creación falla.
+  - ESLint y build Vite pasan. Próximo: publicar desde esta carpeta oficial y
+    comprobar que la vuelta de prueba aparece y conserva su ficha.
+  - La vuelta de prueba sigue en Firestore; su eliminación queda a decisión del
+    usuario porque requiere confirmación explícita en el momento del borrado.

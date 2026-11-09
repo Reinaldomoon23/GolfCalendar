@@ -705,7 +705,7 @@ function AppContent() {
   };
 
   const freeRounds = useMemo(() => Object.entries(mappedResults)
-    .filter(([, entry]) => entry?.recordType === 'free_round')
+    .filter(([id, entry]) => entry?.recordType === 'free_round' || String(id).startsWith('free-round-'))
     .map(([id, entry]) => ({
       id,
       name: entry.tournamentName || 'Vuelta libre',
@@ -749,9 +749,20 @@ function AppContent() {
   };
 
   const handleSaveSpecificResult = async (id, data) => {
-    if (!user) return;
+    if (!user) throw new Error('No hay una sesión activa para guardar esta vuelta.');
+    const previous = results[id];
     setResults(prev => ({ ...prev, [id]: data }));
-    await saveResult(user, id, data);
+    try {
+      await saveResult(user, id, data);
+    } catch (error) {
+      setResults(current => {
+        const restored = { ...current };
+        if (previous === undefined) delete restored[id];
+        else restored[id] = previous;
+        return restored;
+      });
+      throw error;
+    }
   };
 
   const handleDeleteResult = async (id) => {
@@ -765,6 +776,7 @@ function AppContent() {
   };
 
   const handleCreateFreeRound = async (round) => {
+    if (!user) throw new Error('Inicia sesión para guardar una vuelta libre.');
     const pars = Array.isArray(round.pars) && round.pars.length === 18
       ? round.pars.map((value) => String(value))
       : round.par === 72 ? Array(18).fill('4') : Array(18).fill(String(Math.max(1, Math.round(round.par / 18))));
