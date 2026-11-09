@@ -29,10 +29,12 @@ Las distancias de recuperación de más de 40 m se marcan como tales; no cuentan
 ## Vueltas libres y par del campo
 
 Al crear una vuelta libre, elegir o escribir un nombre de campo del catálogo
-calcula el par total sumando los pares de sus 18 hoyos y conserva esa tarjeta
-de pares para la captura. El nombre se compara sin distinguir mayúsculas,
-espacios repetidos ni tildes. Si el campo no existe en el catálogo, se debe
-introducir el par total manualmente; no se asigna 72 por defecto.
+resuelve la tarjeta del recorrido con el mismo resolvedor que usa un torneo,
+incluidas las variantes vigentes por fecha. El par total es la suma de los 18
+pares de esa tarjeta y se conservan esos pares en la vuelta. El nombre se
+compara sin distinguir mayúsculas, espacios repetidos ni tildes. Si el campo
+no existe en el catálogo, se debe introducir el par total manualmente; no se
+asigna 72 por defecto.
 
 ## Privacidad y credenciales
 

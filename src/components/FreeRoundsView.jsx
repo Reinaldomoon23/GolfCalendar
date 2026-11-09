@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { CalendarDays, ChevronRight, MapPin, Plus, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import spanishCourses from '../data/spanish_courses.json';
+import { getScorecardParTotal, resolveCourseScorecard } from '../utils/courseScorecards';
 
 const cardStyle = {
   background: 'var(--color-surface)',
@@ -37,11 +38,26 @@ const findCatalogCourse = (courseName) => spanishCourses.find(
   (course) => normalizeCourseName(course.name) === normalizeCourseName(courseName),
 );
 
-const getCourseParTotal = (course) => {
-  if (!Array.isArray(course?.pars) || course.pars.length !== 18) return null;
-  const pars = course.pars.map(Number);
-  if (pars.some((par) => !Number.isInteger(par) || par < 3 || par > 6)) return null;
-  return pars.reduce((total, par) => total + par, 0);
+const isValidHolePars = (pars) => {
+  if (!Array.isArray(pars) || pars.length !== 18) return false;
+  const values = pars.map(Number);
+  return !values.some((par) => !Number.isInteger(par) || par < 3 || par > 6);
+};
+
+/* Resolve both the total and per-hole pars from the same dated route card. */
+const getResolvedCourseData = (courseName, date) => {
+  const course = findCatalogCourse(courseName);
+  if (!course) return { course: null, scorecard: null, pars: null, totalPar: null };
+
+  const scorecard = resolveCourseScorecard({ course: course.name, dates: formatDate(date) }, course);
+  const sourcePars = isValidHolePars(scorecard?.pars) ? scorecard.pars : course.pars;
+  const pars = isValidHolePars(sourcePars) ? sourcePars.map(Number) : null;
+  return {
+    course,
+    scorecard,
+    pars,
+    totalPar: pars ? getScorecardParTotal({ pars }) : null,
+  };
 };
 
 function FreeRoundForm({ onCancel, onCreate }) {
@@ -53,8 +69,8 @@ function FreeRoundForm({ onCancel, onCreate }) {
   });
   const [error, setError] = useState('');
 
-  const selectedCourse = findCatalogCourse(form.course);
-  const calculatedPar = getCourseParTotal(selectedCourse);
+  const resolvedCourse = getResolvedCourseData(form.course, form.date);
+  const calculatedPar = resolvedCourse.totalPar;
 
   const update = (field, value) => setForm((current) => ({ ...current, [field]: value }));
 
@@ -67,8 +83,8 @@ function FreeRoundForm({ onCancel, onCreate }) {
       setError('Indica un nombre y una fecha.');
       return;
     }
-    const matchedCourse = findCatalogCourse(form.course);
-    const coursePar = getCourseParTotal(matchedCourse);
+    const resolved = getResolvedCourseData(form.course, form.date);
+    const coursePar = resolved.totalPar;
     const par = coursePar ?? Number(form.par);
     if (!Number.isInteger(par) || par < 1) {
       setError('Selecciona un campo del catálogo o introduce manualmente el par total del campo.');
@@ -81,7 +97,9 @@ function FreeRoundForm({ onCancel, onCreate }) {
       dates: formatDate(form.date),
       course: form.course.trim() || 'Campo de golf',
       par,
-      pars: getCourseParTotal(matchedCourse) !== null ? matchedCourse.pars : null,
+      pars: isValidHolePars(resolved.pars) ? resolved.pars : null,
+      courseVariantId: resolved.scorecard?.variantId || null,
+      courseVariantLabel: resolved.scorecard?.label || null,
     });
   };
 
@@ -97,7 +115,7 @@ function FreeRoundForm({ onCancel, onCreate }) {
       <datalist id="free-round-course-list">
         {spanishCourses.map((course) => <option key={course.name} value={course.name} />)}
       </datalist>
-      <label>Par del campo{calculatedPar !== null && <span style={{ display: 'block', marginTop: '0.2rem', color: 'var(--color-text-muted)', fontSize: '0.8rem', fontWeight: 400 }}>Calculado con los 18 hoyos de {selectedCourse.name}</span>}<input type="number" min="1" value={calculatedPar ?? form.par} onChange={(event) => update('par', event.target.value)} readOnly={calculatedPar !== null} placeholder={calculatedPar !== null ? '' : 'Elige un campo o indica el par'} style={{ ...inputStyle, ...(calculatedPar !== null ? { background: 'var(--color-surface-soft)', cursor: 'default' } : {}) }} /></label>
+      <label>Par del campo{calculatedPar !== null && <span style={{ display: 'block', marginTop: '0.2rem', color: 'var(--color-text-muted)', fontSize: '0.8rem', fontWeight: 400 }}>Calculado con el recorrido {resolvedCourse.course.name}{resolvedCourse.scorecard?.label ? ` · ${resolvedCourse.scorecard.label}` : ''}</span>}<input type="number" min="1" value={calculatedPar ?? form.par} onChange={(event) => update('par', event.target.value)} readOnly={calculatedPar !== null} placeholder={calculatedPar !== null ? '' : 'Elige un campo o indica el par'} style={{ ...inputStyle, ...(calculatedPar !== null ? { background: 'var(--color-surface-soft)', cursor: 'default' } : {}) }} /></label>
     </div>
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '1rem', flexWrap: 'wrap' }}>
       <button type="button" onClick={submit} style={{ border: 'none', borderRadius: '999px', padding: '0.7rem 1rem', background: 'var(--color-primary)', color: '#fff', fontWeight: 800, cursor: 'pointer' }}><Plus size={16} style={{ verticalAlign: 'middle', marginRight: '0.3rem' }} />Crear vuelta</button>

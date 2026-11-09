@@ -716,6 +716,8 @@ function AppContent() {
       custom: true,
       freeRound: true,
       pars: entry.scorecards?.[0]?.pars || Array(18).fill('4'),
+      courseVariantId: entry.courseVariantId || null,
+      courseVariantLabel: entry.courseVariantLabel || null,
     })), [mappedResults]);
 
   const tournamentsState = useTournaments(user, preferences, handleUpdatePreferences, mappedResults, {
@@ -772,6 +774,8 @@ function AppContent() {
       tournamentCourse: round.course,
       tournamentDates: round.dates,
       tournamentPar: round.par,
+      courseVariantId: round.courseVariantId || null,
+      courseVariantLabel: round.courseVariantLabel || null,
       rounds: [''],
       totalPutts: [''],
       track_putts: true,

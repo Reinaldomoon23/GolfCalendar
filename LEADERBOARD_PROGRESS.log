@@ -2692,3 +2692,12 @@ SESIÓN: 2026-11-09 | Integración RFEGStats y cierre del roadmap Leaderboard
     manual; los campos reconocidos guardan sus pares individuales reales.
   - Comprobado Camiral Tour: 18 pares suman 72. ESLint y build Vite correctos.
   - Pendiente: publicar este cambio desde la carpeta oficial y verificarlo.
+
+[ACLARACIÓN — PAR DE RECORRIDO Y VARIANTES]
+  - A petición del usuario, la vuelta libre usa el mismo resolveCourseScorecard
+    de los torneos, incluida la variante efectiva por fecha. Se guarda la tarjeta
+    de 18 hoyos resuelta y el par total se suma desde ella para cualquier campo
+    reconocido en el catálogo, no se limita a un caso/campo concreto.
+  - Se conservan courseVariantId y courseVariantLabel en la ficha libre.
+  - ESLint/build pasan; ESLint muestra únicamente avisos previos de hooks en
+    App.jsx. Pendiente publicar esta corrección final y comprobar Hostinger/Vercel.
