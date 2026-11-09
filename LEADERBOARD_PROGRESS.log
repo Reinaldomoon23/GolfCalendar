@@ -2675,3 +2675,11 @@ SESIÓN: 2026-11-09 | Integración RFEGStats y cierre del roadmap Leaderboard
     tipos de ronda.
   - ESLint de componentes y build Vite correctos. Próximo: publicar Vercel y
     Hostinger desde el checkout oficial y verificar el bundle.
+
+[PUBLICADO — RFEGSTATS EN VUELTAS LIBRES]
+  - UI explicativa y panel compartido desplegados en Vercel READY y Hostinger.
+  - Hostinger sirve FreeRoundsView-C4P9ffqy.js con el nuevo texto (HTTP 200).
+  - Endpoint federativo sigue activo (401 sin token) y no se enviaron rondas.
+  - Commit de la interfaz/documentación: dc89154. No hay más tareas de código.
+  - Pendiente solo la validación funcional con una ronda completa real, cuando
+    el usuario elija cuál enviar y confirme el destino federativo.
