@@ -9,7 +9,7 @@
 - Rama de trabajo de este checkout: `codex/mygolflife-baseline`
 - Proyecto Vercel: `golf-calendar-v3` (ver `.vercel/project.json`)
 - Rama automática de producción en Vercel, verificada el 9 de noviembre de 2026:
-  `main`.
+  `codex/mygolflife-baseline`.
 
 No despliegues desde copias antiguas del repositorio. Las ramas pueden contener
 cambios funcionales distintos aunque compartan nombre, dominio o historial.
@@ -28,11 +28,10 @@ sin distinguir mayúsculas) con `C:\Users\miste\Documents\Codex\MyGolfLife`.
 Si apunta a otra carpeta o hay duda sobre la ubicación, detente antes de actuar.
 No borres ni limpies archivos de otra copia para “sincronizarla”.
 
-La rama automática (`main`) todavía no coincide con la rama activa de
-`MyGolfLife`. La versión correcta está publicada manualmente desde esta carpeta.
-Hasta alinear esa configuración en Vercel, un push a `main` podría sustituirla.
-Publica desde esta carpeta con el comando indicado y no trates un push a otra
-rama como publicación de producción.
+La rama automática de producción ya coincide con la rama activa de `MyGolfLife`.
+Vercel fue actualizado desde Settings → Environments → Production → Branch
+Tracking y la API confirmó el valor. Publica desde esta carpeta con el comando
+indicado.
 
 ## Publicar
 
@@ -60,6 +59,6 @@ pnpm install --frozen-lockfile
 
 Se publicó una vez desde otra copia local, que apuntaba al mismo proyecto
 Vercel pero no contenía las últimas revisiones de `MyGolfLife`. Se corrigió
-publicando de nuevo desde la carpeta oficial indicada arriba. La integración
-RFEGStats preparada en aquella otra rama no está incluida en esta versión; hay
-que adaptarla y revisarla en esta rama antes de publicarla.
+publicando de nuevo desde la carpeta oficial indicada arriba y configurando
+esta rama como rama de producción. La integración RFEGStats preparada en aquella
+otra rama aún debe adaptarse y revisarse en esta rama antes de publicarla.

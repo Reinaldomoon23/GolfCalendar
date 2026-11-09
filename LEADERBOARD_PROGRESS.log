@@ -2596,3 +2596,10 @@ SESIÓN: 2026-11-09 | Fuente oficial corregida y producción restaurada
   La confusión explica la publicación desde una rama/copia desactualizada y el
   lockfile ausente del control de versiones en esa copia. El índice Git también
   estaba dañado allí; no se ha determinado su causa y no se atribuye a Drive.
+
+[COMPLETADO — RAMA AUTOMÁTICA VERCEL]
+  - Settings → Environments → Production → Branch Tracking actualizado a
+    codex/mygolflife-baseline.
+  - Verificado por lectura de la API: link.productionBranch = codex/mygolflife-baseline.
+  - Próximos commits de esta rama activan producción; se conserva npm run deploy:all
+    para publicación controlada Vercel + Hostinger.
