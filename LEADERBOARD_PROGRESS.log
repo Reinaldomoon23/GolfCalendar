@@ -2735,3 +2735,15 @@ SESIÓN: 2026-11-09 | Integración RFEGStats y cierre del roadmap Leaderboard
     comprobar que la vuelta de prueba aparece y conserva su ficha.
   - La vuelta de prueba sigue en Firestore; su eliminación queda a decisión del
     usuario porque requiere confirmación explícita en el momento del borrado.
+
+[PUBLICADO — VUELTAS LIBRES, 09-11-2026]
+  - Commit de código: 9273f7c, subido a codex/mygolflife-baseline.
+  - Vercel READY: dpl_FkPdgsefdRWommL3gGntdqxXCsCs; alias golf-calendar-v3.
+  - Hostinger /GolfTeam/ actualizado correctamente.
+  - Revisión visual tras recarga: aparecen la vuelta de diagnóstico y dos
+    vueltas libres previamente guardadas que el filtro antiguo ocultaba.
+  - No se borró ningún resultado. El test `TEST - Diagnóstico vuelta libre
+    09-11-2026` permanece en la cuenta; las otras dos vueltas tampoco se tocaron.
+  - El script FTP recomendó revisar/borrar `index.html` y `assets` antiguos en
+    la raíz del hosting. Se dejaron intactos porque pueden pertenecer a otra
+    página; requiere identificar su propietario antes de cualquier borrado.
