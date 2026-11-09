@@ -2715,3 +2715,8 @@ SESIÓN: 2026-11-09 | Integración RFEGStats y cierre del roadmap Leaderboard
   - La tarjeta de Golf Barcelona existe en el catálogo: 18 hoyos, par total 72.
   - Validación de JSON/ID y build Vite correctos. Pendiente publicar Vercel y
     Hostinger, y confirmar que aparece en la versión en producción.
+
+[PUBLICADO — BARCELONA INTERNATIONAL GOLF CUP -WAGR]
+  - Vercel producción READY (dpl_JB8pSBVDK9JrDECeJEhir2yUHcpN).
+  - Hostinger sirve tournaments_2026-bKersL7F.js con el evento presente (HTTP 200).
+  - El torneo aparecerá en el calendario temporada 2026 bajo WAGR.
