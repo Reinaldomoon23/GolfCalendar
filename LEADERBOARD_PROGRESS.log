@@ -2701,3 +2701,9 @@ SESIÓN: 2026-11-09 | Integración RFEGStats y cierre del roadmap Leaderboard
   - Se conservan courseVariantId y courseVariantLabel en la ficha libre.
   - ESLint/build pasan; ESLint muestra únicamente avisos previos de hooks en
     App.jsx. Pendiente publicar esta corrección final y comprobar Hostinger/Vercel.
+
+[PUBLICADO — PAR AUTOMÁTICO POR RECORRIDO]
+  - Publicación manual final Vercel READY (dpl_C5gXBdunBKuvyQWGBy8qU7MVGe9f).
+  - Hostinger sirve la versión actualizada del componente Vueltas libres
+    (HTTP 200) y muestra el texto del par calculado por recorrido.
+  - Compilación y verificación completas. Commit de lógica: 25ae4b6.
