@@ -2574,3 +2574,12 @@ SESIÓN: 2026-11-09 | Fuente oficial corregida y producción restaurada
   Siguiente paso: adaptar la integración sobre esta rama, auditarla y publicar
   después de validar build y correspondencia de campos.
 ==========================================================================
+
+[AVISO DE CONFIGURACIÓN VERCEL — 2026-11-09]
+  - La API de lectura confirma `link.productionBranch = main`; la rama de trabajo
+    oficial de esta carpeta es codex/mygolflife-baseline.
+  - Producción está correcta ahora por despliegue manual desde MyGolfLife.
+  - Pendiente alinear la rama automática desde el panel Vercel. El panel inspeccionado
+    y la API pública usada no ofrecieron un control editable; no usar endpoints
+    internos no documentados. Hasta resolverlo, publicar solo con npm run deploy:all
+    desde la carpeta oficial y vigilar cualquier auto-deploy originado en main.

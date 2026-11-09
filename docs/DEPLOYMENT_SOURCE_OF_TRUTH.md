@@ -6,11 +6,19 @@
 - Repositorio: `Reinaldomoon23/GolfCalendar`
 - Rama de trabajo de este checkout: `codex/mygolflife-baseline`
 - Proyecto Vercel: `golf-calendar-v3` (ver `.vercel/project.json`)
+- Rama automática de producción en Vercel, verificada el 9 de noviembre de 2026:
+  `main`.
 
 No despliegues desde copias antiguas del repositorio. Las ramas pueden contener
 cambios funcionales distintos aunque compartan nombre, dominio o historial.
 Antes de publicar, comprueba `git status --short --branch`, la rama activa y el
 identificador del proyecto Vercel.
+
+La rama automática (`main`) todavía no coincide con la rama activa de
+`MyGolfLife`. La versión correcta está publicada manualmente desde esta carpeta.
+Hasta alinear esa configuración en Vercel, un push a `main` podría sustituirla.
+Publica desde esta carpeta con el comando indicado y no trates un push a otra
+rama como publicación de producción.
 
 ## Publicar
 
