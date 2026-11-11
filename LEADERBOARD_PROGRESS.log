@@ -2747,3 +2747,15 @@ SESIÓN: 2026-11-09 | Integración RFEGStats y cierre del roadmap Leaderboard
   - El script FTP recomendó revisar/borrar `index.html` y `assets` antiguos en
     la raíz del hosting. Se dejaron intactos porque pueden pertenecer a otra
     página; requiere identificar su propietario antes de cualquier borrado.
+
+[AJUSTE DE INTEGRACIÓN RFEG Y CÓDIGO ESTABLE — 11-11-2026]
+  - El panel RFEG adopta la paleta cálida, bordes y superficies del diseño general;
+    se simplifica el encabezado y la acción de copiar muestra el código.
+  - El código de vuelta se genera una sola vez aunque el callback del padre cambie
+    en cada render o React repita el efecto en modo desarrollo; evita regenerar
+    y mostrar un identificador intermitente.
+  - ESLint aislado del panel y build Vite correctos. El lint global conserva dos
+    errores en StatsView.jsx y TeamLiveScorecard.jsx, ajenos a este cambio, además
+    de avisos existentes.
+  - Próximo: commit/push del componente y publicar desde la carpeta oficial;
+    revisar visualmente el panel en producción.

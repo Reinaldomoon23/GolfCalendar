@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Clipboard, Download, ExternalLink, RefreshCw, Send } from 'lucide-react';
 import { buildRfegCsv, buildRfegDescription, createRfegRoundCode, getCourseMappingConfidence, getRfegRoundReadiness, mapRfegHoleForTransfer, normalizeRfegMappingKey, rankRfegNameMatches } from '../utils/rfegStats';
 import { deleteRfegStatsCredentials, getRfegStatsCatalog, getRfegStatsConnectionStatus, saveRfegCourseMapping, saveRfegStatsCredentials, transferRfegStatsRound } from '../services/rfegStats.service';
@@ -24,8 +24,8 @@ const FIELD_OPTIONS = {
     d2p: [['', 'Seleccionar'], ...['0', '0.5', '1', '1.5', '2', '2.5', '3', '3.5', '4', '4.5', '5', '6', '7', '8', '9', '10', '12', '15', '18', '25'].map((v) => [v, `${v} m`])],
 };
 
-const selectStyle = { width: '100%', minWidth: 0, padding: '9px 10px', border: '1px solid #cbd5e1', borderRadius: 8, background: 'white', color: '#0f172a', fontSize: 14 };
-const labelStyle = { display: 'grid', gap: 5, color: '#475569', fontSize: 12, fontWeight: 700 };
+const selectStyle = { width: '100%', minWidth: 0, padding: '9px 10px', border: 'var(--border-thin)', borderRadius: 'var(--radius-bd)', background: 'var(--color-surface)', color: 'var(--color-text-main)', fontSize: 14 };
+const labelStyle = { display: 'grid', gap: 5, color: 'var(--color-text-muted)', fontSize: 12, fontWeight: 700 };
 
 function FieldSelect({ label, value, options, onChange, disabled = false }) {
     return <label style={labelStyle}>{label}<select value={value || ''} onChange={(event) => onChange(event.target.value)} disabled={disabled} style={selectStyle}>{options.map(([key, text]) => <option key={key} value={key}>{text}</option>)}</select></label>;
@@ -51,6 +51,11 @@ export default function RfegStatsPanel({ card, onUpdate, tournamentName, courseN
     const [rfegPassword, setRfegPassword] = useState('');
     const rfeg = card?.rfeg || {};
     const roundCode = rfeg.roundCode || '';
+    const onUpdateRef = useRef(onUpdate);
+    const roundCodeGenerationRequested = useRef(false);
+    useEffect(() => {
+        onUpdateRef.current = onUpdate;
+    }, [onUpdate]);
     const pars = card?.pars || [];
     const strokes = card?.strokes || [];
     const putts = card?.putts || [];
@@ -187,8 +192,14 @@ export default function RfegStatsPanel({ card, onUpdate, tournamentName, courseN
     };
 
     useEffect(() => {
-        if (!roundCode) onUpdate(0, 'rfeg.roundCode', createRfegRoundCode());
-    }, [roundCode, onUpdate]);
+        if (!roundCode) {
+            if (roundCodeGenerationRequested.current) return;
+            roundCodeGenerationRequested.current = true;
+            onUpdateRef.current(0, 'rfeg.roundCode', createRfegRoundCode());
+        } else {
+            roundCodeGenerationRequested.current = false;
+        }
+    }, [roundCode]);
 
     const updateRfeg = (field, value) => onUpdate(holeIndex, `rfeg.${field}`, value);
     const updateGir = (value) => {
@@ -292,32 +303,32 @@ export default function RfegStatsPanel({ card, onUpdate, tournamentName, courseN
     ];
 
     return (
-        <section style={{ marginTop: 12, border: '1px solid #bfdbfe', borderRadius: 10, background: '#f8fbff', overflow: 'hidden' }}>
-            <button type="button" onClick={() => setExpanded((value) => !value)} aria-expanded={expanded} style={{ width: '100%', padding: '12px 14px', border: 0, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, cursor: 'pointer', color: '#1e3a8a', fontWeight: 800, textAlign: 'left' }}>
-                <span>Estadísticas federativas RFEG · Torneo o vuelta libre</span>
-                <span style={{ color: readiness.complete ? '#15803d' : '#b45309', fontSize: 12 }}>{readiness.complete ? 'Lista para transferir' : `${readiness.completedHoles}/18 hoyos completos`} · {expanded ? 'Ocultar' : 'Abrir'}</span>
+        <section style={{ marginTop: 12, border: 'var(--border-thin)', borderRadius: 'var(--radius-bd)', background: 'var(--color-surface)', overflow: 'hidden' }}>
+            <button type="button" onClick={() => setExpanded((value) => !value)} aria-expanded={expanded} style={{ width: '100%', padding: '14px 16px', border: 0, borderBottom: expanded ? 'var(--border-thin)' : 0, background: 'var(--color-surface-soft)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, cursor: 'pointer', color: 'var(--color-primary)', fontWeight: 700, textAlign: 'left' }}>
+                <span style={{ letterSpacing: '0.03em' }}>Estadísticas RFEG</span>
+                <span style={{ color: readiness.complete ? '#4f765d' : 'var(--color-text-muted)', fontSize: 12, fontWeight: 600 }}>{readiness.complete ? 'Lista para transferir' : `${readiness.completedHoles}/18 hoyos`} · {expanded ? 'Ocultar' : 'Abrir'}</span>
             </button>
             {expanded && <div style={{ padding: 14 }}>
-                <p style={{ margin: '0 0 12px', color: '#475569', fontSize: 13, lineHeight: 1.5 }}>Registra los datos según las instrucciones de Nivel II/III para torneos o vueltas libres. Putts, GIR y golpes se comparten con la tarjeta clásica; el resto de estadísticas federativas se guarda de forma privada con esta vuelta.</p>
-                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: 11, marginBottom: 12, border: '1px solid #bfdbfe', borderRadius: 8, background: 'white' }}>
+                <p style={{ margin: '0 0 12px', color: '#6b625b', fontSize: 13, lineHeight: 1.5 }}>Registra los datos según las instrucciones de Nivel II/III para torneos o vueltas libres. Putts, GIR y golpes se comparten con la tarjeta clásica; el resto de estadísticas federativas se guarda de forma privada con esta vuelta.</p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: 12, marginBottom: 14, border: 'var(--border-thin)', borderRadius: 'var(--radius-bd)', background: 'var(--color-surface-soft)' }}>
                     <div>
-                        <div style={{ color: '#475569', fontSize: 11, fontWeight: 700 }}>Identificador compartido de la vuelta</div>
-                        <code style={{ display: 'inline-block', marginTop: 3, color: '#1d4ed8', fontSize: 15, fontWeight: 800 }}>{roundCode || 'Generando…'}</code>
-                        <div style={{ marginTop: 3, color: '#64748b', fontSize: 12 }}>Pega la descripción copiada en el campo «Descripción» de RFEGStats.</div>
+                        <div style={{ color: '#6b625b', fontSize: 11, fontWeight: 700 }}>Identificador compartido de la vuelta</div>
+                        <code style={{ display: 'inline-block', marginTop: 3, color: 'var(--color-primary)', fontSize: 15, fontWeight: 700 }}>{roundCode || 'Preparando código…'}</code>
+                        <div style={{ marginTop: 3, color: '#8c857f', fontSize: 12 }}>Pega la descripción copiada en el campo «Descripción» de RFEGStats.</div>
                     </div>
-                    <button type="button" onClick={copyRfegDescription} disabled={!roundCode} style={{ display: 'inline-flex', gap: 7, alignItems: 'center', padding: '8px 10px', border: '1px solid #bfdbfe', borderRadius: 8, background: '#eff6ff', color: '#1d4ed8', fontWeight: 700, cursor: roundCode ? 'pointer' : 'wait' }}><Clipboard size={15} />Copiar descripción RFEG</button>
+                    <button type="button" onClick={copyRfegDescription} disabled={!roundCode} style={{ display: 'inline-flex', gap: 7, alignItems: 'center', padding: '8px 10px', border: 'var(--border-thin)', borderRadius: 'var(--radius-bd)', background: 'var(--color-surface)', color: 'var(--color-primary)', fontWeight: 600, cursor: roundCode ? 'pointer' : 'wait' }}><Clipboard size={15} />Copiar código</button>
                 </div>
-                <div style={{ marginBottom: 14, border: '1px solid #cbd5e1', borderRadius: 8, background: 'white', overflow: 'hidden' }}>
-                    <button type="button" onClick={toggleConnection} aria-expanded={connectionOpen} style={{ width: '100%', padding: '10px 12px', border: 0, background: '#f8fafc', display: 'flex', justifyContent: 'space-between', gap: 8, color: '#334155', fontWeight: 700, textAlign: 'left', cursor: 'pointer' }}>
+                <div style={{ marginBottom: 14, border: '1px solid #e5e1de', borderRadius: 8, background: 'white', overflow: 'hidden' }}>
+                    <button type="button" onClick={toggleConnection} aria-expanded={connectionOpen} style={{ width: '100%', padding: '10px 12px', border: 0, background: '#faf9f8', display: 'flex', justifyContent: 'space-between', gap: 8, color: '#333333', fontWeight: 700, textAlign: 'left', cursor: 'pointer' }}>
                         <span>Conexión con RFEGStats</span>
-                        <span style={{ color: connectionStatus?.connected ? '#15803d' : '#64748b', fontSize: 12 }}>{connectionLoading ? 'Comprobando…' : connectionStatus?.connected ? `Conectada · ${connectionStatus.username}` : 'No conectada'} · {connectionOpen ? 'Ocultar' : 'Configurar'}</span>
+                        <span style={{ color: connectionStatus?.connected ? '#15803d' : '#8c857f', fontSize: 12 }}>{connectionLoading ? 'Comprobando…' : connectionStatus?.connected ? `Conectada · ${connectionStatus.username}` : 'No conectada'} · {connectionOpen ? 'Ocultar' : 'Configurar'}</span>
                     </button>
                     {connectionOpen && <div style={{ display: 'grid', gap: 9, padding: 12 }}>
                     {connectionStatus?.connected && <p style={{ margin: 0, color: '#166534', fontSize: 12 }}>Cuenta validada. Las credenciales permanecen cifradas en el servidor y solo se usan para acciones que inicies desde esta pantalla.</p>}
                         <label style={labelStyle}>Usuario RFEGStats<input type="text" value={rfegUsername} onChange={(event) => setRfegUsername(event.target.value)} autoComplete="username" disabled={connectionSaving} style={selectStyle} /></label>
                         <label style={labelStyle}>Contraseña RFEGStats<input type="password" value={rfegPassword} onChange={(event) => setRfegPassword(event.target.value)} autoComplete="off" disabled={connectionSaving} style={selectStyle} /></label>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                            <button type="button" onClick={connectRfegStats} disabled={connectionSaving || connectionLoading} style={{ padding: '8px 11px', border: 0, borderRadius: 7, background: '#0f766e', color: 'white', fontWeight: 700, cursor: connectionSaving ? 'wait' : 'pointer' }}>{connectionSaving ? 'Validando…' : connectionStatus?.connected ? 'Actualizar y validar' : 'Validar y guardar cifrada'}</button>
+                            <button type="button" onClick={connectRfegStats} disabled={connectionSaving || connectionLoading} style={{ padding: '8px 11px', border: 0, borderRadius: 7, background: '#333333', color: 'white', fontWeight: 700, cursor: connectionSaving ? 'wait' : 'pointer' }}>{connectionSaving ? 'Validando…' : connectionStatus?.connected ? 'Actualizar y validar' : 'Validar y guardar cifrada'}</button>
                             {connectionStatus?.connected && !confirmDisconnect && <button type="button" onClick={() => setConfirmDisconnect(true)} disabled={connectionSaving} style={{ padding: '8px 11px', border: '1px solid #fecaca', borderRadius: 7, background: '#fff7f7', color: '#b91c1c', fontWeight: 700, cursor: connectionSaving ? 'wait' : 'pointer' }}>Eliminar credenciales</button>}
                         </div>
                         {confirmDisconnect && <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, padding: 9, borderRadius: 7, background: '#fff7ed', color: '#9a3412', fontSize: 12 }}>
@@ -325,19 +336,19 @@ export default function RfegStatsPanel({ card, onUpdate, tournamentName, courseN
                             <button type="button" onClick={disconnectRfegStats} disabled={connectionSaving} style={{ padding: '6px 9px', border: 0, borderRadius: 6, background: '#b91c1c', color: 'white', fontWeight: 700, cursor: connectionSaving ? 'wait' : 'pointer' }}>{connectionSaving ? 'Eliminando…' : 'Confirmar eliminación'}</button>
                             <button type="button" onClick={() => setConfirmDisconnect(false)} disabled={connectionSaving} style={{ padding: '6px 9px', border: '1px solid #fdba74', borderRadius: 6, background: 'white', color: '#9a3412', fontWeight: 700, cursor: 'pointer' }}>Cancelar</button>
                         </div>}
-                        <p style={{ margin: 0, color: '#64748b', fontSize: 11, lineHeight: 1.45 }}>La contraseña se envía por HTTPS al servidor, se valida en RFEGStats y se guarda cifrada; no se conserva en el navegador ni en texto legible en Firestore.</p>
+                        <p style={{ margin: 0, color: '#8c857f', fontSize: 11, lineHeight: 1.45 }}>La contraseña se envía por HTTPS al servidor, se valida en RFEGStats y se guarda cifrada; no se conserva en el navegador ni en texto legible en Firestore.</p>
                     </div>}
                 </div>
-                <div style={{ display: 'grid', gap: 10, padding: 12, marginBottom: 14, border: '1px solid #cbd5e1', borderRadius: 8, background: 'white' }}>
+                <div style={{ display: 'grid', gap: 10, padding: 12, marginBottom: 14, border: '1px solid #e5e1de', borderRadius: 8, background: 'white' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
-                        <strong style={{ color: '#334155', fontSize: 13 }}>Destino federativo</strong>
-                        <button type="button" onClick={() => loadFederationCatalog()} disabled={catalogLoading || !connectionStatus?.connected} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 9px', border: '1px solid #cbd5e1', borderRadius: 7, background: 'white', color: '#334155', fontWeight: 700, cursor: catalogLoading ? 'wait' : 'pointer' }}><RefreshCw size={14} />{catalogLoading ? 'Cargando…' : catalogLoaded ? 'Actualizar catálogo' : 'Cargar catálogo RFEG'}</button>
+                        <strong style={{ color: '#333333', fontSize: 13 }}>Destino federativo</strong>
+                        <button type="button" onClick={() => loadFederationCatalog()} disabled={catalogLoading || !connectionStatus?.connected} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 9px', border: '1px solid #e5e1de', borderRadius: 7, background: 'white', color: '#333333', fontWeight: 700, cursor: catalogLoading ? 'wait' : 'pointer' }}><RefreshCw size={14} />{catalogLoading ? 'Cargando…' : catalogLoaded ? 'Actualizar catálogo' : 'Cargar catálogo RFEG'}</button>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: 9 }}>
                         <label style={labelStyle}>Club RFEG<select value={rfeg.clubId || ''} onChange={(event) => handleClubChange(event.target.value)} disabled={!clubOptions.length || catalogLoading} style={selectStyle}><option value="">Selecciona un club</option>{clubOptions.map((club) => <option key={club.id} value={club.id}>{club.name}</option>)}</select></label>
                         <label style={labelStyle}>Recorrido RFEG<select value={rfeg.courseId || ''} onChange={(event) => handleCourseChange(event.target.value)} disabled={!courseOptions.length || catalogLoading} style={selectStyle}><option value="">Selecciona un recorrido</option>{courseOptions.map((course) => <option key={course.id} value={course.id}>{course.name}</option>)}</select></label>
                     </div>
-                    {courseName && <div style={{ display: 'grid', gap: 7, padding: 9, border: '1px solid #dbeafe', borderRadius: 7, background: '#f8fbff', color: '#334155', fontSize: 12 }}>
+                    {courseName && <div style={{ display: 'grid', gap: 7, padding: 9, border: '1px solid #e5e1de', borderRadius: 7, background: '#faf9f8', color: '#333333', fontSize: 12 }}>
                         <div>Nombre en RoundTracker: <strong>{courseName}</strong></div>
                         {savedCourseMapping && <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 7 }}>
                             <span>Equivalencia guardada: {savedCourseMapping.clubName} · {savedCourseMapping.courseName}</span>
@@ -345,11 +356,11 @@ export default function RfegStatsPanel({ card, onUpdate, tournamentName, courseN
                         </div>}
                         {!rfeg.clubId && clubMatches.length > 0 && <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
                             <span>Posibles clubes RFEG:</span>
-                            {clubMatches.map((club) => <button key={club.id} type="button" onClick={() => handleClubChange(club.id)} disabled={catalogLoading} style={{ padding: '5px 8px', border: '1px solid #bfdbfe', borderRadius: 6, background: 'white', color: '#1d4ed8', fontWeight: 700, cursor: 'pointer' }}>{club.name} · {getCourseMappingConfidence(club.matchScore)}</button>)}
+                            {clubMatches.map((club) => <button key={club.id} type="button" onClick={() => handleClubChange(club.id)} disabled={catalogLoading} style={{ padding: '5px 8px', border: '1px solid #e5e1de', borderRadius: 6, background: 'white', color: '#333333', fontWeight: 700, cursor: 'pointer' }}>{club.name} · {getCourseMappingConfidence(club.matchScore)}</button>)}
                         </div>}
                         {rfeg.clubId && !rfeg.courseId && courseMatches.length > 0 && <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
                             <span>Posibles recorridos RFEG:</span>
-                            {courseMatches.map((course) => <button key={course.id} type="button" onClick={() => handleCourseChange(course.id)} disabled={catalogLoading} style={{ padding: '5px 8px', border: '1px solid #bfdbfe', borderRadius: 6, background: 'white', color: '#1d4ed8', fontWeight: 700, cursor: 'pointer' }}>{course.name} · {getCourseMappingConfidence(course.matchScore)}</button>)}
+                            {courseMatches.map((course) => <button key={course.id} type="button" onClick={() => handleCourseChange(course.id)} disabled={catalogLoading} style={{ padding: '5px 8px', border: '1px solid #e5e1de', borderRadius: 6, background: 'white', color: '#333333', fontWeight: 700, cursor: 'pointer' }}>{course.name} · {getCourseMappingConfidence(course.matchScore)}</button>)}
                         </div>}
                         {rfeg.clubId && rfeg.courseId && <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 7 }}>
                             <span>Asociación seleccionada: <strong>{rfeg.clubName} · {rfeg.courseName}</strong></span>
@@ -357,9 +368,9 @@ export default function RfegStatsPanel({ card, onUpdate, tournamentName, courseN
                                 ? <span style={{ color: '#15803d', fontWeight: 700 }}>Guardada para próximos torneos</span>
                                 : <button type="button" onClick={saveCurrentCourseMapping} disabled={mappingSaving || !connectionStatus?.connected} style={{ padding: '5px 8px', border: '1px solid #86efac', borderRadius: 6, background: '#f0fdf4', color: '#166534', fontWeight: 700, cursor: mappingSaving ? 'wait' : 'pointer' }}>{mappingSaving ? 'Guardando…' : 'Guardar equivalencia para próximos torneos'}</button>}
                         </div>}
-                        <span style={{ color: '#64748b' }}>Las sugerencias solo comparan nombres normalizados. Confirma que el campo y el recorrido sean los mismos antes de transferir.</span>
+                        <span style={{ color: '#8c857f' }}>Las sugerencias solo comparan nombres normalizados. Confirma que el campo y el recorrido sean los mismos antes de transferir.</span>
                     </div>}
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, color: '#475569', fontSize: 12 }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, color: '#6b625b', fontSize: 12 }}>
                         {[[1, 'Seco'], [2, 'Húmedo'], [3, 'Frío'], [4, 'Viento']].map(([id, label]) => <label key={id} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><input type="checkbox" checked={(rfeg.conditions || []).includes(String(id))} onChange={(event) => {
                             const current = Array.isArray(rfeg.conditions) ? rfeg.conditions : [];
                             const next = event.target.checked ? [...new Set([...current, String(id)])] : current.filter((item) => item !== String(id));
@@ -367,27 +378,27 @@ export default function RfegStatsPanel({ card, onUpdate, tournamentName, courseN
                         }} />{label}</label>)}
                     </div>
                     <label style={labelStyle}>Observaciones de la ronda<textarea value={rfeg.observations || ''} onChange={(event) => persistMetadata('observations', event.target.value)} rows={2} maxLength={2000} style={{ ...selectStyle, resize: 'vertical' }} /></label>
-                    <div style={{ color: '#64748b', fontSize: 12 }}>Fecha prevista: {formattedDate || 'sin fecha'} · Ronda {roundNumber} · Código {roundCode || 'pendiente'}</div>
+                    <div style={{ color: '#8c857f', fontSize: 12 }}>Fecha prevista: {formattedDate || 'sin fecha'} · Ronda {roundNumber} · Código {roundCode || 'pendiente'}</div>
                 </div>
                 <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 10, marginBottom: 12 }}>
                     {Array.from({ length: 18 }, (_, index) => {
                         const complete = readiness.holeErrors[index].length === 0;
-                        return <button key={index} type="button" onClick={() => setHoleIndex(index)} aria-current={holeIndex === index ? 'step' : undefined} style={{ flex: '0 0 38px', height: 38, border: holeIndex === index ? '2px solid #2563eb' : '1px solid #cbd5e1', borderRadius: 20, background: complete ? '#dcfce7' : 'white', color: complete ? '#166534' : '#334155', fontWeight: 800, cursor: 'pointer' }}>{index + 1}</button>;
+                        return <button key={index} type="button" onClick={() => setHoleIndex(index)} aria-current={holeIndex === index ? 'step' : undefined} style={{ flex: '0 0 38px', height: 38, border: holeIndex === index ? '2px solid #333333' : '1px solid #e5e1de', borderRadius: 20, background: complete ? '#dcfce7' : 'white', color: complete ? '#166534' : '#333333', fontWeight: 800, cursor: 'pointer' }}>{index + 1}</button>;
                     })}
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 230px), 1fr))', gap: 10, padding: 12, borderRadius: 9, background: 'white', border: '1px solid #dbeafe' }}>
-                    <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'space-between', gap: 8, color: '#1e293b', fontWeight: 800 }}>Hoyo {currentHole} · HCP {card?.handicaps?.[holeIndex] || '—'} · Par {par}<span>{strokes[holeIndex] ? `${strokes[holeIndex]} golpes` : 'Añade primero los golpes'}</span></div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 230px), 1fr))', gap: 10, padding: 12, borderRadius: 9, background: 'white', border: '1px solid #e5e1de' }}>
+                    <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'space-between', gap: 8, color: '#333333', fontWeight: 800 }}>Hoyo {currentHole} · HCP {card?.handicaps?.[holeIndex] || '—'} · Par {par}<span>{strokes[holeIndex] ? `${strokes[holeIndex]} golpes` : 'Añade primero los golpes'}</span></div>
                     {fields.map((field) => <FieldSelect key={field.key} label={field.label} value={field.value ?? rfeg[field.key]?.[holeIndex] ?? ''} options={field.options} disabled={field.key === 'fir' && par === 3} onChange={field.onChange || ((value) => updateRfeg(field.key, value))} />)}
                     <label style={labelStyle}>Penalidades desde el tee<input type="number" min="0" max="2" value={rfeg.teePenalties?.[holeIndex] ?? ''} onChange={(event) => updateRfeg('teePenalties', event.target.value)} style={selectStyle} /></label>
                     <label style={labelStyle}>Otras penalidades<input type="number" min="0" max="2" value={rfeg.otherPenalties?.[holeIndex] ?? ''} onChange={(event) => updateRfeg('otherPenalties', event.target.value)} style={selectStyle} /></label>
                 </div>
                 {readiness.holeErrors[holeIndex].length > 0 && <p style={{ margin: '10px 0', color: '#92400e', fontSize: 12 }}>Para exportar este hoyo faltan: {readiness.holeErrors[holeIndex].join(', ')}.</p>}
-                {recovery === 'yes' && <p style={{ margin: '8px 0 0', color: '#64748b', fontSize: 12 }}>Marca lie y distancia cuando corresponda a una recuperación de hasta 40 m; la documentación RFEG excluye de la estadística las de más de 40 m.</p>}
+                {recovery === 'yes' && <p style={{ margin: '8px 0 0', color: '#8c857f', fontSize: 12 }}>Marca lie y distancia cuando corresponda a una recuperación de hasta 40 m; la documentación RFEG excluye de la estadística las de más de 40 m.</p>}
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
-                    <button type="button" onClick={copyCsv} style={{ display: 'inline-flex', gap: 7, alignItems: 'center', padding: '9px 12px', border: 0, borderRadius: 8, background: '#2563eb', color: 'white', fontWeight: 700, cursor: 'pointer' }}><Clipboard size={16} />Copiar CSV</button>
-                    <button type="button" onClick={downloadCsv} style={{ display: 'inline-flex', gap: 7, alignItems: 'center', padding: '9px 12px', border: '1px solid #94a3b8', borderRadius: 8, background: 'white', color: '#334155', fontWeight: 700, cursor: 'pointer' }}><Download size={16} />Descargar CSV</button>
-                    <a href="https://rfegolfstats.es/entrenamiento" target="_blank" rel="noreferrer" style={{ display: 'inline-flex', gap: 7, alignItems: 'center', padding: '9px 12px', border: '1px solid #bfdbfe', borderRadius: 8, background: 'white', color: '#1d4ed8', fontWeight: 700, textDecoration: 'none' }}><ExternalLink size={16} />Abrir RFEG</a>
-                    <button type="button" onClick={() => setShowTransferReview((value) => !value)} disabled={!readiness.complete || !connectionStatus?.connected || !rfeg.clubId || !rfeg.courseId || !roundCode || !formattedDate || transferLoading} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '9px 12px', border: 0, borderRadius: 8, background: '#0f766e', color: 'white', fontWeight: 700, cursor: !readiness.complete || !connectionStatus?.connected || !rfeg.courseId ? 'not-allowed' : 'pointer', opacity: !readiness.complete || !connectionStatus?.connected || !rfeg.clubId || !rfeg.courseId || !formattedDate ? 0.55 : 1 }}><Send size={15} />Revisar transferencia</button>
+                    <button type="button" onClick={copyCsv} style={{ display: 'inline-flex', gap: 7, alignItems: 'center', padding: '9px 12px', border: 0, borderRadius: 8, background: '#333333', color: 'white', fontWeight: 700, cursor: 'pointer' }}><Clipboard size={16} />Copiar CSV</button>
+                    <button type="button" onClick={downloadCsv} style={{ display: 'inline-flex', gap: 7, alignItems: 'center', padding: '9px 12px', border: '1px solid #c5b4a5', borderRadius: 8, background: 'white', color: '#333333', fontWeight: 700, cursor: 'pointer' }}><Download size={16} />Descargar CSV</button>
+                    <a href="https://rfegolfstats.es/entrenamiento" target="_blank" rel="noreferrer" style={{ display: 'inline-flex', gap: 7, alignItems: 'center', padding: '9px 12px', border: '1px solid #e5e1de', borderRadius: 8, background: 'white', color: '#333333', fontWeight: 700, textDecoration: 'none' }}><ExternalLink size={16} />Abrir RFEG</a>
+                    <button type="button" onClick={() => setShowTransferReview((value) => !value)} disabled={!readiness.complete || !connectionStatus?.connected || !rfeg.clubId || !rfeg.courseId || !roundCode || !formattedDate || transferLoading} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '9px 12px', border: 0, borderRadius: 8, background: '#333333', color: 'white', fontWeight: 700, cursor: !readiness.complete || !connectionStatus?.connected || !rfeg.courseId ? 'not-allowed' : 'pointer', opacity: !readiness.complete || !connectionStatus?.connected || !rfeg.clubId || !rfeg.courseId || !formattedDate ? 0.55 : 1 }}><Send size={15} />Revisar transferencia</button>
                 </div>
                 {!readiness.complete && <p style={{ margin: '9px 0 0', color: '#92400e', fontSize: 12 }}>Faltan datos obligatorios en {18 - readiness.completedHoles} hoyos. Completa golpes, HCP, par y estadísticas antes de enviar.</p>}
                 {showTransferReview && <div style={{ marginTop: 12, padding: 12, border: '1px solid #fbbf24', borderRadius: 8, background: '#fffbeb' }}>
@@ -398,7 +409,7 @@ export default function RfegStatsPanel({ card, onUpdate, tournamentName, courseN
                         <button type="button" onClick={() => setShowTransferReview(false)} disabled={transferLoading} style={{ padding: '8px 11px', border: '1px solid #d6d3d1', borderRadius: 7, background: 'white', color: '#44403c', fontWeight: 700, cursor: 'pointer' }}>Volver a revisar</button>
                     </div>
                 </div>}
-                <p style={{ margin: '10px 0 0', color: '#64748b', fontSize: 12, lineHeight: 1.5 }}>La transferencia usa el formulario autenticado de RFEGStats; no hay importación CSV visible en la web. Revisa siempre club, recorrido y código RT antes de confirmar.</p>
+                <p style={{ margin: '10px 0 0', color: '#8c857f', fontSize: 12, lineHeight: 1.5 }}>La transferencia usa el formulario autenticado de RFEGStats; no hay importación CSV visible en la web. Revisa siempre club, recorrido y código RT antes de confirmar.</p>
             </div>}
         </section>
     );
